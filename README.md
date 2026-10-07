@@ -25,7 +25,7 @@ Definido pelo Lucas para escolher os melhores descendentes:
 2. **Desempate:** se o critério acima empatar, vence a Luna que deu **menos xeques** durante a partida.
 
 3. **Partidas sem mate:** num empate, a Luna soma pontos pelo material que capturou: peão +0,1, cavalo +0,3, bispo +0,4, torre +0,6, dama +2.
-4. **Derrota:** cada derrota recebe -5 pontos.
+4. **Derrota:** cada derrota recebe -5 pontos, e a Luna mantém os pontos do material que capturou.
 
 ## Organização do trabalho
 

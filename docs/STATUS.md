@@ -138,6 +138,7 @@ Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pa
 |------|---------|-----|
 | 2026-10-07 | O primeiro commit (documentação) foi direto no `main`; o resto segue por PR | Lucas |
 | 2026-10-07 | Aptidão em partidas sem mate: empate pontua pelo material capturado (peão +0,1, cavalo +0,3, bispo +0,4, torre +0,6, dama +2); cada derrota recebe -5 | Lucas |
+| 2026-10-07 | Na derrota, a Luna mantém os pontos do material capturado: derrota = -5 + material | Lucas |
 
 ---
 
@@ -145,7 +146,7 @@ Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pa
 
 Pontos que precisam de decisão do Lucas ou da frente responsável antes ou durante a implementação:
 
-1. **Detalhes da pontuação sem mate.** A regra base foi decidida (ver "Decisões tomadas"). Faltam dois detalhes: (a) uma Luna derrotada também soma o material que capturou, ou fica só com -5? (b) uma vitória fica sempre acima de qualquer empate? Até a resposta, o padrão é: derrota = -5 + material capturado, e vitória sempre acima de empate.
+1. **Vitória contra empate.** Assumido como padrão que qualquer vitória fica acima de qualquer empate, mesmo um empate com muitas capturas. Falta confirmação do Lucas.
 2. **Número de mates contra média de lances.** Hoje a Luna é ordenada pela média de lances até o mate, sem contar quantos mates deu: 1 mate em 30 lances fica à frente de 4 mates em 31. Contar primeiro o número de mates e depois a média? (apontado na revisão de código)
 3. **Motor de regras próprio ou biblioteca.** Implementar as regras do zero ou usar uma biblioteca consolidada como [`python-chess`](https://python-chess.readthedocs.io/) como referência de validação. Por enquanto a Luna usa `python-chess` como adaptador provisório, isolado em `luna/game_interface.py`, para trocar pelo motor próprio quando ele ficar pronto.
 4. **Como medir "rating equivalente a 1600".** Proposta no PR #4: partidas contra Stockfish com Elo limitado e liberação quando o limite inferior do intervalo de confiança de 90% chegar a 1600. Vira decisão quando o PR for mergeado.
@@ -165,3 +166,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | PR #1 aplicou a nova pontuação e ganhou adaptador para o `chess_engine` |
 | 2026-10-07 | Correções da revisão de código: limite de lances, alternância de cores e histórico marcados como `[~]`; FEN e SAN/PGN de volta ao backlog da etapa 1; regra para PRs em revisão explicitada |
 | 2026-10-07 | PR #1 corrigiu o ruído na busca: 75% a 88% das partidas agora terminam em mate; nova decisão em aberto sobre número de mates |
+| 2026-10-07 | Lucas confirmou que a derrota mantém os pontos de captura |
