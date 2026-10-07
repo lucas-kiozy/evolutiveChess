@@ -112,7 +112,9 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Laço contínuo: jogar → avaliar → selecionar → reproduzir → repetir
 - [x] Primeiro treino longo: 600 partidas (20 Lunas, 15 gerações, profundidade 2, motor próprio), com 78% a 95% de mates por geração. Usou a aptidão antiga, não a régua 5/2/-1
 - [x] Análise da evolução, em confrontos de 40 partidas: a `luna-v1` perde para os pesos iniciais (-108 ± 58 Elo), empata com a melhor da geração 1 (-9 ± 55) e vence a da geração 8 (+98 ± 57). **Não houve evolução consistente.** Causa provável: cada Luna joga só 4 partidas por geração, e a ordem antiga favorecia o mate rápido mesmo com mais derrotas (a campeã teve 1 vitória e 2 derrotas), então a seleção ficou quase aleatória
-- [ ] Novo treino com a régua 5/2/-1 e mais partidas por Luna em cada geração, para reduzir o ruído na seleção (proposta da frente da Luna aguardando o Lucas)
+- [ ] Reduzir o ruído na seleção (plano aprovado pelo Lucas): 18 partidas por Luna em cada geração, pontuação acumulada para a elite que sobrevive entre gerações e partidas contra campeãs de gerações passadas
+- [ ] Rodar mais 12 gerações com a régua 5/2/-1 e medir o rating de novo
+- [~] Comparador de velocidade entre os backends: o motor próprio ficou cerca de 1,8 vez mais rápido que o `python-chess` — [PR #8](https://github.com/lucas-kiozy/evolutiveChess/pull/8)
 - [x] Registro das partidas de cada geração em PGN (`generations/gen_NNNN.pgn`, com ids das Lunas, resultado, término e xeques de cada lado)
 
 ### Etapa 4 — Medição de rating (meta ~1600)
@@ -153,7 +155,9 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 | 2026-10-07 | Aptidão em partidas sem mate: empate pontua pelo material capturado (peão +0,1, cavalo +0,3, bispo +0,4, torre +0,6, dama +2); cada derrota recebe -5 | Lucas |
 | 2026-10-07 | Na derrota, a Luna mantém os pontos do material capturado: derrota = -5 + material | Lucas |
 | 2026-10-07 | Régua de aptidão por partida, somada na geração: vitória +5, empate +2, derrota -1 (substitui o -5). Vitória vale sempre mais que empate. Entre vitórias, melhor é a com menos xeques ("ser mais objetivo no ataque"); desempates na ordem: pontos de captura, menos xeques nas vitórias, menos lances até o mate | Lucas |
+| 2026-10-07 | Pontos de captura ficam só como desempate na régua 5/2/-1 (somados, um empate com muitas capturas passaria de uma vitória) | Lucas, ao mergear o PR #1 |
 | 2026-10-07 | Atualizações da documentação vão direto no `main`, sem PR | Lucas |
+| 2026-10-07 | Próximo treino: 18 partidas por Luna por geração, pontuação acumulada da elite, partidas contra campeãs passadas, mais 12 gerações e novo teste de rating | Lucas |
 | 2026-10-07 | "Rating 1600" = partidas contra Stockfish com Elo limitado; a Luna está pronta para o Lichess quando o limite inferior do intervalo de confiança de 90% chegar a 1600 | Lucas, ao mergear o PR #4 |
 
 ---
@@ -162,9 +166,8 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 
 Pontos que precisam de decisão do Lucas ou da frente responsável antes ou durante a implementação:
 
-1. **Capturas: desempate ou soma.** Na régua 5/2/-1, a frente da Luna deixou os pontos de captura só como desempate, porque somados um empate com muitas capturas (até 7,4) passaria de uma vitória (5). Falta o Lucas confirmar.
-2. **Motor de regras próprio ou biblioteca.** Resolvido: o motor próprio (`chess_engine`) está no `main`; `python-chess` fica só como referência nos testes. Falta tornar `chess_engine` o backend padrão da Luna (PR #1).
-3. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
+1. **Motor de regras próprio ou biblioteca.** Resolvido: o motor próprio (`chess_engine`) está no `main`; `python-chess` fica só como referência nos testes. Falta tornar `chess_engine` o backend padrão da Luna (PR #1).
+2. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
 
 ---
 
@@ -193,3 +196,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | Resultados do treino de 600 partidas e da primeira medição de rating (`luna-v1` abaixo de ~1320) |
 | 2026-10-07 | PR #7 mergeado: versão `luna-v1` no repositório |
 | 2026-10-07 | PR #9 aberto: `chess_engine` como backend padrão da Luna |
+| 2026-10-07 | Plano do próximo treino registrado; PR #8 (comparador de velocidade) aberto; decisão sobre capturas encerrada |
