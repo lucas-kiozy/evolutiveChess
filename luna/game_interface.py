@@ -7,7 +7,9 @@ sobre python-chess (``luna.adapters.python_chess``). Quando o pacote
 ``luna/adapters`` e registrá-lo em ``luna.adapters.BACKENDS``.
 
 Convenções:
-- Lances são strings UCI (``"e2e4"``, ``"e7e8q"``).
+- Lances são objetos opacos do backend (inteiros, ``chess.Move``...): a Luna só
+  os repassa ao próprio backend. ``uci(move)`` e ``parse_uci(texto)`` convertem
+  de e para UCI (``"e2e4"``, ``"e7e8q"``) quando é preciso guardar ou exibir.
 - Casas são inteiros 0..63 com a1 = 0, b1 = 1, ..., h8 = 63.
 - Peças são letras maiúsculas ``P N B R Q K``; a cor vem num booleano à parte
   (``True`` = brancas).
@@ -16,7 +18,9 @@ Convenções:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Optional, Protocol, runtime_checkable
+from typing import Any, Iterable, Optional, Protocol, runtime_checkable
+
+Move = Any  # tipo opaco definido por cada backend
 
 
 @dataclass(frozen=True)
@@ -36,11 +40,15 @@ class GameState(Protocol):
     def ply(self) -> int:
         """Número de meios-lances já jogados."""
 
-    def legal_moves(self) -> list[str]: ...
+    def legal_moves(self) -> list[Move]: ...
 
-    def push(self, move: str) -> None: ...
+    def push(self, move: Move) -> None: ...
 
-    def pop(self) -> str: ...
+    def pop(self) -> Move: ...
+
+    def uci(self, move: Move) -> str: ...
+
+    def parse_uci(self, text: str) -> Move: ...
 
     def copy(self) -> "GameState": ...
 
@@ -49,16 +57,16 @@ class GameState(Protocol):
 
     def is_checkmate(self) -> bool: ...
 
-    def is_capture(self, move: str) -> bool: ...
+    def is_capture(self, move: Move) -> bool: ...
 
-    def captured_piece(self, move: str) -> Optional[str]:
+    def captured_piece(self, move: Move) -> Optional[str]:
         """Letra da peça capturada pelo lance (``"P"`` em en passant) ou None."""
 
-    def moving_piece(self, move: str) -> str: ...
+    def moving_piece(self, move: Move) -> str: ...
 
-    def is_promotion(self, move: str) -> bool: ...
+    def is_promotion(self, move: Move) -> bool: ...
 
-    def gives_check(self, move: str) -> bool: ...
+    def gives_check(self, move: Move) -> bool: ...
 
     def is_repetition(self) -> bool:
         """A posição atual já apareceu antes nesta partida?"""

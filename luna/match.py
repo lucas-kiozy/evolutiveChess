@@ -60,13 +60,13 @@ def play_game(
             break
         mover = state.white_to_move
         if state.ply < config.random_opening_plies:
-            move = rng.choice(state.legal_moves())
+            move = rng.choice(sorted(state.legal_moves(), key=state.uci))
         else:
             move = searchers[mover].choose_move(state)
             if move is None:  # não deveria acontecer: outcome já cobre sem lances
                 break
         state.push(move)
-        moves.append(move)
+        moves.append(state.uci(move))
         if state.is_check():
             checks[mover] += 1
     else:

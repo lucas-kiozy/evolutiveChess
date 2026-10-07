@@ -49,14 +49,23 @@ class PythonChessGame:
     def ply(self) -> int:
         return self._board.ply()
 
-    def legal_moves(self) -> list[str]:
-        return [m.uci() for m in self._board.legal_moves]
+    def legal_moves(self) -> list[chess.Move]:
+        return list(self._board.legal_moves)
 
-    def push(self, move: str) -> None:
-        self._board.push(chess.Move.from_uci(move))
+    def push(self, move: chess.Move) -> None:
+        self._board.push(move)
 
-    def pop(self) -> str:
-        return self._board.pop().uci()
+    def pop(self) -> chess.Move:
+        return self._board.pop()
+
+    def uci(self, move: chess.Move) -> str:
+        return move.uci()
+
+    def parse_uci(self, text: str) -> chess.Move:
+        move = chess.Move.from_uci(text)
+        if move not in self._board.legal_moves:
+            raise ValueError(f"Lance ilegal: {text}")
+        return move
 
     def copy(self) -> "PythonChessGame":
         return PythonChessGame(_board=self._board.copy(stack=True))
@@ -67,25 +76,24 @@ class PythonChessGame:
     def is_checkmate(self) -> bool:
         return self._board.is_checkmate()
 
-    def is_capture(self, move: str) -> bool:
-        return self._board.is_capture(chess.Move.from_uci(move))
+    def is_capture(self, move: chess.Move) -> bool:
+        return self._board.is_capture(move)
 
-    def captured_piece(self, move: str) -> Optional[str]:
-        m = chess.Move.from_uci(move)
-        if self._board.is_en_passant(m):
+    def captured_piece(self, move: chess.Move) -> Optional[str]:
+        if self._board.is_en_passant(move):
             return "P"
-        piece = self._board.piece_at(m.to_square)
+        piece = self._board.piece_at(move.to_square)
         return _SYMBOL[piece.piece_type] if piece else None
 
-    def moving_piece(self, move: str) -> str:
-        piece = self._board.piece_at(chess.Move.from_uci(move).from_square)
+    def moving_piece(self, move: chess.Move) -> str:
+        piece = self._board.piece_at(move.from_square)
         return _SYMBOL[piece.piece_type] if piece else "?"
 
-    def is_promotion(self, move: str) -> bool:
-        return len(move) == 5
+    def is_promotion(self, move: chess.Move) -> bool:
+        return move.promotion is not None
 
-    def gives_check(self, move: str) -> bool:
-        return self._board.gives_check(chess.Move.from_uci(move))
+    def gives_check(self, move: chess.Move) -> bool:
+        return self._board.gives_check(move)
 
     def is_repetition(self) -> bool:
         return self._board.is_repetition(2)

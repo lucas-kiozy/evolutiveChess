@@ -13,10 +13,15 @@ def _python_chess(fen: Optional[str] = None) -> GameState:
     return PythonChessGame(fen)
 
 
-# Para plugar o motor do projeto: adicione aqui "chess_engine": _chess_engine,
-# apontando para um adaptador em luna/adapters/chess_engine.py.
+def _chess_engine(fen: Optional[str] = None) -> GameState:
+    from luna.adapters.chess_engine import ChessEngineGame
+
+    return ChessEngineGame(fen)
+
+
 BACKENDS: dict[str, Callable[[Optional[str]], GameState]] = {
     "python-chess": _python_chess,
+    "chess_engine": _chess_engine,
 }
 
 DEFAULT_BACKEND = "python-chess"

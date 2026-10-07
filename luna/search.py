@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from luna.evaluation import MATE_SCORE, evaluate
-from luna.game_interface import GameState
+from luna.game_interface import GameState, Move
 from luna.genome import Genome
 
 _ORDER_VALUE = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9, "K": 0}
@@ -37,8 +37,10 @@ class Searcher:
         self.rng = rng or random.Random()
         self.nodes = 0
 
-    def choose_move(self, state: GameState) -> Optional[str]:
-        moves = self._ordered(state, state.legal_moves())
+    def choose_move(self, state: GameState) -> Optional[Move]:
+        # Ordem UCI antes da ordenação por capturas: desempates e ruído ficam iguais
+        # em qualquer backend, independente da ordem em que ele gera os lances.
+        moves = self._ordered(state, sorted(state.legal_moves(), key=state.uci))
         if not moves:
             return None
         best_move, best_score = moves[0], -INF
@@ -97,10 +99,10 @@ class Searcher:
         return alpha
 
     @staticmethod
-    def _ordered(state: GameState, moves: list[str]) -> list[str]:
+    def _ordered(state: GameState, moves: list[Move]) -> list[Move]:
         """Capturas primeiro, por MVV-LVA (vítima mais valiosa, agressor menos valioso)."""
 
-        def key(move: str) -> int:
+        def key(move: Move) -> int:
             victim = state.captured_piece(move)
             score = 0
             if victim:

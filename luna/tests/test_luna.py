@@ -26,9 +26,9 @@ def test_adapter_implements_interface():
     state = new_game()
     assert isinstance(state, GameState)
     assert len(state.legal_moves()) == 20
-    state.push("e2e4")
+    state.push(state.parse_uci("e2e4"))
     assert not state.white_to_move and state.ply == 1
-    assert state.pop() == "e2e4"
+    assert state.uci(state.pop()) == "e2e4"
 
 
 def test_unknown_backend():
@@ -50,7 +50,7 @@ def test_search_finds_mate_in_one():
     # Mate do corredor: Ra8#.
     state = new_game(fen="6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1")
     move = Searcher(Genome.reference(), SearchConfig(depth=2)).choose_move(state)
-    assert move == "a1a8"
+    assert state.uci(move) == "a1a8"
 
 
 def test_search_prefers_shorter_mate():
@@ -151,7 +151,7 @@ def test_evolve_saves_and_resumes(tmp_path):
 def test_search_avoids_repetition_with_contempt():
     state = new_game()
     for m in ["g1f3", "g8f6", "f3g1", "f6g8", "g1f3", "g8f6"]:
-        state.push(m)
+        state.push(state.parse_uci(m))
     # Voltar com Cg1 repetiria a posição pela terceira vez.
     move = Searcher(Genome.reference(), SearchConfig(depth=2, contempt=200)).choose_move(state)
     state.push(move)
