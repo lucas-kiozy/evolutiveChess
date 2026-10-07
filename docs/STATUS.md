@@ -101,7 +101,7 @@ Em andamento no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (r
   - [~] Empates e derrotas pontuam por material capturado, -5 por derrota; Lunas com mate ficam à frente e as demais são ordenadas pela média desses pontos — PR #1
 - [~] Laço contínuo: jogar → avaliar → selecionar → reproduzir → repetir — PR #1
 - [ ] Treino longo (muitas gerações) e análise dos resultados. Num treino curto, depois da correção do ruído, 75% a 88% das partidas terminam em mate, e a melhor Luna dá mate em 25 a 27 lances em média
-- [ ] Registro das partidas (PGN) e métricas de cada geração
+- [~] Registro das partidas de cada geração em PGN (`generations/gen_NNNN.pgn`, com ids das Lunas, resultado, término e xeques de cada lado) — PR #1
 
 ### Etapa 4 — Medição de rating (meta ~1600)
 
@@ -169,3 +169,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | PR #1 corrigiu o ruído na busca: 75% a 88% das partidas agora terminam em mate; nova decisão em aberto sobre número de mates |
 | 2026-10-07 | Lucas confirmou que a derrota mantém os pontos de captura |
 | 2026-10-07 | PR #2 corrigiu os achados da revisão e ganhou exportação PGN |
+| 2026-10-07 | PR #1 passou a gravar as partidas de cada geração em PGN |
