@@ -52,7 +52,9 @@ def _play_task(args: tuple) -> GameRecord:
     return play_game(Genome.from_dict(white), Genome.from_dict(black), match_config, seed)
 
 
-def schedule(population: list[Genome], rounds: int, rng: random.Random) -> list[tuple[Genome, Genome]]:
+def schedule(
+    population: list[Genome], rounds: int, rng: random.Random
+) -> list[tuple[Genome, Genome]]:
     """Em cada rodada, embaralha e emparelha; cada par joga duas partidas com cores trocadas."""
     pairs = []
     for _ in range(rounds):
@@ -72,10 +74,7 @@ def play_generation(
 ) -> list[GameRecord]:
     rng = random.Random(f"{config.seed}-schedule-{generation}")
     games = schedule(population, config.rounds, rng)
-    tasks = [
-        (w.to_dict(), b.to_dict(), config.match, rng.randrange(2**32))
-        for w, b in games
-    ]
+    tasks = [(w.to_dict(), b.to_dict(), config.match, rng.randrange(2**32)) for w, b in games]
     if executor is None:
         return [_play_task(t) for t in tasks]
     return list(executor.map(_play_task, tasks))
@@ -113,7 +112,9 @@ def _ident(generation: int, index: int) -> str:
     return f"g{generation:04d}-i{index:02d}"
 
 
-def summarize(generation: int, ranked_ids: list[str], stats: dict, records: list[GameRecord], seconds: float) -> dict:
+def summarize(
+    generation: int, ranked_ids: list[str], stats: dict, records: list[GameRecord], seconds: float
+) -> dict:
     mates = [r for r in records if r.termination == "checkmate"]
     terminations: dict[str, int] = {}
     for r in records:
@@ -124,7 +125,8 @@ def summarize(generation: int, ranked_ids: list[str], stats: dict, records: list
         "games": len(records),
         "mate_rate": len(mates) / len(records) if records else 0.0,
         "mean_mate_moves": (sum(r.mate_moves for r in mates) / len(mates)) if mates else None,
-        "mean_checks_per_game": sum(r.white_checks + r.black_checks for r in records) / max(1, len(records)),
+        "mean_checks_per_game": sum(r.white_checks + r.black_checks for r in records)
+        / max(1, len(records)),
         "terminations": terminations,
         "best_id": ranked_ids[0],
         "best_result_points": best.result_points,

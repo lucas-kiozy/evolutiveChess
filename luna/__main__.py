@@ -38,7 +38,7 @@ def main(argv: list[str] | None = None) -> None:
     t.add_argument("--contempt", type=float, default=50.0)
     t.add_argument("--max-plies", type=int, default=200)
     t.add_argument("--opening-plies", type=int, default=2)
-    t.add_argument("--backend", choices=["python-chess", "chess_engine"], default="python-chess")
+    t.add_argument("--backend", choices=["chess_engine", "python-chess"], default="chess_engine")
     t.add_argument("--workers", type=int, default=0, help="0 = número de CPUs")
     t.add_argument("--seed", type=int, default=42)
 
@@ -58,7 +58,9 @@ def main(argv: list[str] | None = None) -> None:
     if args.command == "export":
         from luna.versions import export_version
 
-        path = export_version(args.run_dir, args.name, args.generation, args.notes, overwrite=args.overwrite)
+        path = export_version(
+            args.run_dir, args.name, args.generation, args.notes, overwrite=args.overwrite
+        )
         print(f"Versão salva em {path}")
         return
     if args.command == "versions":
@@ -66,7 +68,9 @@ def main(argv: list[str] | None = None) -> None:
 
         for v in list_versions():
             src = v.source
-            print(f"{v.name}: geração {src.get('generation')} de {src.get('run_dir')} ({v.created})")
+            print(
+                f"{v.name}: geração {src.get('generation')} de {src.get('run_dir')} ({v.created})"
+            )
         return
     if args.command == "train":
         config = EvolutionConfig(

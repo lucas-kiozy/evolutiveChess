@@ -11,6 +11,7 @@ from luna.game_interface import GameState
 from luna.genome import Genome
 
 # Tabelas do ponto de vista das brancas, linha 8 primeiro (como num diagrama).
+# fmt: off
 _PST_RAW = {
     "P": [
         0, 0, 0, 0, 0, 0, 0, 0,
@@ -83,6 +84,7 @@ _PST_RAW = {
         -50, -30, -30, -30, -30, -30, -30, -50,
     ],
 }
+# fmt: on
 
 
 def _to_square_index(table: list[int]) -> list[int]:

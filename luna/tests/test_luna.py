@@ -5,7 +5,7 @@ import pytest
 from luna.adapters import new_game
 from luna.evaluation import evaluate
 from luna.evolution import EvolutionConfig, evolve, next_population, schedule
-from luna.fitness import Stats, collect_stats, rank
+from luna.fitness import collect_stats, rank
 from luna.game_interface import GameState
 from luna.genome import GENE_SPECS, Genome, crossover, mutate
 from luna.match import GameRecord, MatchConfig, play_game
@@ -13,13 +13,22 @@ from luna.search import SearchConfig, Searcher
 from luna.storage import RunStorage
 
 
-def record(white, black, winner, mate_moves=None, wc=0, bc=0, termination=None,
-           wcap=None, bcap=None):
+def record(
+    white, black, winner, mate_moves=None, wc=0, bc=0, termination=None, wcap=None, bcap=None
+):
     return GameRecord(
-        white_id=white, black_id=black, winner=winner,
+        white_id=white,
+        black_id=black,
+        winner=winner,
         termination=termination or ("checkmate" if mate_moves else "max_plies"),
-        plies=0, white_checks=wc, black_checks=bc, mate_moves=mate_moves,
-        material_balance=0, moves=[], white_captures=wcap or {}, black_captures=bcap or {},
+        plies=0,
+        white_checks=wc,
+        black_checks=bc,
+        mate_moves=mate_moves,
+        material_balance=0,
+        moves=[],
+        white_captures=wcap or {},
+        black_captures=bcap or {},
     )
 
 
@@ -58,7 +67,9 @@ def test_search_finds_mate_in_one():
 def test_search_finds_mate_in_one_with_noise(seed):
     for fen in ("7k/8/5K2/8/8/8/8/6Q1 w - - 0 1", "6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1"):
         state = new_game(fen=fen)
-        searcher = Searcher(Genome.reference(), SearchConfig(depth=2, noise=50), random.Random(seed))
+        searcher = Searcher(
+            Genome.reference(), SearchConfig(depth=2, noise=50), random.Random(seed)
+        )
         state.push(searcher.choose_move(state))
         assert state.is_checkmate()
 
@@ -68,7 +79,9 @@ def test_noise_only_picks_among_near_best_moves():
     # nenhum outro lance chega perto, então a captura tem de ser escolhida.
     state = new_game(fen="4k3/8/8/3q4/8/8/8/3RK3 w - - 0 1")
     for seed in range(10):
-        searcher = Searcher(Genome.reference(), SearchConfig(depth=2, noise=20), random.Random(seed))
+        searcher = Searcher(
+            Genome.reference(), SearchConfig(depth=2, noise=20), random.Random(seed)
+        )
         assert state.uci(searcher.choose_move(state)) == "d1d5"
 
 
@@ -188,7 +201,10 @@ def test_play_game_is_reproducible():
 
 def test_evolve_saves_and_resumes(tmp_path):
     cfg = EvolutionConfig(
-        population=4, elite=1, rounds=1, seed=3,
+        population=4,
+        elite=1,
+        rounds=1,
+        seed=3,
         match=MatchConfig(search=SearchConfig(depth=1, quiescence_depth=0), max_plies=20),
     )
     run = tmp_path / "run"
@@ -230,7 +246,10 @@ def test_export_and_load_version(tmp_path):
     from luna.versions import export_version, list_versions, load_version
 
     cfg = EvolutionConfig(
-        population=4, elite=1, rounds=1, seed=5,
+        population=4,
+        elite=1,
+        rounds=1,
+        seed=5,
         match=MatchConfig(search=SearchConfig(depth=1, quiescence_depth=0, noise=3), max_plies=20),
     )
     run = tmp_path / "run"

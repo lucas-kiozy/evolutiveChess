@@ -24,7 +24,7 @@ BACKENDS: dict[str, Callable[[Optional[str]], GameState]] = {
     "chess_engine": _chess_engine,
 }
 
-DEFAULT_BACKEND = "python-chess"
+DEFAULT_BACKEND = "chess_engine"  # motor do projeto, cerca de 2x mais rápido
 
 
 def new_game(backend: str = DEFAULT_BACKEND, fen: Optional[str] = None) -> GameState:

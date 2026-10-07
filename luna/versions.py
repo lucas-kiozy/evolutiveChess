@@ -99,7 +99,9 @@ def export_version(
         raise FileExistsError(f"A versão {name} já existe: {path}")
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(version.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    tmp.write_text(
+        json.dumps(version.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
     os.replace(tmp, path)
     return path
 

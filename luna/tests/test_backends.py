@@ -8,7 +8,8 @@ from luna.adapters import new_game
 from luna.evaluation import evaluate
 from luna.genome import Genome
 from luna.match import MatchConfig, play_game
-from luna.search import SearchConfig
+from luna.search import SearchConfig, Searcher
+from luna.versions import load_version
 
 pytest.importorskip("chess")
 pytest.importorskip("chess_engine")
@@ -45,8 +46,40 @@ def _snapshot(state):
 def test_backends_agree_on_positions(fen):
     a, b = (new_game(name, fen) for name in BACKENDS)
     assert _snapshot(a) == _snapshot(b)
-    g = Genome.reference()
-    assert evaluate(a, g) == pytest.approx(evaluate(b, g))
+    for g in [Genome.reference()] + [Genome.random(random.Random(i)) for i in range(5)]:
+        # Igualdade exata: uma diferença no último dígito já muda o desempate entre lances.
+        assert evaluate(a, g) == evaluate(b, g)
+
+
+@pytest.mark.parametrize("fen", POSITIONS)
+def test_pieces_come_in_square_order(fen):
+    for name in BACKENDS:
+        squares = [sq for sq, _, _ in new_game(name, fen).pieces()]
+        assert squares == sorted(squares)
+
+
+def test_evolved_genome_picks_same_move_on_both_backends():
+    # Posição em que f1e1 e d2e3 empatavam e cada backend escolhia um lance.
+    fen = "r1b3k1/ppp3p1/5r1p/2p1q3/4P3/1R1P4/P1PQ1PPP/5RK1 w - - 4 16"
+    genome = load_version("luna-v1").genome
+    moves = []
+    for name in BACKENDS:
+        state = new_game(name, fen)
+        moves.append(state.uci(Searcher(genome, SearchConfig(depth=2)).choose_move(state)))
+    assert moves[0] == moves[1]
+
+
+@pytest.mark.parametrize("seed", range(4))
+def test_same_game_with_evolved_genomes(seed):
+    rng = random.Random(seed)
+    white, black = Genome.random(rng, id="w"), Genome.random(rng, id="b")
+    records = []
+    for name in BACKENDS:
+        cfg = MatchConfig(
+            search=SearchConfig(depth=1, quiescence_depth=2, noise=5), max_plies=80, backend=name
+        )
+        records.append(play_game(white, black, cfg, seed=seed).to_dict())
+    assert records[0] == records[1]
 
 
 def test_backends_agree_along_random_games():
@@ -67,6 +100,8 @@ def test_backends_agree_along_random_games():
 def test_same_game_on_both_backends():
     records = []
     for name in BACKENDS:
-        cfg = MatchConfig(search=SearchConfig(depth=1, quiescence_depth=2), max_plies=40, backend=name)
+        cfg = MatchConfig(
+            search=SearchConfig(depth=1, quiescence_depth=2), max_plies=40, backend=name
+        )
         records.append(play_game(Genome.reference(id="w"), Genome.reference(id="b"), cfg, seed=5))
     assert records[0].to_dict() == records[1].to_dict()

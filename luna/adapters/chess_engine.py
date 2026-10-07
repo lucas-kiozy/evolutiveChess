@@ -10,7 +10,6 @@ from typing import Iterable, Optional
 
 from chess_engine import BLACK, WHITE, Board, move_to_uci
 from chess_engine.tables import KNIGHT_ATTACKS, RAYS
-
 from luna.game_interface import Outcome
 
 _SYMBOL = {1: "P", 2: "N", 3: "B", 4: "R", 5: "Q", 6: "K"}
