@@ -58,23 +58,23 @@ O repositório também traz três skills do Claude, em `.claude/skills/`, que us
 
 ```
 .
-├── README.md                 # visão geral (este arquivo)
-├── chess_engine/             # motor de xadrez em Python puro (etapa 1)
-├── luna/                     # IA evolutiva: genoma, busca, algoritmo genético (etapas 2 e 3)
-│   └── versions/             # versões nomeadas da Luna
-├── rating/                   # estimativa de rating contra o Stockfish (etapa 4; guia em GUIA.md)
-├── lichess_bot/              # bot do Lichess, uma partida por vez (etapa 5; guia em GUIA.md)
-├── plans/                    # planos de implementação
-├── pyproject.toml            # pacote e dependências (pip install -e ".[dev]")
-├── .github/workflows/ci.yml  # testes e lint a cada PR
-│   ├── API.md                # interface pública do motor
-│   └── tests/                # regras, perft e comparação com python-chess
+├── README.md                   # visão geral (este arquivo)
+├── chess_engine/               # motor de xadrez em Python puro (etapa 1)
+│   ├── API.md                  # interface pública do motor
+│   └── tests/                  # regras, perft e comparação com python-chess
+├── luna/                       # IA evolutiva: genoma, busca, algoritmo genético (etapas 2 e 3)
+│   └── versions/               # versões nomeadas da Luna
+├── rating/                     # estimativa de rating contra o Stockfish (etapa 4; guia em GUIA.md)
+├── lichess_bot/                # bot do Lichess, uma partida por vez (etapa 5; guia em GUIA.md)
 ├── docs/
-│   ├── STATUS.md             # relatório: o que foi feito e backlog
-│   └── REFERENCIAS.md        # base científica e técnica do projeto
+│   ├── STATUS.md               # relatório: o que foi feito e backlog
+│   └── REFERENCIAS.md          # base científica e técnica do projeto
+├── plans/                      # planos de implementação
+├── pyproject.toml              # pacote e dependências (pip install -e ".[dev]")
+├── .github/workflows/ci.yml    # testes e lint a cada PR
 └── .claude/
     ├── agents/documentador.md  # agente que mantém a documentação
-    └── skills/               # skills de treino, validação de regras e relatório da Luna
+    └── skills/                 # skills de treino, validação de regras e relatório da Luna
 ```
 
 ## Como executar
