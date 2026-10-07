@@ -56,6 +56,9 @@ Por enquanto só a frente de documentação tem um agente definido no repositór
 │   └── versions/             # versões nomeadas da Luna
 ├── rating/                   # estimativa de rating contra o Stockfish (etapa 4; guia em GUIA.md)
 ├── lichess_bot/              # bot do Lichess, uma partida por vez (etapa 5; guia em GUIA.md)
+├── plans/                    # planos de implementação
+├── pyproject.toml            # pacote e dependências (pip install -e ".[dev]")
+├── .github/workflows/ci.yml  # testes e lint a cada PR
 │   ├── API.md                # interface pública do motor
 │   └── tests/                # regras, perft e comparação com python-chess
 ├── docs/
@@ -67,7 +70,12 @@ Por enquanto só a frente de documentação tem um agente definido no repositór
 
 ## Como executar
 
-Requer Python 3. O motor não tem dependências; a Luna usa `python-chess` só no backend `python-chess` (o padrão por enquanto).
+Requer Python 3.10 ou mais novo. O motor não tem dependências; a Luna usa `python-chess` só no backend `python-chess` (o padrão por enquanto).
+
+```bash
+# instalar com as dependências de desenvolvimento e de todos os pacotes
+pip install -e ".[dev]"
+```
 
 ```bash
 # jogar no terminal (você contra você)
@@ -89,8 +97,8 @@ python -m luna show --run-dir treinos/meu-treino
 python -m luna export --run-dir treinos/meu-treino --name luna-v1
 python -m luna versions
 
-# testes (pip install pytest -r lichess_bot/requirements.txt)
-python -m pytest chess_engine luna rating lichess_bot
+# testes de todos os pacotes
+python -m pytest
 ```
 
 Rodar `python -m luna train` de novo com o mesmo `--run-dir` continua o treino de onde parou.

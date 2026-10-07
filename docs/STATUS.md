@@ -5,7 +5,7 @@
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-**Último commit do `main` coberto:** `44c5756`
+**Último commit do `main` coberto:** `e0d6006`
 
 Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
@@ -15,7 +15,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 
 | # | Etapa | Status | Progresso |
 |---|-------|--------|-----------|
-| 0 | Base do projeto (repositório, documentação, frentes de trabalho) | Em andamento | Repositório e documentação no `main` |
+| 0 | Base do projeto (repositório, documentação, frentes de trabalho) | **Concluída** | Pacote, testes e CI no `main` pelo [PR #5](https://github.com/lucas-kiozy/evolutiveChess/pull/5); falta só o lint bloqueante |
 | 1 | Jogo de xadrez com regras validadas | **Concluída** | Motor mergeado no `main` pelo [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) |
 | 2 | Luna: IA evolutiva com algoritmo genético | **Concluída** | Luna no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); faltam ajustes (backend padrão, versão `luna-v1`) |
 | 3 | Self-play paralelo e seleção de descendentes | **Concluída** | Laço evolutivo paralelo com a régua 5/2/-1 no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); treino longo em andamento |
@@ -33,6 +33,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 2026-10-07 | Motor de xadrez com todas as regras, FEN, SAN, PGN e jogo no terminal | 1 | [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) |
 | 2026-10-07 | Luna: genoma, avaliação, busca alfa-beta, algoritmo genético, self-play paralelo, aptidão 5/2/-1, PGN por geração, versões nomeadas | 2 e 3 | [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) |
 | 2026-10-07 | Estimativa de rating contra Stockfish e bot do Lichess pela Bot API oficial | 4 e 5 | [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) |
+| 2026-10-07 | `pyproject.toml`, CI no GitHub Actions e plano de base e integração (`plans/`) | 0 | [PR #5](https://github.com/lucas-kiozy/evolutiveChess/pull/5) |
 
 ---
 
@@ -43,10 +44,11 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Criar o repositório `lucas-kiozy/evolutiveChess`
 - [x] Documentação inicial: README, relatório de status, referências
 - [x] Agente de documentação que atualiza este relatório a cada alteração concluída
-- [ ] Definir as frentes (subagentes) de trabalho, no mínimo 3: motor de xadrez, Luna, rating e Lichess
-- [ ] Estrutura de pacote Python (`pyproject.toml`, versão mínima do Python, layout `src/`)
-- [ ] Ferramentas de qualidade: testes (`pytest`), lint e formatação
-- [ ] Integração contínua (GitHub Actions) rodando os testes a cada PR
+- [x] Frentes de trabalho (no mínimo 3): motor de xadrez, Luna, rating e Lichess, cada uma numa conversa do projeto
+- [x] Pacote Python na raiz (`pyproject.toml`, Python 3.10 ou mais novo; `pip install -e ".[dev]"`) — [PR #5](https://github.com/lucas-kiozy/evolutiveChess/pull/5)
+- [x] Testes com `pytest` cobrindo os quatro pacotes — PR #5
+- [x] Integração contínua no GitHub Actions: testes em Python 3.10 a 3.13 a cada PR, lint e perft profundo no `main` — PR #5
+- [ ] Tornar o lint (`ruff`) bloqueante: hoje ele roda mas não reprova, porque o código ainda tem avisos
 
 ### Etapa 1 — Jogo de xadrez com regras validadas
 
@@ -180,3 +182,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | Lucas definiu a régua 5/2/-1; PR #1 aplicou; decisões em aberto renumeradas |
 | 2026-10-07 | PR #1 mergeado: etapas 2 e 3 concluídas |
 | 2026-10-07 | PR #4 mergeado: ferramentas das etapas 4 e 5 no `main` |
+| 2026-10-07 | PR #5 mergeado: etapa 0 concluída (pacote, testes e CI) |
