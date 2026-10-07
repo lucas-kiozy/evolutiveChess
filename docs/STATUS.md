@@ -82,6 +82,7 @@ Em andamento no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (r
 - [~] Elitismo (preservar os melhores entre gerações)
 - [~] Salvar e carregar gerações com retomada do treino (`luna/storage.py`, pasta `luna/runs/<nome>/`)
 - [~] Linha de comando: `python -m luna train` e `python -m luna show`
+- [~] Versões nomeadas da Luna: `python -m luna export --name luna-v1` grava `luna/versions/luna-v1.json` (genoma, busca e origem) para ir ao git; `python -m luna versions` lista — PR #1
 - [~] Histórico de evolução por geração (`history.jsonl`) — PR #1
 - [~] Adaptador para o motor próprio (`--backend chess_engine`), testado contra `python-chess` — PR #1
 - [ ] Tornar `chess_engine` o backend padrão depois que o PR #2 entrar no `main`
@@ -100,7 +101,7 @@ Em andamento no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (r
   - [~] 2º critério (desempate): **menos xeques** dados nas partidas que terminaram em mate
   - [~] Empates e derrotas pontuam por material capturado, -5 por derrota; Lunas com mate ficam à frente e as demais são ordenadas pela média desses pontos — PR #1
 - [~] Laço contínuo: jogar → avaliar → selecionar → reproduzir → repetir — PR #1
-- [ ] Treino longo (muitas gerações) e análise dos resultados. Num treino curto, depois da correção do ruído, 75% a 88% das partidas terminam em mate, e a melhor Luna dá mate em 25 a 27 lances em média
+- [~] Treino longo e análise dos resultados: um treino de 600 partidas chegou à geração 15 com cerca de 85% a 90% das partidas terminando em mate (arquivos do treino fora do repositório). Num treino curto, depois da correção do ruído, 75% a 88% das partidas terminam em mate, e a melhor Luna dá mate em 25 a 27 lances em média
 - [~] Registro das partidas de cada geração em PGN (`generations/gen_NNNN.pgn`, com ids das Lunas, resultado, término e xeques de cada lado) — PR #1
 
 ### Etapa 4 — Medição de rating (meta ~1600)
@@ -170,3 +171,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | Lucas confirmou que a derrota mantém os pontos de captura |
 | 2026-10-07 | PR #2 corrigiu os achados da revisão e ganhou exportação PGN |
 | 2026-10-07 | PR #1 passou a gravar as partidas de cada geração em PGN |
+| 2026-10-07 | PR #1 ganhou versões nomeadas da Luna; treino de 600 partidas registrado |
