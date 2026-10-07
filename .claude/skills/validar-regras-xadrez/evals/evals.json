@@ -1,0 +1,30 @@
+{
+  "skill_name": "validar-regras-xadrez",
+  "evals": [
+    {
+      "id": 2,
+      "name": "validar-roque-pretas",
+      "prompt": "nessa posição r3k2r/8/8/8/2B5/8/8/R3K2R b KQkq - 0 1 as pretas podem rocar pequeno? e grande? o motor tá certo?",
+      "expected_output": "Diz que o roque pequeno é ilegal; Explica que g8 está atacada pelo bispo de c4; Diz que o roque grande é legal; Usou o chess_engine do projeto para conferir (não só raciocínio)",
+      "files": [],
+      "assertions": [
+        "Diz que o roque pequeno é ilegal",
+        "Explica que g8 está atacada pelo bispo de c4",
+        "Diz que o roque grande é legal",
+        "Usou o chess_engine do projeto para conferir (não só raciocínio)"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "validar-en-passant-tardio",
+      "prompt": "depois de 1. e4 e6 2. e5 d5 3. Nf3 c5 o lance exd6 é legal? achei que era en passant",
+      "expected_output": "Diz que exd6 é ilegal; Explica que o en passant só vale imediatamente após o avanço duplo (o d5 foi no lance 2 e já passou); Usou o chess_engine do projeto para conferir",
+      "files": [],
+      "assertions": [
+        "Diz que exd6 é ilegal",
+        "Explica que o en passant só vale imediatamente após o avanço duplo (o d5 foi no lance 2 e já passou)",
+        "Usou o chess_engine do projeto para conferir"
+      ]
+    }
+  ]
+}

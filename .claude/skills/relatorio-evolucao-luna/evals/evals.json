@@ -1,0 +1,31 @@
+{
+  "skill_name": "relatorio-evolucao-luna",
+  "evals": [
+    {
+      "id": 4,
+      "name": "relatorio-com-grafico",
+      "prompt": "a Luna tá melhorando? me dá um relatório do treino default com um gráfico salvo em outputs",
+      "expected_output": "Salvou um gráfico PNG em outputs; Relatório traz a tendência de mates entre o início e o fim do treino; Avisa que métricas de self-play não provam ganho de força ou mede Elo; Não editou arquivos em luna/, rating/, docs/ nem README",
+      "files": [],
+      "assertions": [
+        "Salvou um gráfico PNG em outputs",
+        "Relatório traz a tendência de mates entre o início e o fim do treino",
+        "Avisa que métricas de self-play não provam ganho de força ou mede Elo",
+        "Não editou arquivos em luna/, rating/, docs/ nem README"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "relatorio-forca-real",
+      "prompt": "compara a geração 1 com a última do treino default: a última é mais forte de verdade? quero número",
+      "expected_output": "Jogou partidas entre o melhor da geração 1 e o melhor da última; Dá um Elo relativo (ou diferença de pontuação) com incerteza/erro; Diz se a diferença é estatisticamente clara ou não; Usou rating/elo.py ou o script da skill em vez de inventar fórmula sem base",
+      "files": [],
+      "assertions": [
+        "Jogou partidas entre o melhor da geração 1 e o melhor da última",
+        "Dá um Elo relativo (ou diferença de pontuação) com incerteza/erro",
+        "Diz se a diferença é estatisticamente clara ou não",
+        "Usou rating/elo.py ou o script da skill em vez de inventar fórmula sem base"
+      ]
+    }
+  ]
+}
