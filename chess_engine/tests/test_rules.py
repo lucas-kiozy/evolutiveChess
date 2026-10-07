@@ -114,7 +114,9 @@ def test_threefold_and_fivefold_repetition():
     shuffle = ["g1f3", "g8f6", "f3g1", "f6g8"]
     push_all(board, *shuffle)
     assert not board.is_threefold_repetition()
+    assert board.repetitions() == 2
     push_all(board, *shuffle)
+    assert board.repetitions() == 3
     assert board.is_threefold_repetition()
     assert board.outcome().termination == "threefold_repetition"
     assert board.outcome(claim_draw=False) is None

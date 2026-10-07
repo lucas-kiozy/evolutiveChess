@@ -69,6 +69,7 @@ board.copy()                    # cópia independente, com histórico
 | `is_check()`, `is_checkmate()`, `is_stalemate()` | |
 | `is_insufficient_material()` | K×K, K+menor×K, bispos todos da mesma cor |
 | `is_fifty_moves()`, `is_seventyfive_moves()` | |
+| `repetitions()` | quantas vezes a posição atual já ocorreu na partida, contando a atual |
 | `is_threefold_repetition()`, `is_fivefold_repetition()` | |
 | `outcome(claim_draw=True)` | `Outcome` ou `None` se a partida continua |
 | `is_game_over(claim_draw=True)` | |
@@ -91,6 +92,18 @@ infinitas entre IAs. Com `claim_draw=False` valem só os automáticos.
 | `checks_given(color)` | xeques dados por aquela cor (o lance de mate conta como xeque) |
 
 Ambos acompanham `push`/`pop`, então continuam certos depois de uma busca.
+
+### Tabelas pré-calculadas
+
+`chess_engine.tables` também faz parte da interface estável, útil para
+avaliação (mobilidade, segurança do rei):
+
+| Tabela | Conteúdo |
+|---|---|
+| `KNIGHT_ATTACKS[sq]`, `KING_ATTACKS[sq]` | tupla de casas atacadas a partir de `sq` |
+| `PAWN_ATTACKS[cor][sq]` | casas que um peão daquela cor em `sq` ataca |
+| `RAYS[d][sq]` | casas a partir de `sq` na direção `d`, até a borda; `d` 0..3 ortogonais, 4..7 diagonais |
+| `BETWEEN[a][b]` | casas estritamente entre `a` e `b` (vazio se não alinhadas) |
 
 ## Partida completa
 

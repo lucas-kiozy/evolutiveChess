@@ -664,13 +664,15 @@ class Board:
             return len(colors) == 1
         return False
 
-    def _repetitions(self):
-        """Quantas vezes a posição atual já ocorreu (incluindo agora)."""
+    def repetitions(self):
+        """Quantas vezes a posição atual já ocorreu nesta partida, contando a atual."""
         h = self._hash
         hashes = self._hashes
         last = len(hashes) - 1
         first = max(0, last - self.halfmove_clock)
         return sum(1 for i in range(last, first - 1, -2) if hashes[i] == h)
+
+    _repetitions = repetitions
 
     def is_fifty_moves(self):
         return self.halfmove_clock >= 100
@@ -679,10 +681,10 @@ class Board:
         return self.halfmove_clock >= 150
 
     def is_threefold_repetition(self):
-        return self._repetitions() >= 3
+        return self.repetitions() >= 3
 
     def is_fivefold_repetition(self):
-        return self._repetitions() >= 5
+        return self.repetitions() >= 5
 
     def outcome(self, claim_draw=True):
         """Resultado da partida, ou ``None`` se ela continua.
