@@ -156,6 +156,7 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 | 2026-10-07 | Na derrota, a Luna mantém os pontos do material capturado: derrota = -5 + material | Lucas |
 | 2026-10-07 | Régua de aptidão por partida, somada na geração: vitória +5, empate +2, derrota -1 (substitui o -5). Vitória vale sempre mais que empate. Entre vitórias, melhor é a com menos xeques ("ser mais objetivo no ataque"); desempates na ordem: pontos de captura, menos xeques nas vitórias, menos lances até o mate | Lucas |
 | 2026-10-07 | Pontos de captura ficam só como desempate na régua 5/2/-1 (somados, um empate com muitas capturas passaria de uma vitória) | Lucas, ao mergear o PR #1 |
+| 2026-10-07 | Motor de regras próprio (`chess_engine`); `python-chess` fica só como referência nos testes e como backend alternativo | Lucas, ao mergear o PR #2 |
 | 2026-10-07 | Atualizações da documentação vão direto no `main`, sem PR | Lucas |
 | 2026-10-07 | Próximo treino: 18 partidas por Luna por geração, pontuação acumulada da elite, partidas contra campeãs passadas, mais 12 gerações e novo teste de rating | Lucas |
 | 2026-10-07 | "Rating 1600" = partidas contra Stockfish com Elo limitado; a Luna está pronta para o Lichess quando o limite inferior do intervalo de confiança de 90% chegar a 1600 | Lucas, ao mergear o PR #4 |
@@ -166,8 +167,7 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 
 Pontos que precisam de decisão do Lucas ou da frente responsável antes ou durante a implementação:
 
-1. **Motor de regras próprio ou biblioteca.** Resolvido: o motor próprio (`chess_engine`) está no `main`; `python-chess` fica só como referência nos testes. Falta tornar `chess_engine` o backend padrão da Luna (PR #1).
-2. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
+1. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
 
 ---
 
