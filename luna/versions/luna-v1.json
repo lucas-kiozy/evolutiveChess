@@ -1,0 +1,76 @@
+{
+  "name": "luna-v1",
+  "created": "2026-10-07T21:21:52+00:00",
+  "notes": "Treino de 600 partidas (20 Lunas x 15 geracoes, profundidade 2, motor proprio, seed 600) em 2026-10-07. Aptidao usada: mate em menos lances, desempate por menos xeques; sem mate: capturas (peao 0,1, cavalo 0,3, bispo 0,4, torre 0,6, dama 2), derrota -5. Ainda nao usa a regua vitoria 5 / empate 2 / derrota -1. Medição em 2026-10-07: no confronto direto de 40 partidas contra os pesos iniciais (Genome.reference), a luna-v1 fez 14/40 (-108 ± 58 Elo). Guardada como primeira versão e ponto de comparação, não como a mais forte.",
+  "source": {
+    "run_dir": "/mnt/project-files/luna-treinos/treino-600",
+    "generation": 15,
+    "id": "g0015-i08",
+    "rank": 1,
+    "stats": {
+      "games": 4,
+      "wins": 1,
+      "draws": 1,
+      "losses": 2,
+      "mates": 1,
+      "mate_moves": [
+        25
+      ],
+      "mate_checks": [
+        2
+      ],
+      "checks_given": 11,
+      "non_win_points": -0.09999999999999964,
+      "mean_mate_moves": 25.0,
+      "mean_mate_checks": 2.0,
+      "checks_per_game": 2.75,
+      "mean_non_win_points": -0.033333333333333215
+    },
+    "backend": "chess_engine",
+    "summary": {
+      "generation": 15,
+      "games": 40,
+      "mate_rate": 0.85,
+      "mean_mate_moves": 52.76470588235294,
+      "mean_checks_per_game": 12.525,
+      "terminations": {
+        "checkmate": 34,
+        "max_plies": 4,
+        "insufficient_material": 2
+      },
+      "best_id": "g0015-i08",
+      "best_mean_mate_moves": 25.0,
+      "best_checks_per_game": 2.75,
+      "seconds": 35.02
+    }
+  },
+  "search": {
+    "depth": 2,
+    "quiescence_depth": 4,
+    "noise": 5.0,
+    "contempt": 50.0
+  },
+  "genome": {
+    "id": "g0015-i08",
+    "parents": [
+      "g0014-i04",
+      "g0014-i19"
+    ],
+    "genes": {
+      "pawn": 89.42099202899774,
+      "knight": 357.75874151497476,
+      "bishop": 285.6472835983453,
+      "rook": 462.93121213239993,
+      "queen": 1001.6524040483561,
+      "pst_weight": 1.2616383743447448,
+      "mobility": 5.20608855217627,
+      "bishop_pair": 38.06040897720607,
+      "doubled_pawn": 11.090796505983953,
+      "isolated_pawn": 0.0,
+      "passed_pawn": 0.0,
+      "rook_open_file": 20.939098528318514,
+      "king_shield": 2.9514347092173185,
+      "check_bonus": -11.770555550319482
+    }
+  }
+}
