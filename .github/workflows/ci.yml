@@ -30,11 +30,7 @@ jobs:
         run: pip install -e ".[dev]"
       - name: Rodar testes
         shell: bash
-        # Enquanto chess_engine/ e luna/ não entram na main, o pytest não coleta
-        # nenhum teste e sai com código 5 ("no tests collected"). Tratamos o 5
-        # como sucesso para o CI ficar verde antes dos PRs dos pacotes; qualquer
-        # outro código diferente de zero continua falhando.
-        run: python -m pytest || [ $? -eq 5 ]
+        run: python -m pytest
 
   lint:
     runs-on: ubuntu-latest
@@ -62,13 +58,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # Enquanto chess_engine/tests não existe na main, o pytest sairia com
-      # código 4 (caminho inexistente); os passos abaixo são pulados nesse caso.
       - name: Instalar dependências
-        if: hashFiles('chess_engine/tests/**') != ''
         run: pip install -e ".[dev]"
       - name: Perft profundo
-        if: hashFiles('chess_engine/tests/**') != ''
         env:
           CHESS_SLOW: "1"
         run: python -m pytest chess_engine/tests

@@ -19,7 +19,7 @@ include = ["chess_engine*", "luna*", "rating*", "lichess_bot*"]
 exclude = ["*.tests*"]
 
 [tool.pytest.ini_options]
-testpaths = ["chess_engine/tests", "luna/tests", "rating/tests", "lichess_bot/tests"]
+testpaths = ["chess_engine/tests", "luna/tests", "rating/tests", "lichess_bot/tests", "tools/tests"]
 addopts = "-q"
 
 [tool.ruff]
