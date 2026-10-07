@@ -51,7 +51,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Testes com `pytest` cobrindo os quatro pacotes — PR #5
 - [x] Integração contínua no GitHub Actions: testes em Python 3.10 a 3.13 a cada PR, lint e perft profundo no `main` — PR #5
 - [x] Skills do Claude para treinar a Luna, validar regras e relatar a evolução (`.claude/skills/`) — [PR #6](https://github.com/lucas-kiozy/evolutiveChess/pull/6)
-- [ ] Tornar o lint (`ruff`) bloqueante: hoje ele roda mas não reprova, porque o código ainda tem avisos
+- [ ] Tornar o lint (`ruff`) bloqueante: hoje ele roda mas não reprova, porque o código ainda tem avisos (o PR #9 limpa os avisos em `luna/`)
 
 ### Etapa 1 — Jogo de xadrez com regras validadas
 
@@ -93,7 +93,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Versões nomeadas da Luna: `python -m luna export --name luna-v1` grava `luna/versions/luna-v1.json` (genoma, busca e origem) para ir ao git; `python -m luna versions` lista
 - [x] Histórico de evolução por geração (`history.jsonl`)
 - [x] Adaptador para o motor próprio (`--backend chess_engine`), testado contra `python-chess`
-- [ ] Tornar `chess_engine` o backend padrão (o PR #2 já está no `main`)
+- [~] Tornar `chess_engine` o backend padrão e garantir partidas idênticas nos dois backends — [PR #9](https://github.com/lucas-kiozy/evolutiveChess/pull/9)
 - [x] Melhor Luna do treino de 600 partidas exportada como `luna-v1` (arquivo na pasta compartilhada do projeto, `luna-treinos/versoes/luna-v1.json`)
 - [x] `luna-v1.json` em `luna/versions/` no repositório, como ponto de comparação — [PR #7](https://github.com/lucas-kiozy/evolutiveChess/pull/7)
 - [x] Velocidade: 7 a 8 s por geração de 8 partidas com o `chess_engine` (8 Lunas, profundidade 2, 4 CPUs)
@@ -192,3 +192,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | PR #6 mergeado: skills do Claude registradas |
 | 2026-10-07 | Resultados do treino de 600 partidas e da primeira medição de rating (`luna-v1` abaixo de ~1320) |
 | 2026-10-07 | PR #7 mergeado: versão `luna-v1` no repositório |
+| 2026-10-07 | PR #9 aberto: `chess_engine` como backend padrão da Luna |
