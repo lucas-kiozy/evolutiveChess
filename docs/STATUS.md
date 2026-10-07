@@ -5,7 +5,7 @@
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-**Último commit do `main` coberto:** `d820658`
+**Último commit do `main` coberto:** `44f839d`
 
 Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
@@ -35,6 +35,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 2026-10-07 | Estimativa de rating contra Stockfish e bot do Lichess pela Bot API oficial | 4 e 5 | [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) |
 | 2026-10-07 | `pyproject.toml`, CI no GitHub Actions e plano de base e integração (`plans/`) | 0 | [PR #5](https://github.com/lucas-kiozy/evolutiveChess/pull/5) |
 | 2026-10-07 | Skills `luna-treino`, `validar-regras-xadrez` e `relatorio-evolucao-luna` | 0 | [PR #6](https://github.com/lucas-kiozy/evolutiveChess/pull/6) |
+| 2026-10-07 | Primeira versão nomeada da Luna (`luna-v1`), ponto de comparação para os próximos treinos | 3 | [PR #7](https://github.com/lucas-kiozy/evolutiveChess/pull/7) |
 
 ---
 
@@ -94,7 +95,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Adaptador para o motor próprio (`--backend chess_engine`), testado contra `python-chess`
 - [ ] Tornar `chess_engine` o backend padrão (o PR #2 já está no `main`)
 - [x] Melhor Luna do treino de 600 partidas exportada como `luna-v1` (arquivo na pasta compartilhada do projeto, `luna-treinos/versoes/luna-v1.json`)
-- [~] `luna-v1.json` em `luna/versions/` no repositório, como ponto de comparação — [PR #7](https://github.com/lucas-kiozy/evolutiveChess/pull/7)
+- [x] `luna-v1.json` em `luna/versions/` no repositório, como ponto de comparação — [PR #7](https://github.com/lucas-kiozy/evolutiveChess/pull/7)
 - [x] Velocidade: 7 a 8 s por geração de 8 partidas com o `chess_engine` (8 Lunas, profundidade 2, 4 CPUs)
 - [x] Corrigido o ruído na escolha do lance, que fazia a Luna jogar quase ao acaso (apontado na revisão de código)
 
@@ -190,4 +191,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | PR #5 mergeado: etapa 0 concluída (pacote, testes e CI) |
 | 2026-10-07 | PR #6 mergeado: skills do Claude registradas |
 | 2026-10-07 | Resultados do treino de 600 partidas e da primeira medição de rating (`luna-v1` abaixo de ~1320) |
-| 2026-10-07 | PR #7 aberto com a versão `luna-v1` |
+| 2026-10-07 | PR #7 mergeado: versão `luna-v1` no repositório |
