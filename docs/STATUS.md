@@ -5,7 +5,7 @@
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-**Último commit do `main` coberto:** `e0d6006`
+**Último commit do `main` coberto:** `d820658`
 
 Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
@@ -34,6 +34,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 2026-10-07 | Luna: genoma, avaliação, busca alfa-beta, algoritmo genético, self-play paralelo, aptidão 5/2/-1, PGN por geração, versões nomeadas | 2 e 3 | [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) |
 | 2026-10-07 | Estimativa de rating contra Stockfish e bot do Lichess pela Bot API oficial | 4 e 5 | [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) |
 | 2026-10-07 | `pyproject.toml`, CI no GitHub Actions e plano de base e integração (`plans/`) | 0 | [PR #5](https://github.com/lucas-kiozy/evolutiveChess/pull/5) |
+| 2026-10-07 | Skills `luna-treino`, `validar-regras-xadrez` e `relatorio-evolucao-luna` | 0 | [PR #6](https://github.com/lucas-kiozy/evolutiveChess/pull/6) |
 
 ---
 
@@ -48,6 +49,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Pacote Python na raiz (`pyproject.toml`, Python 3.10 ou mais novo; `pip install -e ".[dev]"`) — [PR #5](https://github.com/lucas-kiozy/evolutiveChess/pull/5)
 - [x] Testes com `pytest` cobrindo os quatro pacotes — PR #5
 - [x] Integração contínua no GitHub Actions: testes em Python 3.10 a 3.13 a cada PR, lint e perft profundo no `main` — PR #5
+- [x] Skills do Claude para treinar a Luna, validar regras e relatar a evolução (`.claude/skills/`) — [PR #6](https://github.com/lucas-kiozy/evolutiveChess/pull/6)
 - [ ] Tornar o lint (`ruff`) bloqueante: hoje ele roda mas não reprova, porque o código ainda tem avisos
 
 ### Etapa 1 — Jogo de xadrez com regras validadas
@@ -183,3 +185,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | PR #1 mergeado: etapas 2 e 3 concluídas |
 | 2026-10-07 | PR #4 mergeado: ferramentas das etapas 4 e 5 no `main` |
 | 2026-10-07 | PR #5 mergeado: etapa 0 concluída (pacote, testes e CI) |
+| 2026-10-07 | PR #6 mergeado: skills do Claude registradas |

@@ -46,6 +46,14 @@ O projeto é tocado por frentes de trabalho com focos diferentes, cada uma numa 
 
 Por enquanto só a frente de documentação tem um agente definido no repositório, em [.claude/agents/documentador.md](.claude/agents/documentador.md).
 
+O repositório também traz três skills do Claude, em `.claude/skills/`, que usam o código do projeto:
+
+| Skill | Para que serve |
+|-------|----------------|
+| `luna-treino` | Treinar a Luna: rodar ou retomar gerações e resumir o treino |
+| `validar-regras-xadrez` | Conferir se um lance ou uma posição é legal no `chess_engine` e explicar o motivo |
+| `relatorio-evolucao-luna` | Relatório de evolução da Luna: tendência de mates, genes que mudaram, gráfico e Elo entre gerações |
+
 ## Estrutura do repositório
 
 ```
@@ -64,8 +72,9 @@ Por enquanto só a frente de documentação tem um agente definido no repositór
 ├── docs/
 │   ├── STATUS.md             # relatório: o que foi feito e backlog
 │   └── REFERENCIAS.md        # base científica e técnica do projeto
-└── .claude/agents/
-    └── documentador.md       # agente que mantém a documentação
+└── .claude/
+    ├── agents/documentador.md  # agente que mantém a documentação
+    └── skills/               # skills de treino, validação de regras e relatório da Luna
 ```
 
 ## Como executar
