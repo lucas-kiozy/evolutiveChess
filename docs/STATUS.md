@@ -94,7 +94,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Adaptador para o motor próprio (`--backend chess_engine`), testado contra `python-chess`
 - [ ] Tornar `chess_engine` o backend padrão (o PR #2 já está no `main`)
 - [x] Melhor Luna do treino de 600 partidas exportada como `luna-v1` (arquivo na pasta compartilhada do projeto, `luna-treinos/versoes/luna-v1.json`)
-- [ ] Colocar `luna-v1.json` em `luna/versions/` no repositório
+- [~] `luna-v1.json` em `luna/versions/` no repositório, como ponto de comparação — [PR #7](https://github.com/lucas-kiozy/evolutiveChess/pull/7)
 - [x] Velocidade: 7 a 8 s por geração de 8 partidas com o `chess_engine` (8 Lunas, profundidade 2, 4 CPUs)
 - [x] Corrigido o ruído na escolha do lance, que fazia a Luna jogar quase ao acaso (apontado na revisão de código)
 
@@ -111,7 +111,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Laço contínuo: jogar → avaliar → selecionar → reproduzir → repetir
 - [x] Primeiro treino longo: 600 partidas (20 Lunas, 15 gerações, profundidade 2, motor próprio), com 78% a 95% de mates por geração. Usou a aptidão antiga, não a régua 5/2/-1
 - [x] Análise da evolução, em confrontos de 40 partidas: a `luna-v1` perde para os pesos iniciais (-108 ± 58 Elo), empata com a melhor da geração 1 (-9 ± 55) e vence a da geração 8 (+98 ± 57). **Não houve evolução consistente.** Causa provável: cada Luna joga só 4 partidas por geração, e a ordem antiga favorecia o mate rápido mesmo com mais derrotas (a campeã teve 1 vitória e 2 derrotas), então a seleção ficou quase aleatória
-- [ ] Novo treino com a régua 5/2/-1 e mais partidas por Luna em cada geração, para reduzir o ruído na seleção
+- [ ] Novo treino com a régua 5/2/-1 e mais partidas por Luna em cada geração, para reduzir o ruído na seleção (proposta da frente da Luna aguardando o Lucas)
 - [x] Registro das partidas de cada geração em PGN (`generations/gen_NNNN.pgn`, com ids das Lunas, resultado, término e xeques de cada lado)
 
 ### Etapa 4 — Medição de rating (meta ~1600)
@@ -190,3 +190,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | PR #5 mergeado: etapa 0 concluída (pacote, testes e CI) |
 | 2026-10-07 | PR #6 mergeado: skills do Claude registradas |
 | 2026-10-07 | Resultados do treino de 600 partidas e da primeira medição de rating (`luna-v1` abaixo de ~1320) |
+| 2026-10-07 | PR #7 aberto com a versão `luna-v1` |
