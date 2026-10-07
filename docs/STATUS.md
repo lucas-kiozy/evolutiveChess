@@ -84,7 +84,8 @@ Em andamento no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (r
 - [~] Histórico de evolução por geração (`history.jsonl`) — PR #1
 - [~] Adaptador para o motor próprio (`--backend chess_engine`), testado contra `python-chess` — PR #1
 - [ ] Tornar `chess_engine` o backend padrão depois que o PR #2 entrar no `main`
-- [~] Velocidade: cerca de 15 s por geração de 8 partidas (8 Lunas, profundidade 2, 4 CPUs)
+- [~] Velocidade: 7 a 8 s por geração de 8 partidas com o `chess_engine` (8 Lunas, profundidade 2, 4 CPUs)
+- [~] Corrigido o ruído na escolha do lance, que fazia a Luna jogar quase ao acaso (apontado na revisão de código) — PR #1
 
 ### Etapa 3 — Self-play paralelo e seleção de descendentes
 
@@ -95,10 +96,10 @@ Em andamento no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (r
 - [~] Limite de 200 meios-lances por partida, que termina em empate (`MatchConfig.max_plies`) — PR #1
 - [~] Cálculo de aptidão (`luna/fitness.py`) — PR #1:
   - [~] 1º critério: vitória com **menos lances** até o xeque-mate
-  - [~] 2º critério (desempate): **menos xeques** dados durante a partida
+  - [~] 2º critério (desempate): **menos xeques** dados nas partidas que terminaram em mate
   - [~] Empates e derrotas pontuam por material capturado, -5 por derrota; Lunas com mate ficam à frente e as demais são ordenadas pela média desses pontos — PR #1
 - [~] Laço contínuo: jogar → avaliar → selecionar → reproduzir → repetir — PR #1
-- [ ] Treino longo (muitas gerações) e análise dos resultados; nas 2 primeiras gerações ainda não houve mate
+- [ ] Treino longo (muitas gerações) e análise dos resultados. Num treino curto, depois da correção do ruído, 75% a 88% das partidas terminam em mate, e a melhor Luna dá mate em 25 a 27 lances em média
 - [ ] Registro das partidas (PGN) e métricas de cada geração
 
 ### Etapa 4 — Medição de rating (meta ~1600)
@@ -145,7 +146,7 @@ Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pa
 Pontos que precisam de decisão do Lucas ou da frente responsável antes ou durante a implementação:
 
 1. **Detalhes da pontuação sem mate.** A regra base foi decidida (ver "Decisões tomadas"). Faltam dois detalhes: (a) uma Luna derrotada também soma o material que capturou, ou fica só com -5? (b) uma vitória fica sempre acima de qualquer empate? Até a resposta, o padrão é: derrota = -5 + material capturado, e vitória sempre acima de empate.
-2. **Pontuação de derrotas.** Se uma Luna perde, ela recebe aptidão zero ou ganha algo por ter resistido mais lances?
+2. **Número de mates contra média de lances.** Hoje a Luna é ordenada pela média de lances até o mate, sem contar quantos mates deu: 1 mate em 30 lances fica à frente de 4 mates em 31. Contar primeiro o número de mates e depois a média? (apontado na revisão de código)
 3. **Motor de regras próprio ou biblioteca.** Implementar as regras do zero ou usar uma biblioteca consolidada como [`python-chess`](https://python-chess.readthedocs.io/) como referência de validação. Por enquanto a Luna usa `python-chess` como adaptador provisório, isolado em `luna/game_interface.py`, para trocar pelo motor próprio quando ele ficar pronto.
 4. **Como medir "rating equivalente a 1600".** Proposta no PR #4: partidas contra Stockfish com Elo limitado e liberação quando o limite inferior do intervalo de confiança de 90% chegar a 1600. Vira decisão quando o PR for mergeado.
 5. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
@@ -163,3 +164,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | Lucas decidiu a pontuação de empates e derrotas; seção "Decisões tomadas" criada |
 | 2026-10-07 | PR #1 aplicou a nova pontuação e ganhou adaptador para o `chess_engine` |
 | 2026-10-07 | Correções da revisão de código: limite de lances, alternância de cores e histórico marcados como `[~]`; FEN e SAN/PGN de volta ao backlog da etapa 1; regra para PRs em revisão explicitada |
+| 2026-10-07 | PR #1 corrigiu o ruído na busca: 75% a 88% das partidas agora terminam em mate; nova decisão em aberto sobre número de mates |
