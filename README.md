@@ -12,7 +12,7 @@ Um jogo de xadrez em Python com uma inteligência evolutiva chamada **Luna**. A 
 | 1 | Jogo de xadrez funcional com todas as regras validadas | **Concluída** ([PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2)) |
 | 2 | Luna: IA evolutiva com algoritmo genético | **Concluída** ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)) |
 | 3 | Self-play paralelo: Luna contra Luna, seleção dos melhores descendentes | **Concluída** ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)); treino longo em andamento |
-| 4 | Medição de rating (meta: ~1600) | Em andamento: estimador pronto, falta medir a Luna |
+| 4 | Medição de rating (meta: ~1600) | Em andamento: primeira medição abaixo de ~1320 |
 | 5 | Luna jogando no Lichess, partida a partida, e evoluindo | Em andamento: bot pronto, aguarda a Luna chegar a ~1600 |
 
 O detalhamento de cada etapa, com backlog e critérios de pronto, está em [docs/STATUS.md](docs/STATUS.md).

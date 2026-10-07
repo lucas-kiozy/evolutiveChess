@@ -18,8 +18,8 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 0 | Base do projeto (repositório, documentação, frentes de trabalho) | **Concluída** | Pacote, testes e CI no `main` pelo [PR #5](https://github.com/lucas-kiozy/evolutiveChess/pull/5); falta só o lint bloqueante |
 | 1 | Jogo de xadrez com regras validadas | **Concluída** | Motor mergeado no `main` pelo [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) |
 | 2 | Luna: IA evolutiva com algoritmo genético | **Concluída** | Luna no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); faltam ajustes (backend padrão, versão `luna-v1`) |
-| 3 | Self-play paralelo e seleção de descendentes | **Concluída** | Laço evolutivo paralelo com a régua 5/2/-1 no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); treino longo em andamento |
-| 4 | Medição de rating (meta ~1600) | Em andamento | Estimador no `main` pelo [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4); falta ligar a Luna e medir |
+| 3 | Self-play paralelo e seleção de descendentes | **Concluída** | Laço no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); o primeiro treino de 600 partidas não mostrou evolução consistente |
+| 4 | Medição de rating (meta ~1600) | Em andamento | Primeira medição: `luna-v1` abaixo de ~1320 (estimativa 1216 ± 47); meta 1600 |
 | 5 | Luna jogando no Lichess | Em andamento | Bot no `main` pelo [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4); falta a Luna chegar a ~1600, a conta BOT e o aprendizado online |
 
 ---
@@ -93,7 +93,8 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Histórico de evolução por geração (`history.jsonl`)
 - [x] Adaptador para o motor próprio (`--backend chess_engine`), testado contra `python-chess`
 - [ ] Tornar `chess_engine` o backend padrão (o PR #2 já está no `main`)
-- [ ] Exportar a melhor Luna do treino de 600 partidas como `luna-v1` quando o treino terminar
+- [x] Melhor Luna do treino de 600 partidas exportada como `luna-v1` (arquivo na pasta compartilhada do projeto, `luna-treinos/versoes/luna-v1.json`)
+- [ ] Colocar `luna-v1.json` em `luna/versions/` no repositório
 - [x] Velocidade: 7 a 8 s por geração de 8 partidas com o `chess_engine` (8 Lunas, profundidade 2, 4 CPUs)
 - [x] Corrigido o ruído na escolha do lance, que fazia a Luna jogar quase ao acaso (apontado na revisão de código)
 
@@ -108,7 +109,9 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
   - [x] Régua por partida somada na geração: vitória +5, empate +2, derrota -1
   - [x] Desempates: pontos de captura, depois menos xeques nas vitórias, depois menos lances até o mate
 - [x] Laço contínuo: jogar → avaliar → selecionar → reproduzir → repetir
-- [~] Treino longo e análise dos resultados: um treino de 600 partidas chegou à geração 15 com cerca de 85% a 90% das partidas terminando em mate (arquivos do treino fora do repositório). Num treino curto, depois da correção do ruído, 75% a 88% das partidas terminam em mate, e a melhor Luna dá mate em 25 a 27 lances em média
+- [x] Primeiro treino longo: 600 partidas (20 Lunas, 15 gerações, profundidade 2, motor próprio), com 78% a 95% de mates por geração. Usou a aptidão antiga, não a régua 5/2/-1
+- [x] Análise da evolução, em confrontos de 40 partidas: a `luna-v1` perde para os pesos iniciais (-108 ± 58 Elo), empata com a melhor da geração 1 (-9 ± 55) e vence a da geração 8 (+98 ± 57). **Não houve evolução consistente.** Causa provável: cada Luna joga só 4 partidas por geração, e a ordem antiga favorecia o mate rápido mesmo com mais derrotas (a campeã teve 1 vitória e 2 derrotas), então a seleção ficou quase aleatória
+- [ ] Novo treino com a régua 5/2/-1 e mais partidas por Luna em cada geração, para reduzir o ruído na seleção
 - [x] Registro das partidas de cada geração em PGN (`generations/gen_NNNN.pgn`, com ids das Lunas, resultado, término e xeques de cada lado)
 
 ### Etapa 4 — Medição de rating (meta ~1600)
@@ -122,8 +125,8 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 - [x] Estimativa do rating por máxima verossimilhança no modelo de Elo, com intervalo de confiança de 90%
 - [x] Critério "pronta para o Lichess": limite inferior do IC 90% maior ou igual a 1600
 - [x] Interface comum de jogador: `choose_move(fen, lances_uci) -> uci`
-- [ ] Ligar a Luna real ao estimador (adaptador curto, exemplo em `rating/GUIA.md`)
-- [ ] Medir a melhor Luna de cada geração
+- [x] Primeira medição, da `luna-v1`: 60 partidas contra Stockfish 16 com Elo limitado (12 vitórias, 18 empates, 30 derrotas, 35% dos pontos). Estimativa de 1216 ± 47 (IC 90%: 1139 a 1293) na escala CCRL/UCI_Elo. Como o intervalo inteiro fica abaixo de 1320, o piso do Stockfish, a conclusão firme é "abaixo de ~1320". Essa escala não é a do Lichess
+- [ ] Medir a melhor Luna de cada novo treino até chegar a ~1600
 
 ### Etapa 5 — Luna jogando no Lichess
 
@@ -186,3 +189,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | PR #4 mergeado: ferramentas das etapas 4 e 5 no `main` |
 | 2026-10-07 | PR #5 mergeado: etapa 0 concluída (pacote, testes e CI) |
 | 2026-10-07 | PR #6 mergeado: skills do Claude registradas |
+| 2026-10-07 | Resultados do treino de 600 partidas e da primeira medição de rating (`luna-v1` abaixo de ~1320) |
