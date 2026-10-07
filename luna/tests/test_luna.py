@@ -222,3 +222,27 @@ def test_pgn_export_of_a_mate():
     assert '[Result "0-1"]' in pgn
     assert '[White "w"]' in pgn
     assert pgn.rstrip().endswith("1. f3 e5 2. g4 Qh4# 0-1")
+
+
+def test_export_and_load_version(tmp_path):
+    from luna.versions import export_version, list_versions, load_version
+
+    cfg = EvolutionConfig(
+        population=4, elite=1, rounds=1, seed=5,
+        match=MatchConfig(search=SearchConfig(depth=1, quiescence_depth=0, noise=3), max_plies=20),
+    )
+    run = tmp_path / "run"
+    evolve(str(run), 2, cfg, workers=1, log=lambda _: None)
+    vdir = tmp_path / "versions"
+    path = export_version(run, name="luna-teste", notes="primeira", versions_dir=vdir)
+    v = load_version("luna-teste", versions_dir=vdir)
+    best = RunStorage(run).load_generation(2)["population"][0]
+    assert path.name == "luna-teste.json"
+    assert v.genome.genes == best["genes"]
+    assert v.search == SearchConfig(depth=1, quiescence_depth=0, noise=3)
+    assert v.source["generation"] == 2 and v.notes == "primeira"
+    assert [x.name for x in list_versions(vdir)] == ["luna-teste"]
+    with pytest.raises(FileExistsError):
+        export_version(run, name="luna-teste", versions_dir=vdir)
+    # Versão de uma geração específica e com nome padrão
+    assert export_version(run, generation=1, versions_dir=vdir).name == "luna-g0001.json"

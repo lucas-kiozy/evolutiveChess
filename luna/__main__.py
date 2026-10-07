@@ -5,6 +5,8 @@ Exemplos::
     python -m luna train --run-dir luna/runs/default --generations 10 --population 16
     python -m luna train --run-dir luna/runs/default --generations 10   # retoma
     python -m luna show --run-dir luna/runs/default
+    python -m luna export --run-dir luna/runs/default --name luna-v1   # salva a melhor como versão
+    python -m luna versions                                            # lista as versões salvas
 """
 
 from __future__ import annotations
@@ -44,7 +46,29 @@ def main(argv: list[str] | None = None) -> None:
     s = sub.add_parser("show", help="mostra o histórico e o melhor genoma")
     s.add_argument("--run-dir", default="luna/runs/default")
 
+    e = sub.add_parser("export", help="salva a melhor Luna de uma geração como versão nomeada")
+    e.add_argument("--run-dir", default="luna/runs/default")
+    e.add_argument("--name", help="padrão: luna-gNNNN")
+    e.add_argument("--generation", type=int, help="padrão: a última avaliada")
+    e.add_argument("--notes", default="")
+    e.add_argument("--overwrite", action="store_true")
+
+    sub.add_parser("versions", help="lista as versões salvas em luna/versions/")
+
     args = parser.parse_args(argv)
+    if args.command == "export":
+        from luna.versions import export_version
+
+        path = export_version(args.run_dir, args.name, args.generation, args.notes, overwrite=args.overwrite)
+        print(f"Versão salva em {path}")
+        return
+    if args.command == "versions":
+        from luna.versions import list_versions
+
+        for v in list_versions():
+            src = v.source
+            print(f"{v.name}: geração {src.get('generation')} de {src.get('run_dir')} ({v.created})")
+        return
     if args.command == "train":
         config = EvolutionConfig(
             population=args.population,
