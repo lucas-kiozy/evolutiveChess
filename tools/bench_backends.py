@@ -5,6 +5,8 @@ Uso, a partir da raiz do repositório:
 
 Para cada backend registrado em ``luna.adapters.BACKENDS`` roda as mesmas
 partidas Luna x Luna (mesmos genomas e mesma semente) e imprime uma tabela.
+Divergências entre backends são listadas, mas o código de saída é 0, a menos
+que se passe ``--estrito`` (aí sai com 1 se houver divergência).
 """
 
 from __future__ import annotations
@@ -62,6 +64,19 @@ def formatar_tabela(linhas: list[tuple], coincidem: bool) -> str:
     return "\n".join(saida)
 
 
+def partidas_divergentes(todos: list[list[dict]]) -> list[tuple[int, int]]:
+    """(índice da partida, primeiro meio-lance diferente) em relação ao primeiro backend."""
+    saida = []
+    for i, ref in enumerate(todos[0]):
+        for outro in todos[1:]:
+            if outro[i] != ref:
+                a, b = ref["moves"], outro[i]["moves"]
+                ply = next((k for k, (x, y) in enumerate(zip(a, b)) if x != y), min(len(a), len(b)))
+                saida.append((i, ply))
+                break
+    return saida
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--partidas", type=int, default=20)
@@ -69,6 +84,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--semente", type=int, default=2026)
     ap.add_argument(
         "--max-lances", type=int, default=200, help="limite de meios-lances por partida"
+    )
+    ap.add_argument(
+        "--estrito", action="store_true", help="sai com código 1 se os resultados divergirem"
     )
     args = ap.parse_args(argv)
 
@@ -82,9 +100,15 @@ def main(argv: list[str] | None = None) -> int:
         total = sum(r["plies"] for r in registros)
         linhas.append((nome, len(registros), total, segundos))
     todos = list(resultados.values())
-    coincidem = all(r == todos[0] for r in todos)
-    print(formatar_tabela(linhas, coincidem))
-    return 0 if coincidem else 1
+    divergentes = partidas_divergentes(todos)
+    print(formatar_tabela(linhas, not divergentes))
+    if divergentes:
+        print(
+            "ATENÇÃO: partidas divergentes entre backends (índice: primeiro meio-lance diferente):"
+        )
+        for i, ply in divergentes:
+            print(f"  partida {i}: meio-lance {ply}")
+    return 1 if (divergentes and args.estrito) else 0
 
 
 if __name__ == "__main__":

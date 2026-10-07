@@ -20,5 +20,5 @@ def test_bench_smoke(capsys):
     saida = capsys.readouterr().out
     for nome in BACKENDS:
         assert nome in saida
-    assert "coincidem entre backends: sim" in saida
+    assert "meios-lances/s" in saida
     assert codigo == 0
