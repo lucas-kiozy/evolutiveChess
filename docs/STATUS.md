@@ -78,8 +78,9 @@ Em andamento no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (r
 - [~] Salvar e carregar gerações com retomada do treino (`luna/storage.py`, pasta `luna/runs/<nome>/`)
 - [~] Linha de comando: `python -m luna train` e `python -m luna show`
 - [ ] Histórico de evolução por geração (aptidão média e máxima)
-- [ ] Trocar o adaptador provisório (`python-chess`) pelo motor próprio da etapa 1, via `luna/game_interface.py`
-- [ ] Melhorar a velocidade: hoje cerca de 50 s por partida por núcleo
+- [~] Adaptador para o motor próprio (`--backend chess_engine`), testado contra `python-chess` — PR #1
+- [ ] Tornar `chess_engine` o backend padrão depois que o PR #2 entrar no `main`
+- [~] Velocidade: cerca de 15 s por geração de 8 partidas (8 Lunas, profundidade 2, 4 CPUs)
 
 ### Etapa 3 — Self-play paralelo e seleção de descendentes
 
@@ -91,9 +92,9 @@ Em andamento no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (r
 - [~] Cálculo de aptidão (`luna/fitness.py`) — PR #1:
   - [~] 1º critério: vitória com **menos lances** até o xeque-mate
   - [~] 2º critério (desempate): **menos xeques** dados durante a partida
-  - [ ] Pontuar empates por material capturado e derrotas com -5 (ver "Decisões tomadas")
+  - [~] Empates e derrotas pontuam por material capturado, -5 por derrota; Lunas com mate ficam à frente e as demais são ordenadas pela média desses pontos — PR #1
 - [~] Laço contínuo: jogar → avaliar → selecionar → reproduzir → repetir — PR #1
-- [ ] Treino longo (muitas gerações) e análise dos resultados
+- [ ] Treino longo (muitas gerações) e análise dos resultados; nas 2 primeiras gerações ainda não houve mate
 - [ ] Registro das partidas (PGN) e métricas de cada geração
 
 ### Etapa 4 — Medição de rating (meta ~1600)
@@ -156,3 +157,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | Etapa 1 em revisão com o PR #2 (motor de xadrez com todas as regras) |
 | 2026-10-07 | Etapas 4 e 5 em revisão com o PR #4 (estimador de rating e bot do Lichess) |
 | 2026-10-07 | Lucas decidiu a pontuação de empates e derrotas; seção "Decisões tomadas" criada |
+| 2026-10-07 | PR #1 aplicou a nova pontuação e ganhou adaptador para o `chess_engine` |
