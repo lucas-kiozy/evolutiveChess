@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "evolutivechess"
+version = "0.1.0"
+description = "Xadrez em Python com a Luna, uma IA evolutiva por algoritmo genético"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+luna = ["chess>=1.10"]
+lichess = ["chess>=1.10", "requests>=2.28"]
+dev = ["pytest>=8", "ruff>=0.6", "chess>=1.10", "requests>=2.28"]
+
+[tool.setuptools.packages.find]
+include = ["chess_engine*", "luna*", "rating*", "lichess_bot*"]
+exclude = ["*.tests*"]
+
+[tool.pytest.ini_options]
+testpaths = ["chess_engine/tests", "luna/tests", "rating/tests", "lichess_bot/tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
