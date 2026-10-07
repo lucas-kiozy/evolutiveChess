@@ -22,8 +22,8 @@ Itens do backlog cobertos aqui (Etapa 0): estrutura de pacote Python, ferramenta
 1. Não editar `README.md` nem nada em `docs/`. Ao concluir, avisar a frente de Documentação.
 2. `chess_engine/`, `luna/` e `lichess_bot/` têm dono. Tarefas que tocam essas pastas só começam com confirmação do Lucas e depois que o PR da pasta estiver mergeado no main.
 3. Os pacotes ficam na raiz do repositório (`chess_engine/`, `luna/`), não em `src/`. Não mover pastas.
-4. Python mínimo: 3.10 (a Luna usa `X | None` em runtime via `from __future__ import annotations` e `list[str]`; 3.10 cobre tudo).
-5. Cada tarefa vai num PR próprio contra `main`, com testes passando.
+4. Python mínimo: 3.10 (escolha do projeto: a versão mais antiga do CPython ainda suportada; é a base da matriz do CI).
+5. Cada tarefa vai num PR contra `main`, com testes passando. As Tarefas 1 e 2 vão juntas num só PR, porque o CI da Tarefa 2 só é verificável com o `pyproject.toml` da Tarefa 1.
 6. O motor `chess_engine` não tem dependências; isso continua assim. `chess` (python-chess) é dependência só da Luna e dos testes de comparação.
 
 ## Tarefas
@@ -86,6 +86,8 @@ O relatório do implementador lista a saída do `ruff check .` por pasta.
   2. Conformidade: 200 partidas aleatórias com semente fixa (`random.Random(2026)`), até 200 meios-lances cada, jogadas lado a lado nos dois backends; a cada lance comparar `legal_moves()` (como conjunto), `is_check()`, `is_checkmate()`, `fen()`, `outcome()`, e para cada lance legal `is_capture`, `captured_piece`, `moving_piece`, `is_promotion`, `gives_check`. Pular o teste se `chess` não estiver instalado.
   3. Posições pontuais: en passant (`captured_piece == "P"`), promoção (`is_promotion`), mate do pastor (`outcome().termination == "checkmate"`, `winner is True`).
   4. Uma partida Luna × Luna curta (profundidade 1) com `backend="chess-engine"` termina sem erro.
+- Atualizar o comentário em `luna/adapters/__init__.py` que sugere a chave `"chess_engine"`: a chave registrada é `"chess-engine"`.
+- Remover do `.github/workflows/ci.yml` a tolerância ao código 5 do pytest (`|| [ $? -eq 5 ]`) e o comentário correspondente, já que os pacotes estarão na main.
 
 ### Task 4 (Tarefa 4): comparação de velocidade entre os backends
 
@@ -97,6 +99,17 @@ O relatório do implementador lista a saída do `ruff check .` por pasta.
 - Para cada backend registrado em `luna.adapters.BACKENDS`, roda as mesmas partidas Luna × Luna (mesmos genomas, mesma semente) e imprime uma tabela: backend, partidas, meios-lances totais, segundos, meios-lances por segundo, e se os resultados das partidas coincidem entre backends.
 - Sem testes automatizados além de um smoke test em `tools/tests/test_bench.py` com `--partidas 1 --profundidade 1`, adicionado a `testpaths`.
 - O resultado serve para a frente da Luna decidir o backend padrão; este plano não decide.
+
+## Desvios na execução
+
+A implementação da Tarefa 2 acrescentou o seguinte ao texto original:
+
+- (a) o job `testes` trata o código de saída 5 do pytest ("nenhum teste coletado") como sucesso enquanto `chess_engine/` e `luna/` não estão na main;
+- (b) os passos do `perft-profundo` só rodam se `chess_engine/tests` existir;
+- (c) `fail-fast: false` na matriz;
+- (d) `cache-dependency-path: pyproject.toml` no job `testes` e sem cache de pip nos outros jobs;
+- (e) `permissions: contents: read` e `concurrency` no workflow;
+- (f) ruff fixado em `>=0.6,<1` no job de lint.
 
 ## Fora deste plano
 
