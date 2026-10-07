@@ -67,6 +67,9 @@ class PythonChessGame:
             raise ValueError(f"Lance ilegal: {text}")
         return move
 
+    def san(self, move: chess.Move) -> str:
+        return self._board.san(move)
+
     def copy(self) -> "PythonChessGame":
         return PythonChessGame(_board=self._board.copy(stack=True))
 

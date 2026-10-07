@@ -37,6 +37,7 @@ def _snapshot(state):
         "promo": {u: state.is_promotion(by_uci[u]) for u in moves},
         "gives_check": {u: state.gives_check(by_uci[u]) for u in moves},
         "repetition": state.is_repetition(),
+        "san": {u: state.san(by_uci[u]) for u in moves},
     }
 
 

@@ -193,6 +193,8 @@ def test_evolve_saves_and_resumes(tmp_path):
     evolve(str(run), 1, cfg, workers=2, log=lambda _: None)
     storage = RunStorage(run)
     assert storage.generation_path(1).exists()
+    pgn = storage.pgn_path(1).read_text(encoding="utf-8")
+    assert pgn.count("[Event ") == 4
     assert storage.load_state()[0] == 2
     evolve(str(run), 1, workers=1, log=lambda _: None)
     assert [h["generation"] for h in storage.history()] == [1, 2]
@@ -207,3 +209,16 @@ def test_search_avoids_repetition_with_contempt():
     move = Searcher(Genome.reference(), SearchConfig(depth=2, contempt=200)).choose_move(state)
     state.push(move)
     assert not state.is_repetition()
+
+
+def test_pgn_export_of_a_mate():
+    from luna.pgn import game_to_pgn
+
+    # Mate do louco: 1. f3 e5 2. g4 Qh4#
+    rec = record("w", "b", "black", mate_moves=2, termination="checkmate")
+    rec.moves = ["f2f3", "e7e5", "g2g4", "d8h4"]
+    rec.plies = 4
+    pgn = game_to_pgn(rec, event="teste")
+    assert '[Result "0-1"]' in pgn
+    assert '[White "w"]' in pgn
+    assert pgn.rstrip().endswith("1. f3 e5 2. g4 Qh4# 0-1")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import random
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -11,6 +12,7 @@ from typing import Callable, Optional
 from luna.fitness import FALLBACKS, collect_stats, rank
 from luna.genome import Genome, crossover, mutate
 from luna.match import GameRecord, MatchConfig, play_game
+from luna.pgn import games_to_pgn
 from luna.search import SearchConfig
 from luna.storage import RunStorage
 
@@ -177,6 +179,15 @@ def evolve(
                     ],
                     "games": [rec.to_dict() for rec in records],
                 },
+            )
+            storage.save_pgn(
+                generation,
+                games_to_pgn(
+                    records,
+                    event=f"Luna geração {generation}",
+                    date=datetime.date.today().strftime("%Y.%m.%d"),
+                    backend=config.match.backend,
+                ),
             )
             population = next_population(ranked, config, generation + 1)
             storage.save_state(generation + 1, population)

@@ -51,6 +51,9 @@ class ChessEngineGame:
     def parse_uci(self, text: str) -> int:
         return self._board.parse_uci(text)
 
+    def san(self, move: int) -> str:
+        return self._board.san(move)
+
     def copy(self) -> "ChessEngineGame":
         return ChessEngineGame(_board=self._board.copy())
 

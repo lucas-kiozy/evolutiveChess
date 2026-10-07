@@ -7,6 +7,7 @@ Layout de ``run_dir``::
     history.jsonl             um resumo por geração
     best_genome.json          melhor genoma da última geração avaliada
     generations/gen_0001.json população avaliada, estatísticas e partidas
+    generations/gen_0001.pgn  as mesmas partidas em PGN
 """
 
 from __future__ import annotations
@@ -66,6 +67,16 @@ class RunStorage:
             self.root / "best_genome.json",
             {"generation": generation, **best},
         )
+
+    def pgn_path(self, generation: int) -> Path:
+        return self.root / "generations" / f"gen_{generation:04d}.pgn"
+
+    def save_pgn(self, generation: int, text: str) -> None:
+        path = self.pgn_path(generation)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".pgn.tmp")
+        tmp.write_text(text, encoding="utf-8")
+        os.replace(tmp, path)
 
     def load_generation(self, generation: int) -> dict:
         return _read_json(self.generation_path(generation))

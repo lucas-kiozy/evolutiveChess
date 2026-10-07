@@ -52,6 +52,9 @@ class GameState(Protocol):
 
     def parse_uci(self, text: str) -> Move: ...
 
+    def san(self, move: Move) -> str:
+        """Notação algébrica (SAN) do lance na posição atual, com + ou #."""
+
     def copy(self) -> "GameState": ...
 
     def is_check(self) -> bool:
