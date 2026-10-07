@@ -5,7 +5,7 @@
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-**Último commit do `main` coberto:** `44f839d`
+**Último commit do `main` coberto:** `1274549`
 
 Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
@@ -36,6 +36,9 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 2026-10-07 | `pyproject.toml`, CI no GitHub Actions e plano de base e integração (`plans/`) | 0 | [PR #5](https://github.com/lucas-kiozy/evolutiveChess/pull/5) |
 | 2026-10-07 | Skills `luna-treino`, `validar-regras-xadrez` e `relatorio-evolucao-luna` | 0 | [PR #6](https://github.com/lucas-kiozy/evolutiveChess/pull/6) |
 | 2026-10-07 | Primeira versão nomeada da Luna (`luna-v1`), ponto de comparação para os próximos treinos | 3 | [PR #7](https://github.com/lucas-kiozy/evolutiveChess/pull/7) |
+| 2026-10-07 | Comparador de velocidade entre os backends | 2 | [PR #8](https://github.com/lucas-kiozy/evolutiveChess/pull/8) |
+| 2026-10-07 | `chess_engine` como backend padrão da Luna; avisos do lint limpos em `luna/` | 2 | [PR #9](https://github.com/lucas-kiozy/evolutiveChess/pull/9) |
+| 2026-10-07 | Menos ruído na seleção: 18 partidas por Luna, elite com resultados acumulados, partidas contra campeãs passadas | 3 | [PR #10](https://github.com/lucas-kiozy/evolutiveChess/pull/10) |
 
 ---
 
@@ -93,7 +96,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Versões nomeadas da Luna: `python -m luna export --name luna-v1` grava `luna/versions/luna-v1.json` (genoma, busca e origem) para ir ao git; `python -m luna versions` lista
 - [x] Histórico de evolução por geração (`history.jsonl`)
 - [x] Adaptador para o motor próprio (`--backend chess_engine`), testado contra `python-chess`
-- [~] Tornar `chess_engine` o backend padrão e garantir partidas idênticas nos dois backends — [PR #9](https://github.com/lucas-kiozy/evolutiveChess/pull/9)
+- [x] `chess_engine` é o backend padrão da Luna, com partidas idênticas nos dois backends — [PR #9](https://github.com/lucas-kiozy/evolutiveChess/pull/9)
 - [x] Melhor Luna do treino de 600 partidas exportada como `luna-v1` (arquivo na pasta compartilhada do projeto, `luna-treinos/versoes/luna-v1.json`)
 - [x] `luna-v1.json` em `luna/versions/` no repositório, como ponto de comparação — [PR #7](https://github.com/lucas-kiozy/evolutiveChess/pull/7)
 - [x] Velocidade: 7 a 8 s por geração de 8 partidas com o `chess_engine` (8 Lunas, profundidade 2, 4 CPUs)
@@ -112,9 +115,9 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Laço contínuo: jogar → avaliar → selecionar → reproduzir → repetir
 - [x] Primeiro treino longo: 600 partidas (20 Lunas, 15 gerações, profundidade 2, motor próprio), com 78% a 95% de mates por geração. Usou a aptidão antiga, não a régua 5/2/-1
 - [x] Análise da evolução, em confrontos de 40 partidas: a `luna-v1` perde para os pesos iniciais (-108 ± 58 Elo), empata com a melhor da geração 1 (-9 ± 55) e vence a da geração 8 (+98 ± 57). **Não houve evolução consistente.** Causa provável: cada Luna joga só 4 partidas por geração, e a ordem antiga favorecia o mate rápido mesmo com mais derrotas (a campeã teve 1 vitória e 2 derrotas), então a seleção ficou quase aleatória
-- [ ] Reduzir o ruído na seleção (plano aprovado pelo Lucas): 18 partidas por Luna em cada geração, pontuação acumulada para a elite que sobrevive entre gerações e partidas contra campeãs de gerações passadas
+- [x] Reduzir o ruído na seleção: 18 partidas por Luna em cada geração (`--games-per-luna`), a elite carrega os resultados das gerações anteriores (ranking pela média por partida) e cada Luna enfrenta 2 campeãs passadas (`--hall-of-fame`). Custo: cerca de 70 s por geração com 8 Lunas, profundidade 2, 4 CPUs — [PR #10](https://github.com/lucas-kiozy/evolutiveChess/pull/10)
 - [ ] Rodar mais 12 gerações com a régua 5/2/-1 e medir o rating de novo
-- [~] Comparador de velocidade entre os backends: o motor próprio ficou cerca de 1,8 vez mais rápido que o `python-chess` — [PR #8](https://github.com/lucas-kiozy/evolutiveChess/pull/8)
+- [x] Comparador de velocidade entre os backends (`tools/bench_backends.py`): o motor próprio ficou cerca de 1,8 vez mais rápido que o `python-chess` — [PR #8](https://github.com/lucas-kiozy/evolutiveChess/pull/8)
 - [x] Registro das partidas de cada geração em PGN (`generations/gen_NNNN.pgn`, com ids das Lunas, resultado, término e xeques de cada lado)
 
 ### Etapa 4 — Medição de rating (meta ~1600)
@@ -197,3 +200,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | PR #7 mergeado: versão `luna-v1` no repositório |
 | 2026-10-07 | PR #9 aberto: `chess_engine` como backend padrão da Luna |
 | 2026-10-07 | Plano do próximo treino registrado; PR #8 (comparador de velocidade) aberto; decisão sobre capturas encerrada |
+| 2026-10-07 | PRs #8, #9 e #10 mergeados (246 testes passando no `main`) |

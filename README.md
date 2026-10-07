@@ -69,6 +69,7 @@ O repositório também traz três skills do Claude, em `.claude/skills/`, que us
 ├── docs/
 │   ├── STATUS.md               # relatório: o que foi feito e backlog
 │   └── REFERENCIAS.md          # base científica e técnica do projeto
+├── tools/                      # utilitários, como o comparador de velocidade dos backends
 ├── plans/                      # planos de implementação
 ├── pyproject.toml              # pacote e dependências (pip install -e ".[dev]")
 ├── .github/workflows/ci.yml    # testes e lint a cada PR
@@ -79,7 +80,7 @@ O repositório também traz três skills do Claude, em `.claude/skills/`, que us
 
 ## Como executar
 
-Requer Python 3.10 ou mais novo. O motor não tem dependências; a Luna usa `python-chess` só no backend `python-chess` (o padrão por enquanto).
+Requer Python 3.10 ou mais novo. O motor não tem dependências. A Luna usa o motor próprio por padrão; `python-chess` só é necessário no backend alternativo e nos testes de comparação.
 
 ```bash
 # instalar com as dependências de desenvolvimento e de todos os pacotes
@@ -96,8 +97,8 @@ python -m chess_engine --aleatorio --pretas
 # começar de uma posição FEN
 python -m chess_engine --fen "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3"
 
-# treinar a Luna: 10 gerações de 8 Lunas, usando o motor próprio
-python -m luna train --run-dir treinos/meu-treino --generations 10 --population 8 --backend chess_engine
+# treinar a Luna: 10 gerações de 8 Lunas, 18 partidas por Luna e 2 campeãs passadas
+python -m luna train --run-dir treinos/meu-treino --generations 10 --population 8 --games-per-luna 18 --hall-of-fame 2
 
 # ver o histórico e a melhor Luna do treino
 python -m luna show --run-dir treinos/meu-treino
