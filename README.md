@@ -2,7 +2,7 @@
 
 Um jogo de xadrez em Python com uma inteligência evolutiva chamada **Luna**. A Luna aprende jogando contra outras Lunas, em várias partidas em paralelo, e cada geração seleciona os melhores descendentes por algoritmo genético. Quando a Luna atingir rating equivalente a ~1600, ela passa a jogar no [Lichess](https://lichess.org/), uma partida por vez, e continua se aperfeiçoando.
 
-> **Status atual:** a primeira versão da Luna está em revisão no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1). O motor de xadrez, com todas as regras, já está no `main` (etapa 1 concluída), e a medição de rating com o bot do Lichess no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4).
+> **Status atual:** as etapas 1 a 3 estão no `main`: o motor de xadrez com todas as regras e a Luna evoluindo por self-play paralelo. A medição de rating e o bot do Lichess estão em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4).
 > O relatório completo do que já foi feito e do que falta está em [docs/STATUS.md](docs/STATUS.md).
 
 ## Etapas do projeto
@@ -10,8 +10,8 @@ Um jogo de xadrez em Python com uma inteligência evolutiva chamada **Luna**. A 
 | # | Etapa | Status |
 |---|-------|--------|
 | 1 | Jogo de xadrez funcional com todas as regras validadas | **Concluída** ([PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2)) |
-| 2 | Luna: IA evolutiva com algoritmo genético | Em andamento ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)) |
-| 3 | Self-play paralelo: Luna contra Luna, seleção dos melhores descendentes | Em andamento ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)) |
+| 2 | Luna: IA evolutiva com algoritmo genético | **Concluída** ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)) |
+| 3 | Self-play paralelo: Luna contra Luna, seleção dos melhores descendentes | **Concluída** ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)); treino longo em andamento |
 | 4 | Medição de rating (meta: ~1600) | Em andamento ([PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4)) |
 | 5 | Luna jogando no Lichess, partida a partida, e evoluindo | Em andamento ([PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4)) |
 
@@ -52,6 +52,8 @@ Por enquanto só a frente de documentação tem um agente definido no repositór
 .
 ├── README.md                 # visão geral (este arquivo)
 ├── chess_engine/             # motor de xadrez em Python puro (etapa 1)
+├── luna/                     # IA evolutiva: genoma, busca, algoritmo genético (etapas 2 e 3)
+│   └── versions/             # versões nomeadas da Luna
 │   ├── API.md                # interface pública do motor
 │   └── tests/                # regras, perft e comparação com python-chess
 ├── docs/
@@ -61,11 +63,11 @@ Por enquanto só a frente de documentação tem um agente definido no repositór
     └── documentador.md       # agente que mantém a documentação
 ```
 
-Os pacotes da Luna (`luna/`), da medição de rating (`rating/`) e do bot do Lichess (`lichess_bot/`) entram aqui quando os PRs #1 e #4 forem mergeados.
+Os pacotes da medição de rating (`rating/`) e do bot do Lichess (`lichess_bot/`) entram aqui quando o PR #4 for mergeado.
 
 ## Como executar
 
-Requer Python 3. O motor não tem dependências.
+Requer Python 3. O motor não tem dependências; a Luna usa `python-chess` só no backend `python-chess` (o padrão por enquanto).
 
 ```bash
 # jogar no terminal (você contra você)
@@ -77,9 +79,21 @@ python -m chess_engine --aleatorio --pretas
 # começar de uma posição FEN
 python -m chess_engine --fen "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3"
 
-# testes (pip install pytest; python-chess é opcional, para os testes de comparação)
-python -m pytest chess_engine
+# treinar a Luna: 10 gerações de 8 Lunas, usando o motor próprio
+python -m luna train --run-dir treinos/meu-treino --generations 10 --population 8 --backend chess_engine
+
+# ver o histórico e a melhor Luna do treino
+python -m luna show --run-dir treinos/meu-treino
+
+# salvar a melhor Luna como versão nomeada (vai para luna/versions/) e listar as versões
+python -m luna export --run-dir treinos/meu-treino --name luna-v1
+python -m luna versions
+
+# testes (pip install pytest -r luna/requirements.txt)
+python -m pytest chess_engine luna
 ```
+
+Rodar `python -m luna train` de novo com o mesmo `--run-dir` continua o treino de onde parou.
 
 ## Referências
 
