@@ -1,0 +1,31 @@
+{
+  "skill_name": "luna-treino",
+  "evals": [
+    {
+      "id": 0,
+      "name": "treino-mais-geracoes",
+      "prompt": "roda mais 5 gerações do treino da Luna (o default) e me diz como ficou, rapidinho",
+      "expected_output": "Retomou o treino em luna/runs/default (histórico passou de 12 para 17 gerações); Não reimplementou o treino: usou python -m luna train; Resumo final cita taxa de mate e mate médio das novas gerações; Não editou arquivos em luna/, chess_engine/, rating/, docs/ nem README",
+      "files": [],
+      "assertions": [
+        "Retomou o treino em luna/runs/default (histórico passou de 12 para 17 gerações)",
+        "Não reimplementou o treino: usou python -m luna train",
+        "Resumo final cita taxa de mate e mate médio das novas gerações",
+        "Não editou arquivos em luna/, chess_engine/, rating/, docs/ nem README"
+      ]
+    },
+    {
+      "id": 1,
+      "name": "treino-config-nova",
+      "prompt": "quero testar um treino com população 12 e profundidade 2 sem mexer no treino default. roda só 2 gerações pra eu ver e me diz quanto tempo 20 gerações levariam",
+      "expected_output": "Criou um treino numa pasta nova (luna/runs/default continua com 12 gerações); O treino novo usa população 12 e profundidade 2 no config.json; Rodou 2 gerações no treino novo; Deu uma estimativa de tempo para 20 gerações baseada no tempo medido",
+      "files": [],
+      "assertions": [
+        "Criou um treino numa pasta nova (luna/runs/default continua com 12 gerações)",
+        "O treino novo usa população 12 e profundidade 2 no config.json",
+        "Rodou 2 gerações no treino novo",
+        "Deu uma estimativa de tempo para 20 gerações baseada no tempo medido"
+      ]
+    }
+  ]
+}
