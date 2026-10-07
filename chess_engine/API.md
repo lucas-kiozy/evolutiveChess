@@ -35,10 +35,15 @@ make_move(12, 28)     # e2e4
 from chess_engine import Board, WHITE, BLACK
 
 board = Board()                 # posição inicial
-board = Board(fen)              # qualquer FEN; ValueError se inválida
+board = Board(fen)              # qualquer FEN; ValueError se inválida ou impossível
 board.fen()
 board.copy()                    # cópia independente, com histórico
 ```
+
+A FEN é validada: campos malformados, peão na 1ª ou 8ª fileira, casa de en
+passant impossível e o lado que não joga em xeque dão `ValueError`. Direitos de
+roque sem o rei e a torre nas casas iniciais são descartados em silêncio (como
+no python-chess).
 
 ### Lances
 
@@ -46,9 +51,9 @@ board.copy()                    # cópia independente, com histórico
 |---|---|
 | `legal_moves()` | lista de lances legais (cópia nova a cada chamada, pode alterar) |
 | `push(move)` | aplica um lance legal (não valida, por velocidade) |
-| `pop()` | desfaz o último lance e o devolve |
+| `pop()` | desfaz o último lance e o devolve (`IndexError` se não houver) |
 | `parse_uci(s)` / `push_uci(s)` | converte/aplica `"e2e4"`; `ValueError` se ilegal |
-| `parse_san(s)` / `push_san(s)` | o mesmo para SAN (`"Nf3"`, `"O-O"`, `"e8=Q+"`) |
+| `parse_san(s)` / `push_san(s)` | o mesmo para SAN (`"Nf3"`, `"O-O"`, `"e8=Q+"`); aceita também `"nf3"`, `"a8Q"`, `"e2-e4"` |
 | `san(move)` | SAN do lance na posição atual |
 | `is_capture(move)`, `is_castling(move)`, `gives_check(move)` | classificam um lance legal |
 | `peek()`, `move_stack`, `ply` | último lance, lista de lances, número de meios-lances |
@@ -121,7 +126,26 @@ result.moves              # lances em UCI
 result.moves_by(WHITE)    # lances do vencedor = critério 1 da Luna
 result.checks_by(WHITE)   # xeques dados     = critério de desempate
 result.final_fen
+result.pgn({"White": "Luna 12", "Black": "Luna 7"})   # partida em PGN
 ```
+
+`moves_by` e `checks_by` contam só os lances jogados dentro de `play_game`,
+mesmo que o tabuleiro passado em `board=` já tenha lances (uma abertura, por
+exemplo).
+
+## PGN
+
+```python
+from chess_engine import to_pgn
+
+to_pgn(board.move_stack)                                   # da posição inicial
+to_pgn(["e8d7", "e2e4"], start_fen=fen, result="1/2-1/2",
+       headers={"Event": "Geração 12"})
+```
+
+Aceita lances em UCI ou inteiros. Partidas que não começam da posição inicial
+recebem as etiquetas `SetUp` e `FEN`. O PGN gerado é lido sem erros pelo
+python-chess (conferido nos testes).
 
 Um jogador é qualquer função `jogador(board) -> lance`. Ele recebe o tabuleiro
 da própria partida e pode usar `push`/`pop` para pensar, desde que devolva a
@@ -144,6 +168,9 @@ python -m chess_engine --aleatorio     # contra lances aleatórios
 python -m chess_engine --aleatorio --pretas
 ```
 
+No terminal, empate por 50 lances ou tripla repetição é reivindicado com o
+comando `empate`; ao fim da partida o PGN é impresso.
+
 ## Testes
 
 ```
@@ -156,5 +183,6 @@ CHESS_SLOW=1 python -m pytest chess_engine/tests   # inclui perft profundo
   cravadas e afogamento.
 * `test_rules.py`: cada regra testada isoladamente, mais a API.
 * `test_against_python_chess.py`: partidas aleatórias comparadas lance a lance
-  com a biblioteca python-chess (lances legais, xeque, FEN, SAN e resultado).
+  com a biblioteca python-chess (lances legais, xeque, FEN, SAN, resultado e o
+  PGN exportado).
   Só roda se `chess` estiver instalado (`pip install chess`).

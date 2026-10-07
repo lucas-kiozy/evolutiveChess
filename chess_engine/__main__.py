@@ -6,14 +6,16 @@
     python -m chess_engine --fen "<FEN>"   # começa de uma posição
 
 Digite lances em SAN (``Nf3``, ``exd5``, ``O-O``, ``e8=Q``) ou UCI (``g1f3``).
-Comandos: ``lances``, ``desfazer``, ``fen``, ``sair``.
+Comandos: ``lances``, ``desfazer``, ``empate`` (reivindica pela regra dos 50
+lances ou tripla repetição), ``fen``, ``pgn``, ``sair``.
 """
 
 import argparse
 import random
 import sys
 
-from .board import STARTING_FEN, Board
+from .board import STARTING_FEN, Board, Outcome
+from .pgn import to_pgn
 from .tables import PIECE_SYMBOLS, WHITE
 
 UNICODE = {
@@ -50,7 +52,7 @@ def render(board, flipped=False):
     return "\n".join(lines)
 
 
-def read_move(board):
+def read_move(board, start_fen):
     while True:
         try:
             text = input(f"{'Brancas' if board.turn == WHITE else 'Pretas'} > ").strip()
@@ -66,6 +68,15 @@ def read_move(board):
         if text == "fen":
             print(board.fen())
             continue
+        if text == "pgn":
+            print(to_pgn(board.move_stack, start_fen))
+            continue
+        if text == "empate":
+            outcome = board.outcome(claim_draw=True)
+            if outcome is not None and outcome.winner is None:
+                return outcome
+            print("Ainda não há empate para reivindicar.")
+            continue
         if text == "desfazer":
             return "undo"
         for parse in (board.parse_uci, board.parse_san):
@@ -76,32 +87,47 @@ def read_move(board):
         print("Lance inválido. Digite 'lances' para ver as opções.")
 
 
+def finish(board, start_fen, outcome):
+    print(f"\nFim de jogo: {outcome.result()} ({TERMINATIONS[outcome.termination]})\n")
+    print(to_pgn(board.move_stack, start_fen, outcome.result()))
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="python -m chess_engine", description="Xadrez no terminal")
     parser.add_argument("--fen", default=STARTING_FEN, help="posição inicial")
     parser.add_argument("--aleatorio", action="store_true", help="joga contra lances aleatórios")
     parser.add_argument("--pretas", action="store_true", help="com --aleatorio, você joga de pretas")
     args = parser.parse_args(argv)
+    if args.pretas and not args.aleatorio:
+        parser.error("--pretas só faz sentido junto com --aleatorio")
 
-    board = Board(args.fen)
+    try:
+        board = Board(args.fen)
+    except ValueError as exc:
+        parser.error(str(exc))
     human = -WHITE if args.pretas else WHITE
     while True:
         print()
         print(render(board, flipped=args.aleatorio and human != WHITE))
-        outcome = board.outcome()
+        # Em partida humana, 50 lances e tripla repetição são reivindicados com 'empate'.
+        outcome = board.outcome(claim_draw=False)
         if outcome is not None:
-            print(f"\nFim de jogo: {outcome.result()} ({TERMINATIONS[outcome.termination]})")
-            return 0
+            return finish(board, args.fen, outcome)
         if board.is_check():
             print("Xeque!")
+        if board.outcome(claim_draw=True) is not None:
+            print("Você pode reivindicar empate: digite 'empate'.")
         if args.aleatorio and board.turn != human:
             move = random.choice(board.legal_moves())
             print(f"Computador joga {board.san(move)}")
             board.push(move)
             continue
-        move = read_move(board)
+        move = read_move(board, args.fen)
         if move is None:
             return 0
+        if isinstance(move, Outcome):
+            return finish(board, args.fen, move)
         if move == "undo":
             # Contra o computador, desfaz também a resposta dele.
             for _ in range(2 if args.aleatorio else 1):

@@ -27,6 +27,10 @@ STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 PROMOTION_PIECES = (QUEEN, ROOK, BISHOP, KNIGHT)
 _DIAG_SLIDERS = (BISHOP, QUEEN)
 _ORTH_SLIDERS = (ROOK, QUEEN)
+_CASTLING_CHARS = {"K": CASTLE_WK, "Q": CASTLE_WQ, "k": CASTLE_BK, "q": CASTLE_BQ}
+# (direito, casa do rei, casa da torre, torre com sinal)
+_CASTLING_HOMES = ((CASTLE_WK, 4, 7, ROOK), (CASTLE_WQ, 4, 0, ROOK),
+                   (CASTLE_BK, 60, 63, -ROOK), (CASTLE_BQ, 60, 56, -ROOK))
 
 
 # --------------------------------------------------------------------------- lances
@@ -97,12 +101,22 @@ class Board:
     # ------------------------------------------------------------------ FEN
 
     def set_fen(self, fen):
+        """Carrega uma posição. ``ValueError`` se a FEN for inválida ou impossível.
+
+        Direitos de roque sem o rei e a torre nas casas iniciais são descartados,
+        como no python-chess.
+        """
         parts = fen.split()
-        if len(parts) < 4:
-            raise ValueError(f"FEN inválida: {fen!r}")
+        if len(parts) not in (4, 6):
+            raise ValueError(f"FEN inválida (precisa de 4 ou 6 campos): {fen!r}")
         placement, side, castling, ep = parts[:4]
-        halfmove = int(parts[4]) if len(parts) > 4 else 0
-        fullmove = int(parts[5]) if len(parts) > 5 else 1
+        try:
+            halfmove = int(parts[4]) if len(parts) > 4 else 0
+            fullmove = int(parts[5]) if len(parts) > 5 else 1
+        except ValueError:
+            raise ValueError(f"FEN inválida (contadores): {fen!r}") from None
+        if halfmove < 0 or fullmove < 1:
+            raise ValueError(f"FEN inválida (contadores): {fen!r}")
 
         squares = [EMPTY] * 64
         rows = placement.split("/")
@@ -112,14 +126,18 @@ class Board:
             rank = 7 - i
             file = 0
             for ch in row:
-                if ch.isdigit():
+                if ch in "12345678":
                     file += int(ch)
                 else:
                     piece = SYMBOL_TO_PIECE.get(ch.lower())
                     if piece is None or file > 7:
                         raise ValueError(f"FEN inválida: {fen!r}")
+                    if piece == PAWN and rank in (0, 7):
+                        raise ValueError(f"FEN com peão na 1ª ou 8ª fileira: {fen!r}")
                     squares[rank * 8 + file] = piece if ch.isupper() else -piece
                     file += 1
+                if file > 8:
+                    raise ValueError(f"FEN inválida: {fen!r}")
             if file != 8:
                 raise ValueError(f"FEN inválida: {fen!r}")
 
@@ -133,22 +151,45 @@ class Board:
             raise ValueError("FEN sem rei")
 
         if side not in ("w", "b"):
-            raise ValueError(f"FEN inválida: {fen!r}")
+            raise ValueError(f"FEN inválida (vez): {fen!r}")
+        turn = WHITE if side == "w" else BLACK
+
         rights = 0
         if castling != "-":
             for ch in castling:
-                rights |= {"K": CASTLE_WK, "Q": CASTLE_WQ, "k": CASTLE_BK, "q": CASTLE_BQ}[ch]
+                bit = _CASTLING_CHARS.get(ch)
+                if bit is None or rights & bit:
+                    raise ValueError(f"FEN inválida (roque): {fen!r}")
+                rights |= bit
+        for bit, king_sq, rook_sq, rook in _CASTLING_HOMES:
+            if squares[king_sq] != (KING if rook > 0 else -KING) or squares[rook_sq] != rook:
+                rights &= ~bit
+
+        if ep == "-":
+            ep_square = -1
+        else:
+            if len(ep) != 2 or ep[0] not in "abcdefgh" or ep[1] not in "36":
+                raise ValueError(f"FEN inválida (en passant): {fen!r}")
+            ep_square = square_index(ep)
+            # Quem acabou de jogar avançou um peão duas casas: ele está à frente de ep,
+            # e ep e a casa de origem estão vazias.
+            pushed = ep_square - 8 * turn
+            if (ep[1] != ("6" if turn == WHITE else "3") or squares[pushed] != -PAWN * turn
+                    or squares[ep_square] or squares[ep_square + 8 * turn]):
+                raise ValueError(f"FEN inválida (en passant impossível): {fen!r}")
 
         self.squares = squares
-        self.turn = WHITE if side == "w" else BLACK
+        self.turn = turn
         self.castling = rights
-        self.ep_square = -1 if ep == "-" else square_index(ep)
+        self.ep_square = ep_square
         self.halfmove_clock = halfmove
         self.fullmove_number = fullmove
         self._kings = kings
+        if self._attacked(kings[-turn], turn):
+            raise ValueError(f"FEN impossível: o lado que não joga está em xeque: {fen!r}")
         self._ep_key = self._compute_ep_key()
         self._hash = self._compute_hash()
-        self._in_check = self._attacked(kings[self.turn], -self.turn)
+        self._in_check = self._attacked(kings[turn], -turn)
         self._checks = [0, 0, 0]
         self._moves_made = [0, 0, 0]
         self._stack = []
@@ -201,16 +242,32 @@ class Board:
     # ------------------------------------------------------------------ hash
 
     def _compute_ep_key(self):
-        """Só entra no hash se algum peão adversário puder, em tese, capturar en passant."""
+        """Só entra no hash se houver captura en passant legal (como no python-chess)."""
         ep = self.ep_square
         if ep < 0:
             return 0
         pawn = PAWN * self.turn
         # Casas de onde um peão de quem joga atacaria ep.
         for s in PAWN_ATTACKS[-self.turn][ep]:
-            if self.squares[s] == pawn:
+            if self.squares[s] == pawn and self._ep_capture_is_legal(s):
                 return ZOBRIST_EP_FILE[ep & 7]
         return 0
+
+    def _ep_capture_is_legal(self, from_sq):
+        """Simula a captura en passant de ``from_sq`` e confere se o rei fica seguro."""
+        squares = self.squares
+        us = self.turn
+        ep = self.ep_square
+        pawn = PAWN * us
+        captured_sq = ep - 8 * us
+        squares[from_sq] = EMPTY
+        squares[captured_sq] = EMPTY
+        squares[ep] = pawn
+        legal = not self._attacked(self._kings[us], -us)
+        squares[ep] = EMPTY
+        squares[captured_sq] = -pawn
+        squares[from_sq] = pawn
+        return legal
 
     def _compute_hash(self):
         h = 0
@@ -396,18 +453,8 @@ class Board:
         ep = self.ep_square
         if ep >= 0:
             pawn = PAWN * us
-            captured_sq = ep - forward
             for s in PAWN_ATTACKS[them][ep]:
-                if squares[s] != pawn:
-                    continue
-                squares[s] = EMPTY
-                squares[captured_sq] = EMPTY
-                squares[ep] = pawn
-                legal = not self._attacked(k, them)
-                squares[ep] = EMPTY
-                squares[captured_sq] = -pawn
-                squares[s] = pawn
-                if legal:
+                if squares[s] == pawn and self._ep_capture_is_legal(s):
                     append(s | ep << 6)
 
         return moves
@@ -481,7 +528,9 @@ class Board:
             self._checks[us] += 1
 
     def pop(self):
-        """Desfaz o último lance e o devolve."""
+        """Desfaz o último lance e o devolve. ``IndexError`` se não houver lance."""
+        if not self._stack:
+            raise IndexError("nenhum lance para desfazer")
         (move, piece, captured, castling, ep, ep_key, halfmove, h, in_check,
          legal) = self._stack.pop()
         squares = self.squares
@@ -593,11 +642,28 @@ class Board:
         return san
 
     def parse_san(self, san):
-        """Converte SAN em lance legal. Aceita '0-0', sufixos '+', '#', '!' e '?'."""
-        wanted = san.strip().replace("0", "O").rstrip("+#!?")
-        for move in self.legal_moves():
-            if self.san(move).rstrip("+#") == wanted:
-                return move
+        """Converte SAN em lance legal.
+
+        Aceita também as variações comuns de quem digita: '0-0', sufixos '+#!?',
+        peça minúscula ('nf3'), promoção sem '=' ('a8Q') e coordenadas ('e2-e4', 'e2e4').
+        """
+        text = san.strip().replace("0", "O").rstrip("+#!?")
+        by_san = {self.san(m).rstrip("+#"): m for m in self.legal_moves()}
+        candidates = [text]
+        if len(text) >= 3 and text[-1] in "QRBNqrbn" and text[-2] in "18" and "=" not in text:
+            candidates.append(text[:-1] + "=" + text[-1].upper())
+        if text and text[0] in "nbrqk":
+            candidates.append(text[0].upper() + text[1:])
+        for candidate in candidates:
+            if candidate in by_san:
+                return by_san[candidate]
+        coords = text.replace("-", "").replace("x", "").replace("=", "").lower()
+        if coords.startswith("o"):
+            coords = ""
+        try:
+            return self.parse_uci(coords)
+        except ValueError:
+            pass
         raise ValueError(f"Lance SAN ilegal ou ambíguo: {san!r}")
 
     def push_san(self, san):

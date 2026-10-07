@@ -5,14 +5,16 @@ SAN e o resultado. Pulado se ``chess`` (python-chess) não estiver instalado.
 Ajuste a quantidade de partidas com ``CHESS_ORACLE_GAMES`` (padrão 60).
 """
 
+import io
 import os
 import random
 
 import pytest
 
-from chess_engine import Board, move_to_uci
+from chess_engine import Board, move_to_uci, to_pgn
 
 chess = pytest.importorskip("chess")
+chess_pgn = pytest.importorskip("chess.pgn")
 
 GAMES = int(os.environ.get("CHESS_ORACLE_GAMES", "60"))
 
@@ -60,6 +62,10 @@ def test_random_game_matches_python_chess(seed):
         uci = move_to_uci(move)
         ours.push(move)
         theirs.push_uci(uci)
+    # O PGN exportado é lido pelo python-chess e chega à mesma posição final.
+    game = chess_pgn.read_game(io.StringIO(to_pgn(ours.move_stack)))
+    assert not game.errors
+    assert game.end().board().fen(en_passant="fen") == ours.fen()
     # Desfaz tudo e confere de volta.
     while ours.ply:
         ours.pop()

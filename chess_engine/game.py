@@ -9,12 +9,17 @@ estava.
 from dataclasses import dataclass, field
 
 from .board import Board, Outcome, move_to_uci
+from .pgn import to_pgn
 from .tables import BLACK, WHITE
 
 
 @dataclass
 class GameResult:
-    """Resumo de uma partida, com os números que a Luna usa como aptidão."""
+    """Resumo de uma partida, com os números que a Luna usa como aptidão.
+
+    Lances e xeques contam só o que foi jogado dentro de ``play_game``, mesmo
+    que o tabuleiro recebido já tivesse lances (por exemplo, uma abertura).
+    """
 
     outcome: Outcome
     moves: list = field(default_factory=list)   # lances em UCI
@@ -39,6 +44,12 @@ class GameResult:
     def checks_by(self, color):
         return self.white_checks if color == WHITE else self.black_checks
 
+    def pgn(self, headers=None):
+        """A partida em PGN. ``headers`` acrescenta etiquetas (White, Black, Event...)."""
+        tags = {"Termination": self.outcome.termination}
+        tags.update(headers or {})
+        return to_pgn(self.moves, self.start_fen, self.outcome.result(), tags)
+
 
 def play_game(white, black, board=None, max_plies=None, claim_draw=True):
     """Joga até o fim e devolve um ``GameResult``.
@@ -49,6 +60,8 @@ def play_game(white, black, board=None, max_plies=None, claim_draw=True):
     board = board if board is not None else Board()
     start_fen = board.fen()
     start_ply = board.ply
+    start_moves = {c: board.moves_made(c) for c in (WHITE, BLACK)}
+    start_checks = {c: board.checks_given(c) for c in (WHITE, BLACK)}
     players = {WHITE: white, BLACK: black}
     moves = []
     while True:
@@ -68,8 +81,8 @@ def play_game(white, black, board=None, max_plies=None, claim_draw=True):
         moves=moves,
         start_fen=start_fen,
         final_fen=board.fen(),
-        white_moves=board.moves_made(WHITE),
-        black_moves=board.moves_made(BLACK),
-        white_checks=board.checks_given(WHITE),
-        black_checks=board.checks_given(BLACK),
+        white_moves=board.moves_made(WHITE) - start_moves[WHITE],
+        black_moves=board.moves_made(BLACK) - start_moves[BLACK],
+        white_checks=board.checks_given(WHITE) - start_checks[WHITE],
+        black_checks=board.checks_given(BLACK) - start_checks[BLACK],
     )

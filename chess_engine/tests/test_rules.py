@@ -6,7 +6,7 @@ import pytest
 
 from chess_engine import (
     BLACK, KNIGHT, QUEEN, STARTING_FEN, WHITE, Board, make_move, move_to_uci, play_game,
-    square_index,
+    square_index, to_pgn,
 )
 
 
@@ -35,7 +35,22 @@ def test_fen_roundtrip(fen):
     assert Board(fen).fen() == fen
 
 
-@pytest.mark.parametrize("fen", ["", "8/8/8/8/8/8/8/8 w - - 0 1", "rnbqkbnr/pppppppp/9/8/8/8/PPPPPPPP/RNBQKBNR w"])
+@pytest.mark.parametrize("fen", [
+    "",
+    "8/8/8/8/8/8/8/8 w - - 0 1",                                       # sem reis
+    "rnbqkbnr/pppppppp/9/8/8/8/PPPPPPPP/RNBQKBNR w",
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KX - 0 1",          # roque inválido
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KKq - 0 1",         # roque repetido
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR x KQkq - 0 1",        # vez inválida
+    "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c66 0 2",  # ep com 3 letras
+    "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c3 0 2",   # ep na fileira errada
+    "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2",     # ep sem peão que avançou
+    "4k3/8/8/8/8/8/8/P3K3 w - - 0 1",                                  # peão na 1ª fileira
+    "P3k3/8/8/8/8/8/8/4K3 w - - 0 1",                                  # peão na 8ª fileira
+    "4k3/8/8/8/8/8/8/4R1K1 w - - 0 1",                                  # pretas em xeque, vez das brancas
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - x 1",        # contador inválido
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0",          # 5 campos
+])
 def test_invalid_fen(fen):
     with pytest.raises(ValueError):
         Board(fen)
@@ -90,14 +105,14 @@ def test_insufficient_material(fen, insufficient):
 
 
 def test_fifty_and_seventyfive_moves():
-    board = Board("8/8/8/4k3/8/8/4R3/4K3 w - - 99 80")
+    board = Board("8/8/8/4k3/8/8/R7/4K3 w - - 99 80")
     assert not board.is_fifty_moves()
-    board.push_uci("e2a2")
+    board.push_uci("a2b2")
     assert board.is_fifty_moves()
     assert board.outcome().termination == "fifty_moves"
     assert board.outcome(claim_draw=False) is None
-    board = Board("8/8/8/4k3/8/8/4R3/4K3 w - - 149 80")
-    board.push_uci("e2a2")
+    board = Board("8/8/8/4k3/8/8/R7/4K3 w - - 149 80")
+    board.push_uci("a2b2")
     assert board.outcome(claim_draw=False).termination == "seventyfive_moves"
 
 
@@ -317,3 +332,84 @@ def test_play_game_with_random_players():
 def test_play_game_max_plies():
     result = play_game(lambda b: b.legal_moves()[0], lambda b: b.legal_moves()[0], max_plies=10)
     assert result.plies <= 10
+
+
+def test_castling_rights_without_king_or_rook_are_dropped():
+    board = Board("4k3/8/8/8/8/8/8/3K3R w K - 0 1")
+    assert board.castling == 0
+    assert board.fen().split()[2] == "-"
+    assert all(not board.is_castling(m) for m in board.legal_moves())
+    board = Board("r3k3/8/8/8/8/8/8/4K2R w KQkq - 0 1")
+    assert board.fen().split()[2] == "Kq"
+
+
+def test_illegal_en_passant_does_not_change_repetition_key():
+    # O peão de b5 está cravado na horizontal: o en passant não é legal, então
+    # a posição é a mesma (para repetição) que sem a casa de en passant.
+    with_ep = Board("8/8/8/KPp4r/8/8/8/7k w - c6 0 1")
+    without_ep = Board("8/8/8/KPp4r/8/8/8/7k w - - 0 1")
+    assert with_ep.key() == without_ep.key()
+    legal_ep = Board("rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3")
+    assert legal_ep.key() != Board("rnbqkbnr/ppp1pppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq - 0 3").key()
+
+
+def test_pop_without_moves_raises():
+    with pytest.raises(IndexError):
+        Board().pop()
+
+
+@pytest.mark.parametrize("text,uci", [
+    ("nf3", "g1f3"), ("e2-e4", "e2e4"), ("e2e4", "e2e4"), ("0-0", None),
+])
+def test_parse_san_accepts_common_human_input(text, uci):
+    if uci is None:
+        board = Board("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1")
+        assert board.is_castling(board.parse_san(text))
+    else:
+        assert move_to_uci(Board().parse_san(text)) == uci
+
+
+def test_parse_san_promotion_without_equals_and_pawn_vs_bishop():
+    board = Board("4k3/P7/8/8/8/8/8/4K3 w - - 0 1")
+    assert move_to_uci(board.parse_san("a8Q")) == "a7a8q"
+    board = Board("4k3/8/8/8/8/2n5/1P6/2B1K3 w - - 0 1")
+    assert move_to_uci(board.parse_san("bxc3")) == "b2c3"
+
+
+def test_play_game_counts_only_its_own_moves():
+    board = push_all(Board(), "e2e4", "f7f6", "d1h5")  # brancas já deram um xeque
+    result = play_game(lambda b: b.legal_moves()[0], lambda b: b.legal_moves()[0],
+                       board=board, max_plies=6)
+    assert result.plies == 6
+    assert result.white_moves + result.black_moves == result.plies
+    assert result.start_fen == "rnbqkbnr/ppppp1pp/5p2/7Q/4P3/8/PPPP1PPP/RNB1KBNR b KQkq - 1 2"
+    replay = Board(result.start_fen)
+    for uci in result.moves:
+        replay.push_uci(uci)
+    assert replay.checks_given(WHITE) == result.white_checks
+    assert replay.checks_given(BLACK) == result.black_checks
+
+
+def test_pgn_export():
+    board = push_all(Board(), "f2f3", "e7e5", "g2g4", "d8h4")
+    pgn = to_pgn(board.move_stack, result="0-1", headers={"White": "Luna A", "Black": "Luna B"})
+    assert '[White "Luna A"]' in pgn
+    assert '[Result "0-1"]' in pgn
+    assert pgn.rstrip().endswith("1. f3 e5 2. g4 Qh4# 0-1")
+    assert "[FEN" not in pgn
+
+
+def test_pgn_from_position_with_black_to_move():
+    fen = "4k3/8/8/8/8/8/4P3/4K3 b - - 0 30"
+    pgn = to_pgn(["e8d7", "e2e4"], start_fen=fen)
+    assert '[SetUp "1"]' in pgn and f'[FEN "{fen}"]' in pgn
+    assert "30... Kd7 31. e4 *" in pgn
+
+
+def test_game_result_pgn():
+    rng = random.Random(5)
+    result = play_game(lambda b: rng.choice(b.legal_moves()), lambda b: rng.choice(b.legal_moves()))
+    pgn = result.pgn({"Event": "Teste"})
+    assert f'[Result "{result.outcome.result()}"]' in pgn
+    assert f'[Termination "{result.outcome.termination}"]' in pgn
+    assert pgn.rstrip().endswith(result.outcome.result())

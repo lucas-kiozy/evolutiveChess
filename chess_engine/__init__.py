@@ -18,14 +18,16 @@ from .board import (
     PROMOTION_PIECES, STARTING_FEN, Board, Outcome, make_move, move_from, move_promotion,
     move_to, move_to_uci, perft,
 )
-from .game import play_game
+from .game import GameResult, play_game
+from .pgn import to_pgn
 from .tables import (
     BISHOP, BLACK, EMPTY, KING, KNIGHT, PAWN, QUEEN, ROOK, SQUARE_NAMES, WHITE, square_index,
 )
 
 __all__ = [
     "Board", "Outcome", "STARTING_FEN", "PROMOTION_PIECES",
-    "make_move", "move_from", "move_to", "move_promotion", "move_to_uci", "perft", "play_game",
+    "make_move", "move_from", "move_to", "move_promotion", "move_to_uci", "perft",
+    "play_game", "GameResult", "to_pgn",
     "WHITE", "BLACK", "EMPTY", "PAWN", "KNIGHT", "BISHOP", "ROOK", "QUEEN", "KING",
     "SQUARE_NAMES", "square_index",
 ]
