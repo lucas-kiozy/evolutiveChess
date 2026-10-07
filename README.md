@@ -2,33 +2,40 @@
 
 Um jogo de xadrez em Python com uma inteligência evolutiva chamada **Luna**. A Luna aprende jogando contra outras Lunas, em várias partidas em paralelo, e cada geração seleciona os melhores descendentes por algoritmo genético. Quando a Luna atingir rating equivalente a ~1600, ela passa a jogar no [Lichess](https://lichess.org/), uma partida por vez, e continua se aperfeiçoando.
 
-> **Status atual:** fase de planejamento. Nenhum código foi escrito ainda.
+> **Status atual:** a primeira versão da Luna está em revisão no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1). O motor de xadrez, com todas as regras, já está no `main` (etapa 1 concluída), e a medição de rating com o bot do Lichess no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4).
 > O relatório completo do que já foi feito e do que falta está em [docs/STATUS.md](docs/STATUS.md).
 
 ## Etapas do projeto
 
 | # | Etapa | Status |
 |---|-------|--------|
-| 1 | Jogo de xadrez funcional com todas as regras validadas | Não iniciada |
-| 2 | Luna: IA evolutiva com algoritmo genético | Não iniciada |
-| 3 | Self-play paralelo: Luna contra Luna, seleção dos melhores descendentes | Não iniciada |
-| 4 | Medição de rating (meta: ~1600) | Não iniciada |
-| 5 | Luna jogando no Lichess, partida a partida, e evoluindo | Não iniciada |
+| 1 | Jogo de xadrez funcional com todas as regras validadas | **Concluída** ([PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2)) |
+| 2 | Luna: IA evolutiva com algoritmo genético | Em andamento ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)) |
+| 3 | Self-play paralelo: Luna contra Luna, seleção dos melhores descendentes | Em andamento ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)) |
+| 4 | Medição de rating (meta: ~1600) | Em andamento ([PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4)) |
+| 5 | Luna jogando no Lichess, partida a partida, e evoluindo | Em andamento ([PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4)) |
 
 O detalhamento de cada etapa, com backlog e critérios de pronto, está em [docs/STATUS.md](docs/STATUS.md).
 
 ## Critério de aptidão da Luna
 
-Definido pelo Lucas para escolher os melhores descendentes:
+Definido pelo Lucas para escolher os melhores descendentes. Cada partida dá pontos à Luna, e os pontos são somados em todas as partidas da geração:
 
-1. **Vitória com menos jogadas:** vence a Luna que precisou de menos lances para dar xeque-mate.
-2. **Desempate:** se o critério acima empatar, vence a Luna que deu **menos xeques** durante a partida.
+| Resultado | Pontos |
+|-----------|--------|
+| Vitória (xeque-mate) | +5 |
+| Empate | +2 |
+| Derrota | -1 |
 
-O tratamento de partidas empatadas (afogamento, repetição, regra dos 50 lances, material insuficiente) ainda está em aberto; veja "Decisões em aberto" no relatório.
+Se duas Lunas empatarem na soma, os desempates são, nesta ordem:
+
+1. **Mais pontos de captura** em empates e derrotas: peão 0,1, cavalo 0,3, bispo 0,4, torre 0,6, dama 2.
+2. **Menos xeques nas vitórias:** o ideal é vencer sendo objetivo no ataque.
+3. **Menos lances até o xeque-mate.**
 
 ## Organização do trabalho
 
-O projeto é tocado por frentes de trabalho (agentes) com focos diferentes:
+O projeto é tocado por frentes de trabalho com focos diferentes, cada uma numa conversa própria do projeto no Claude:
 
 | Frente | Responsabilidade |
 |--------|------------------|
@@ -37,13 +44,16 @@ O projeto é tocado por frentes de trabalho (agentes) com focos diferentes:
 | Rating e Lichess | Medição de rating contra adversários calibrados, integração com a API de bots do Lichess |
 | Documentação | Este README e o relatório em `docs/`, atualizados a cada alteração concluída |
 
-A definição do agente de documentação está em [.claude/agents/documentador.md](.claude/agents/documentador.md).
+Por enquanto só a frente de documentação tem um agente definido no repositório, em [.claude/agents/documentador.md](.claude/agents/documentador.md).
 
 ## Estrutura do repositório
 
 ```
 .
 ├── README.md                 # visão geral (este arquivo)
+├── chess_engine/             # motor de xadrez em Python puro (etapa 1)
+│   ├── API.md                # interface pública do motor
+│   └── tests/                # regras, perft e comparação com python-chess
 ├── docs/
 │   ├── STATUS.md             # relatório: o que foi feito e backlog
 │   └── REFERENCIAS.md        # base científica e técnica do projeto
@@ -51,11 +61,25 @@ A definição do agente de documentação está em [.claude/agents/documentador.
     └── documentador.md       # agente que mantém a documentação
 ```
 
-A estrutura do código (pacotes do motor, da Luna e da integração com o Lichess) será documentada aqui assim que as primeiras alterações forem incorporadas.
+Os pacotes da Luna (`luna/`), da medição de rating (`rating/`) e do bot do Lichess (`lichess_bot/`) entram aqui quando os PRs #1 e #4 forem mergeados.
 
 ## Como executar
 
-Ainda não há código executável. Esta seção será preenchida quando o motor de xadrez estiver disponível.
+Requer Python 3. O motor não tem dependências.
+
+```bash
+# jogar no terminal (você contra você)
+python -m chess_engine
+
+# jogar contra lances aleatórios, de pretas
+python -m chess_engine --aleatorio --pretas
+
+# começar de uma posição FEN
+python -m chess_engine --fen "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3"
+
+# testes (pip install pytest; python-chess é opcional, para os testes de comparação)
+python -m pytest chess_engine
+```
 
 ## Referências
 

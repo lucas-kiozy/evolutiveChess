@@ -3,9 +3,11 @@
 **Última atualização:** 2026-10-07
 **Atualizado por:** agente de documentação ([.claude/agents/documentador.md](../.claude/agents/documentador.md))
 
-Este relatório é atualizado depois de cada alteração concluída (PR mergeado) no repositório. Ele mostra o que já foi feito, o que está em andamento e o backlog de cada etapa.
+Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-Legenda: `[x]` concluído · `[~]` em andamento · `[ ]` não iniciado
+**Último commit do `main` coberto:** `d047ba3`
+
+Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
 ---
 
@@ -13,12 +15,12 @@ Legenda: `[x]` concluído · `[~]` em andamento · `[ ]` não iniciado
 
 | # | Etapa | Status | Progresso |
 |---|-------|--------|-----------|
-| 0 | Base do projeto (repositório, documentação, frentes de trabalho) | Em andamento | Documentação inicial criada |
-| 1 | Jogo de xadrez com regras validadas | Não iniciada | 0% |
-| 2 | Luna: IA evolutiva com algoritmo genético | Não iniciada | 0% |
-| 3 | Self-play paralelo e seleção de descendentes | Não iniciada | 0% |
-| 4 | Medição de rating (meta ~1600) | Não iniciada | 0% |
-| 5 | Luna jogando no Lichess | Não iniciada | 0% |
+| 0 | Base do projeto (repositório, documentação, frentes de trabalho) | Em andamento | Repositório e documentação no `main` |
+| 1 | Jogo de xadrez com regras validadas | **Concluída** | Motor mergeado no `main` pelo [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) |
+| 2 | Luna: IA evolutiva com algoritmo genético | Em andamento | Primeira versão em revisão no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (rascunho) |
+| 3 | Self-play paralelo e seleção de descendentes | Em andamento | Laço evolutivo paralelo no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); falta definir a aptidão sem mate |
+| 4 | Medição de rating (meta ~1600) | Em andamento | Estimador de rating em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) |
+| 5 | Luna jogando no Lichess | Em andamento | Bot do Lichess em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4); falta conta BOT e ligar a Luna |
 
 ---
 
@@ -27,7 +29,8 @@ Legenda: `[x]` concluído · `[~]` em andamento · `[ ]` não iniciado
 | Data | Alteração | Etapa | Referência |
 |------|-----------|-------|------------|
 | 2026-10-07 | Repositório criado (vazio) | 0 | — |
-| 2026-10-07 | README, relatório de status, referências e agente de documentação | 0 | PR de documentação inicial |
+| 2026-10-07 | README, relatório de status, referências e agente de documentação | 0 | Primeiro commit do `main` |
+| 2026-10-07 | Motor de xadrez com todas as regras, FEN, SAN, PGN e jogo no terminal | 1 | [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) |
 
 ---
 
@@ -36,8 +39,8 @@ Legenda: `[x]` concluído · `[~]` em andamento · `[ ]` não iniciado
 ### Etapa 0 — Base do projeto
 
 - [x] Criar o repositório `lucas-kiozy/evolutiveChess`
-- [~] Documentação inicial: README, relatório de status, referências
-- [~] Agente de documentação que atualiza este relatório a cada alteração concluída
+- [x] Documentação inicial: README, relatório de status, referências
+- [x] Agente de documentação que atualiza este relatório a cada alteração concluída
 - [ ] Definir as frentes (subagentes) de trabalho, no mínimo 3: motor de xadrez, Luna, rating e Lichess
 - [ ] Estrutura de pacote Python (`pyproject.toml`, versão mínima do Python, layout `src/`)
 - [ ] Ferramentas de qualidade: testes (`pytest`), lint e formatação
@@ -47,64 +50,99 @@ Legenda: `[x]` concluído · `[~]` em andamento · `[ ]` não iniciado
 
 **Critério de pronto:** um humano consegue jogar uma partida completa, e todas as regras passam em testes automatizados, incluindo contagem de nós por *perft* em posições de referência.
 
-- [ ] Representação do tabuleiro e das peças
-- [ ] Leitura e escrita de posições em FEN
-- [ ] Geração de lances de todas as peças
-- [ ] Roque (curto e longo, com todas as restrições: rei/torre não movidos, casas livres, sem passar por xeque)
-- [ ] Captura *en passant*
-- [ ] Promoção de peão (dama, torre, bispo, cavalo)
-- [ ] Filtro de lances legais (não deixar o próprio rei em xeque)
-- [ ] Detecção de xeque, xeque-mate e afogamento
-- [ ] Empates: repetição tripla, regra dos 50 lances, material insuficiente
-- [ ] Registro de partidas em notação algébrica (SAN) e exportação em PGN
-- [ ] Testes de *perft* contra valores de referência publicados
-- [ ] Interface para jogar (terminal, no mínimo)
+**Concluída em 2026-10-07** com o merge do [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) (pacote `chess_engine/`, Python puro; interface descrita em `chess_engine/API.md`). No `main`, `pytest chess_engine` passa com 97 testes (7 pulados: os lentos e os que comparam com `python-chess`, que precisa estar instalado).
+
+- [x] Representação do tabuleiro e das peças
+- [x] Leitura e escrita de posições em FEN, com validação de FEN inválida (inclusive roque sem rei ou torre)
+- [x] Geração de lances de todas as peças
+- [x] Roque (curto e longo, com todas as restrições)
+- [x] Captura *en passant*
+- [x] Promoção de peão
+- [x] Filtro de lances legais (não deixar o próprio rei em xeque)
+- [x] Detecção de xeque, xeque-mate e afogamento
+- [x] Empates: repetição tripla e quíntupla, regras dos 50 e 75 lances, material insuficiente
+- [x] `play_game` com contagem de lances e de xeques por cor, usada na aptidão da Luna
+- [x] Testes de *perft* em 21 posições de referência
+- [x] 300 partidas aleatórias comparadas com `python-chess`, sem divergência (406 testes passando)
+- [x] Notação algébrica (SAN): `san()`, `parse_san()`, `push_san()`
+- [x] Exportação de partidas em PGN (`to_pgn`, `GameResult.pgn`), lida sem erros pelo `python-chess`
+- [x] Contadores de `play_game` contam só a própria partida (correção da revisão de código)
+- [x] Jogo no terminal: `python -m chess_engine`
 
 ### Etapa 2 — Luna: IA evolutiva com algoritmo genético
 
 **Critério de pronto:** uma Luna joga partidas completas usando parâmetros vindos de um genoma, e uma população de Lunas pode ser criada, cruzada e mutada.
 
-- [ ] Definir o genoma (por exemplo, pesos de material, posição das peças, mobilidade, segurança do rei, estrutura de peões)
-- [ ] Função de avaliação parametrizada pelo genoma
-- [ ] Busca de lances (minimax com poda alfa-beta, profundidade configurável)
-- [ ] Inicialização da população
-- [ ] Operadores genéticos: seleção, cruzamento, mutação
-- [ ] Elitismo (preservar os melhores entre gerações)
-- [ ] Salvar e carregar genomas e gerações (checkpoints)
-- [ ] Histórico de evolução por geração (aptidão média e máxima)
+Em andamento no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (rascunho, pacote `luna/`, 15 testes). Os itens marcados `[~]` estão no PR e passam a `[x]` quando ele for mergeado.
+
+- [~] Definir o genoma: 14 pesos de avaliação (`luna/genome.py`)
+- [~] Função de avaliação parametrizada pelo genoma (`luna/evaluation.py`)
+- [~] Busca de lances: alfa-beta com busca de quiescência (`luna/search.py`)
+- [~] Inicialização da população
+- [~] Operadores genéticos: seleção por torneio, cruzamento uniforme, mutação gaussiana (`luna/evolution.py`)
+- [~] Elitismo (preservar os melhores entre gerações)
+- [~] Salvar e carregar gerações com retomada do treino (`luna/storage.py`, pasta `luna/runs/<nome>/`)
+- [~] Linha de comando: `python -m luna train` e `python -m luna show`
+- [~] Versões nomeadas da Luna: `python -m luna export --name luna-v1` grava `luna/versions/luna-v1.json` (genoma, busca e origem) para ir ao git; `python -m luna versions` lista — PR #1
+- [~] Histórico de evolução por geração (`history.jsonl`) — PR #1
+- [~] Adaptador para o motor próprio (`--backend chess_engine`), testado contra `python-chess` — PR #1
+- [ ] Tornar `chess_engine` o backend padrão depois que o PR #2 entrar no `main`
+- [~] Velocidade: 7 a 8 s por geração de 8 partidas com o `chess_engine` (8 Lunas, profundidade 2, 4 CPUs)
+- [~] Corrigido o ruído na escolha do lance, que fazia a Luna jogar quase ao acaso (apontado na revisão de código) — PR #1
 
 ### Etapa 3 — Self-play paralelo e seleção de descendentes
 
 **Critério de pronto:** uma geração inteira joga em paralelo, a aptidão é calculada pelo critério definido e a próxima geração é gerada automaticamente, em ciclo.
 
-- [ ] Torneio entre Lunas (todos contra todos ou pareamento por rodadas)
-- [ ] Execução de várias partidas em paralelo (`multiprocessing`/`concurrent.futures`)
-- [ ] Alternância de cores (cada par joga de brancas e de pretas)
-- [ ] Limite de lances por partida, para evitar partidas infinitas
-- [ ] Cálculo de aptidão:
-  - [ ] 1º critério: vitória com **menos lances** até o xeque-mate
-  - [ ] 2º critério (desempate): **menos xeques** dados durante a partida
-- [ ] Laço contínuo: jogar → avaliar → selecionar → reproduzir → repetir
-- [ ] Registro das partidas (PGN) e métricas de cada geração
+- [~] Partidas Luna contra Luna em paralelo (`ProcessPoolExecutor` em `luna/evolution.py`, partida em `luna/match.py`) — PR #1
+- [~] Alternância de cores: cada par joga duas partidas com cores trocadas (`schedule()` em `luna/evolution.py`) — PR #1
+- [~] Limite de 200 meios-lances por partida, que termina em empate (`MatchConfig.max_plies`) — PR #1
+- [~] Cálculo de aptidão (`luna/fitness.py`) — PR #1:
+  - [~] Régua por partida somada na geração: vitória +5, empate +2, derrota -1
+  - [~] Desempates: pontos de captura, depois menos xeques nas vitórias, depois menos lances até o mate
+- [~] Laço contínuo: jogar → avaliar → selecionar → reproduzir → repetir — PR #1
+- [~] Treino longo e análise dos resultados: um treino de 600 partidas chegou à geração 15 com cerca de 85% a 90% das partidas terminando em mate (arquivos do treino fora do repositório). Num treino curto, depois da correção do ruído, 75% a 88% das partidas terminam em mate, e a melhor Luna dá mate em 25 a 27 lances em média
+- [~] Registro das partidas de cada geração em PGN (`generations/gen_NNNN.pgn`, com ids das Lunas, resultado, término e xeques de cada lado) — PR #1
 
 ### Etapa 4 — Medição de rating (meta ~1600)
 
 **Critério de pronto:** o rating estimado da melhor Luna é calculado de forma reprodutível, com intervalo de confiança, contra adversários de força conhecida.
 
-- [ ] Escolher adversários de referência com força calibrada (por exemplo, Stockfish com nível ou Elo limitado)
-- [ ] Rodar séries de partidas da melhor Luna de cada geração contra esses adversários
-- [ ] Estimar o rating (Elo ou Glicko-2) com intervalo de confiança
-- [ ] Gatilho: quando o rating estimado atingir ~1600, liberar a etapa 5
+Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pacote `rating/`, guia em `rating/GUIA.md`). Os itens `[~]` passam a `[x]` quando ele for mergeado.
+
+- [~] Adversário de referência: Stockfish com `UCI_Elo` calibrado (piso de 1320, o mínimo do Stockfish)
+- [~] Séries de partidas em paralelo contra esse adversário
+- [~] Estimativa do rating por máxima verossimilhança no modelo de Elo, com intervalo de confiança de 90%
+- [~] Critério "pronta para o Lichess": limite inferior do IC 90% maior ou igual a 1600
+- [~] Interface comum de jogador: `choose_move(fen, lances_uci) -> uci`
+- [ ] Ligar a Luna real ao estimador (adaptador curto, exemplo em `rating/GUIA.md`)
+- [ ] Medir a melhor Luna de cada geração
 
 ### Etapa 5 — Luna jogando no Lichess
 
 **Critério de pronto:** a Luna joga partidas no Lichess por uma conta BOT, uma partida por vez, e continua evoluindo com os resultados.
 
-- [ ] Criar conta BOT no Lichess e token de API (guardado fora do repositório)
-- [ ] Integração com a API de bots do Lichess (aceitar desafios, receber o estado da partida, enviar lances)
-- [ ] Jogar uma partida por vez, em sequência
-- [ ] Usar os resultados das partidas online para continuar a evolução
+Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pacote `lichess_bot/`, guia em `lichess_bot/GUIA.md`).
+
+- [~] Integração com a Bot API oficial do Lichess
+- [~] Uma partida por vez, em sequência
+- [~] Cada partida gravada em `lichess_bot/runs/`, com gancho `on_game_finished` para o aprendizado
+- [ ] **Lucas:** criar a conta BOT e o token de API quando a Luna chegar a ~1600 (o token fica fora do repositório)
+- [ ] Ligar a Luna real ao bot
+- [ ] Definir como a Luna aprende com as partidas do Lichess (ver "Decisões em aberto", item 5)
 - [ ] Acompanhar o rating da Luna no Lichess ao longo do tempo
+
+---
+
+## Decisões tomadas
+
+| Data | Decisão | Por |
+|------|---------|-----|
+| 2026-10-07 | O primeiro commit (documentação) foi direto no `main`; o resto segue por PR | Lucas |
+| 2026-10-07 | Aptidão em partidas sem mate: empate pontua pelo material capturado (peão +0,1, cavalo +0,3, bispo +0,4, torre +0,6, dama +2); cada derrota recebe -5 | Lucas |
+| 2026-10-07 | Na derrota, a Luna mantém os pontos do material capturado: derrota = -5 + material | Lucas |
+| 2026-10-07 | Régua de aptidão por partida, somada na geração: vitória +5, empate +2, derrota -1 (substitui o -5). Vitória vale sempre mais que empate. Entre vitórias, melhor é a com menos xeques ("ser mais objetivo no ataque"); desempates na ordem: pontos de captura, menos xeques nas vitórias, menos lances até o mate | Lucas |
+| 2026-10-07 | Atualizações da documentação vão direto no `main`, sem PR | Lucas |
 
 ---
 
@@ -112,10 +150,10 @@ Legenda: `[x]` concluído · `[~]` em andamento · `[ ]` não iniciado
 
 Pontos que precisam de decisão do Lucas ou da frente responsável antes ou durante a implementação:
 
-1. **Partidas empatadas no cálculo de aptidão.** O critério atual cobra vitórias (menos lances até o mate) com desempate por menos xeques. Ainda não está definido quanto vale um empate (afogamento, repetição, 50 lances, material insuficiente) nem uma partida interrompida pelo limite de lances.
-2. **Pontuação de derrotas.** Se uma Luna perde, ela recebe aptidão zero ou ganha algo por ter resistido mais lances?
-3. **Motor de regras próprio ou biblioteca.** Implementar as regras do zero ou usar uma biblioteca consolidada como [`python-chess`](https://python-chess.readthedocs.io/) como referência de validação.
-4. **Como medir "rating equivalente a 1600".** Rating Elo/Glicko contra quais adversários de referência, com quantas partidas.
+1. **Capturas: desempate ou soma.** Na régua 5/2/-1, a frente da Luna deixou os pontos de captura só como desempate, porque somados um empate com muitas capturas (até 7,4) passaria de uma vitória (5). Falta o Lucas confirmar.
+2. **Motor de regras próprio ou biblioteca.** Resolvido: o motor próprio (`chess_engine`) está no `main`; `python-chess` fica só como referência nos testes. Falta tornar `chess_engine` o backend padrão da Luna (PR #1).
+3. **Como medir "rating equivalente a 1600".** Proposta no PR #4: partidas contra Stockfish com Elo limitado e liberação quando o limite inferior do intervalo de confiança de 90% chegar a 1600. Vira decisão quando o PR for mergeado.
+4. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
 
 ---
 
@@ -124,3 +162,16 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | Data | O que mudou |
 |------|-------------|
 | 2026-10-07 | Criação do relatório com as etapas definidas pelo Lucas e o backlog inicial |
+| 2026-10-07 | Etapas 2 e 3 em andamento com o PR #1 (Luna); decisão sobre partidas sem mate passa a ser bloqueante |
+| 2026-10-07 | Etapa 1 em revisão com o PR #2 (motor de xadrez com todas as regras) |
+| 2026-10-07 | Etapas 4 e 5 em revisão com o PR #4 (estimador de rating e bot do Lichess) |
+| 2026-10-07 | Lucas decidiu a pontuação de empates e derrotas; seção "Decisões tomadas" criada |
+| 2026-10-07 | PR #1 aplicou a nova pontuação e ganhou adaptador para o `chess_engine` |
+| 2026-10-07 | Correções da revisão de código: limite de lances, alternância de cores e histórico marcados como `[~]`; FEN e SAN/PGN de volta ao backlog da etapa 1; regra para PRs em revisão explicitada |
+| 2026-10-07 | PR #1 corrigiu o ruído na busca: 75% a 88% das partidas agora terminam em mate; nova decisão em aberto sobre número de mates |
+| 2026-10-07 | Lucas confirmou que a derrota mantém os pontos de captura |
+| 2026-10-07 | PR #2 corrigiu os achados da revisão e ganhou exportação PGN |
+| 2026-10-07 | PR #1 passou a gravar as partidas de cada geração em PGN |
+| 2026-10-07 | PR #1 ganhou versões nomeadas da Luna; treino de 600 partidas registrado |
+| 2026-10-07 | PR #2 mergeado: etapa 1 concluída |
+| 2026-10-07 | Lucas definiu a régua 5/2/-1; PR #1 aplicou; decisões em aberto renumeradas |
