@@ -125,7 +125,8 @@ def test_result_scale_decides_first():
     assert stats["vence_perde"].result_points == 4
     assert stats["dois_empates"].result_points == 4
     assert stats["vence_tudo"].result_points == 10
-    order = rank(stats)
+    # Só as três jogaram 2 partidas cada; as adversárias jogaram 1.
+    order = rank({i: stats[i] for i in ("vence_perde", "dois_empates", "vence_tudo")})
     assert order[0] == "vence_tudo"
     # Mesma soma na régua: desempata pelos pontos de captura (dama = 2).
     assert order.index("dois_empates") < order.index("vence_perde")
@@ -174,7 +175,7 @@ def test_game_records_captures():
 
 def test_schedule_balances_colors():
     pop = [Genome.reference(id=str(i)) for i in range(6)]
-    games = schedule(pop, rounds=2, rng=random.Random(0))
+    games = schedule(pop, 2, random.Random(0))
     assert len(games) == 12
     for g in pop:
         assert sum(w.id == g.id for w, _ in games) == 2
@@ -203,7 +204,8 @@ def test_evolve_saves_and_resumes(tmp_path):
     cfg = EvolutionConfig(
         population=4,
         elite=1,
-        rounds=1,
+        games_per_luna=4,
+        hall_of_fame=1,
         seed=3,
         match=MatchConfig(search=SearchConfig(depth=1, quiescence_depth=0), max_plies=20),
     )
@@ -212,11 +214,23 @@ def test_evolve_saves_and_resumes(tmp_path):
     storage = RunStorage(run)
     assert storage.generation_path(1).exists()
     pgn = storage.pgn_path(1).read_text(encoding="utf-8")
-    assert pgn.count("[Event ") == 4
+    # Geração 1 ainda não tem campeãs: 4 Lunas x 4 partidas / 2 = 8 partidas entre si.
+    assert pgn.count("[Event ") == 8
     assert storage.load_state()[0] == 2
+    hall, carry = storage.load_hall_of_fame()
+    assert len(hall) == 1 and len(carry) == 1
     evolve(str(run), 1, workers=1, log=lambda _: None)
     assert [h["generation"] for h in storage.history()] == [1, 2]
     assert storage.load_best() is not None
+    gen2 = storage.load_generation(2)
+    # Cada Luna jogou 4 partidas na geração 2, 2 delas contra a campeã da geração 1.
+    for luna in gen2["population"]:
+        played = [g for g in gen2["games"] if luna["id"] in (g["white_id"], g["black_id"])]
+        assert len(played) == 4
+        assert sum("campea-" in g["white_id"] + g["black_id"] for g in played) == 2
+    # A elite leva as 4 partidas da geração 1 e soma as 4 da geração 2.
+    elite = next(p for p in gen2["population"] if p["id"] == "g0002-i00")
+    assert elite["stats"]["games"] == 8
 
 
 def test_search_avoids_repetition_with_contempt():
@@ -248,7 +262,8 @@ def test_export_and_load_version(tmp_path):
     cfg = EvolutionConfig(
         population=4,
         elite=1,
-        rounds=1,
+        games_per_luna=2,
+        hall_of_fame=0,
         seed=5,
         match=MatchConfig(search=SearchConfig(depth=1, quiescence_depth=0, noise=3), max_plies=20),
     )
@@ -267,3 +282,37 @@ def test_export_and_load_version(tmp_path):
         export_version(run, name="luna-teste", versions_dir=vdir)
     # Versão de uma geração específica e com nome padrão
     assert export_version(run, generation=1, versions_dir=vdir).name == "luna-g0001.json"
+
+
+def test_each_luna_plays_18_games_with_hall_of_fame():
+    from luna.evolution import play_generation
+
+    cfg = EvolutionConfig(
+        population=4,
+        match=MatchConfig(search=SearchConfig(depth=1, quiescence_depth=0), max_plies=4),
+    )
+    pop = [Genome.reference(id=f"l{i}") for i in range(4)]
+    hall = [Genome.reference(id=f"c{i}") for i in range(3)]
+    records = play_generation(pop, cfg, 1, hall_of_fame=hall)
+    for luna in pop:
+        played = [r for r in records if luna.id in (r.white_id, r.black_id)]
+        vs_champions = [r for r in played if "campea-" in r.white_id + r.black_id]
+        assert len(played) == 18
+        assert len(vs_champions) == 4
+        assert sum(r.white_id == luna.id for r in played) == 9
+
+
+def test_old_config_with_rounds_still_loads():
+    cfg = EvolutionConfig(population=4).to_dict()
+    del cfg["games_per_luna"], cfg["hall_of_fame"]
+    cfg["rounds"], cfg["fallback"] = 2, "captures"
+    old = EvolutionConfig.from_dict(cfg)
+    assert old.games_per_luna == 4 and old.hall_of_fame == 0
+
+
+def test_ranking_uses_average_per_game():
+    from luna.fitness import Stats
+
+    veteran = Stats(games=8, wins=4, draws=4)  # média 3,5
+    newcomer = Stats(games=4, wins=3, draws=1)  # média 4,25
+    assert rank({"veterana": veteran, "novata": newcomer}) == ["novata", "veterana"]

@@ -1,11 +1,13 @@
 """Critério de aptidão definido pelo Lucas.
 
 Régua por partida: vitória +5, empate +2, derrota -1. A régua é somada nas
-partidas da geração e decide primeiro, então uma vitória sempre vale mais que
-um empate e um empate mais que uma derrota.
+partidas e decide primeiro, então uma vitória sempre vale mais que um empate e um
+empate mais que uma derrota. A comparação usa a média por partida, que dá a mesma
+ordem que a soma quando todas jogam o mesmo número de partidas e continua justa
+para a elite, que acumula as partidas das gerações anteriores.
 
-Desempates, nesta ordem, entre Lunas com a mesma soma na régua:
-1. Pontos de captura nos empates e derrotas (maior é melhor): peão 0,1;
+Desempates, nesta ordem, entre Lunas com a mesma média na régua:
+1. Pontos de captura nos empates e derrotas, por partida (maior é melhor): peão 0,1;
    cavalo 0,3; bispo 0,4; torre 0,6; dama 2.
 2. Menos xeques dados nas partidas vencidas (vencer sendo objetivo no ataque).
 3. Menos lances até o mate nas partidas vencidas.
@@ -16,7 +18,7 @@ um empate com muitas capturas (2 + até 5,4) passaria de uma vitória (5).
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from typing import Iterable
 
 from luna.match import GameRecord
@@ -61,6 +63,23 @@ class Stats:
     def checks_per_game(self) -> float:
         return self.checks_given / self.games if self.games else 0.0
 
+    def merge(self, other: "Stats") -> None:
+        """Soma os resultados de ``other`` (partidas de gerações anteriores)."""
+        self.games += other.games
+        self.wins += other.wins
+        self.draws += other.draws
+        self.losses += other.losses
+        self.mates += other.mates
+        self.mate_moves += other.mate_moves
+        self.win_checks += other.win_checks
+        self.checks_given += other.checks_given
+        self.capture_points += other.capture_points
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Stats":
+        names = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in d.items() if k in names})
+
     def to_dict(self) -> dict:
         d = asdict(self)
         d["result_points"] = self.result_points
@@ -97,9 +116,10 @@ def collect_stats(records: Iterable[GameRecord]) -> dict[str, Stats]:
 def sort_key(s: Stats) -> tuple:
     """Chave de ordenação: menor é melhor."""
     inf = float("inf")
+    games = s.games or 1
     return (
-        -s.result_points,
-        -round(s.capture_points, 6),
+        -round(s.result_points / games, 9),
+        -round(s.capture_points / games, 9),
         s.mean_win_checks if s.win_checks else inf,
         s.mean_mate_moves if s.mate_moves else inf,
     )
