@@ -91,7 +91,7 @@ Em andamento no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (r
 - [~] Cálculo de aptidão (`luna/fitness.py`) — PR #1:
   - [~] 1º critério: vitória com **menos lances** até o xeque-mate
   - [~] 2º critério (desempate): **menos xeques** dados durante a partida
-  - [ ] Ranquear Lunas que não dão mate (ver "Decisões em aberto", item 1)
+  - [ ] Pontuar empates por material capturado e derrotas com -5 (ver "Decisões tomadas")
 - [~] Laço contínuo: jogar → avaliar → selecionar → reproduzir → repetir — PR #1
 - [ ] Treino longo (muitas gerações) e análise dos resultados
 - [ ] Registro das partidas (PGN) e métricas de cada geração
@@ -126,11 +126,20 @@ Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pa
 
 ---
 
+## Decisões tomadas
+
+| Data | Decisão | Por |
+|------|---------|-----|
+| 2026-10-07 | O primeiro commit (documentação) foi direto no `main`; o resto segue por PR | Lucas |
+| 2026-10-07 | Aptidão em partidas sem mate: empate pontua pelo material capturado (peão +0,1, cavalo +0,3, bispo +0,4, torre +0,6, dama +2); cada derrota recebe -5 | Lucas |
+
+---
+
 ## Decisões em aberto
 
 Pontos que precisam de decisão do Lucas ou da frente responsável antes ou durante a implementação:
 
-1. **Como ranquear Lunas que não dão mate.** O critério atual cobra vitórias (menos lances até o mate) com desempate por menos xeques. Ainda não está definido quanto vale um empate (afogamento, repetição, 50 lances, material insuficiente) nem uma partida interrompida pelo limite de lances. Isso já é bloqueante: na primeira medição do PR #1, com busca de profundidade 2, houve **0 mates em 8 partidas**, então sem essa regra a seleção não distingue as Lunas.
+1. **Detalhes da pontuação sem mate.** A regra base foi decidida (ver "Decisões tomadas"). Faltam dois detalhes: (a) uma Luna derrotada também soma o material que capturou, ou fica só com -5? (b) uma vitória fica sempre acima de qualquer empate? Até a resposta, o padrão é: derrota = -5 + material capturado, e vitória sempre acima de empate.
 2. **Pontuação de derrotas.** Se uma Luna perde, ela recebe aptidão zero ou ganha algo por ter resistido mais lances?
 3. **Motor de regras próprio ou biblioteca.** Implementar as regras do zero ou usar uma biblioteca consolidada como [`python-chess`](https://python-chess.readthedocs.io/) como referência de validação. Por enquanto a Luna usa `python-chess` como adaptador provisório, isolado em `luna/game_interface.py`, para trocar pelo motor próprio quando ele ficar pronto.
 4. **Como medir "rating equivalente a 1600".** Proposta no PR #4: partidas contra Stockfish com Elo limitado e liberação quando o limite inferior do intervalo de confiança de 90% chegar a 1600. Vira decisão quando o PR for mergeado.
@@ -146,3 +155,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | Etapas 2 e 3 em andamento com o PR #1 (Luna); decisão sobre partidas sem mate passa a ser bloqueante |
 | 2026-10-07 | Etapa 1 em revisão com o PR #2 (motor de xadrez com todas as regras) |
 | 2026-10-07 | Etapas 4 e 5 em revisão com o PR #4 (estimador de rating e bot do Lichess) |
+| 2026-10-07 | Lucas decidiu a pontuação de empates e derrotas; seção "Decisões tomadas" criada |

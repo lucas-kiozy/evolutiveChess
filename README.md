@@ -24,7 +24,8 @@ Definido pelo Lucas para escolher os melhores descendentes:
 1. **Vitória com menos jogadas:** vence a Luna que precisou de menos lances para dar xeque-mate.
 2. **Desempate:** se o critério acima empatar, vence a Luna que deu **menos xeques** durante a partida.
 
-O tratamento de partidas empatadas (afogamento, repetição, regra dos 50 lances, material insuficiente) ainda está em aberto; veja "Decisões em aberto" no relatório.
+3. **Partidas sem mate:** num empate, a Luna soma pontos pelo material que capturou: peão +0,1, cavalo +0,3, bispo +0,4, torre +0,6, dama +2.
+4. **Derrota:** cada derrota recebe -5 pontos.
 
 ## Organização do trabalho
 
