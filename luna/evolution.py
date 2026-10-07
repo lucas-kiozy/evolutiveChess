@@ -1,4 +1,20 @@
-"""Laço evolutivo: partidas em paralelo, seleção, cruzamento e mutação."""
+"""Laço evolutivo: partidas em paralelo, seleção, cruzamento e mutação.
+
+Para reduzir o ruído da aptidão (poucas partidas fazem a ordem das Lunas sair quase
+por sorteio), três medidas aprovadas pelo Lucas, seguindo a literatura sobre
+algoritmos genéticos com avaliação ruidosa:
+
+- cada Luna joga ``games_per_luna`` partidas por geração (padrão 18);
+- a elite carrega os resultados das gerações anteriores, então sua pontuação é a
+  média de mais partidas (média ao longo do tempo; Jin e Branke, 2005);
+- parte das partidas é contra campeãs de gerações passadas, o "hall of fame" de
+  Rosin e Belew (1997), que dá adversárias fixas e mostra se há progresso.
+
+Referências: Y. Jin, J. Branke, "Evolutionary optimization in uncertain
+environments: a survey", IEEE Trans. Evolutionary Computation 9(3):303-317, 2005.
+C. D. Rosin, R. K. Belew, "New methods for competitive coevolution", Evolutionary
+Computation 5(1):1-29, 1997.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +25,7 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass, field
 from typing import Callable, Optional
 
-from luna.fitness import collect_stats, rank
+from luna.fitness import Stats, collect_stats, rank
 from luna.genome import Genome, crossover, mutate
 from luna.match import GameRecord, MatchConfig, play_game
 from luna.pgn import games_to_pgn
@@ -24,7 +40,8 @@ class EvolutionConfig:
     tournament_size: int = 3
     mutation_rate: float = 0.2  # chance de cada gene mutar
     mutation_scale: float = 0.05  # desvio da mutação, fração da faixa do gene
-    rounds: int = 2  # rodadas por geração; cada rodada = 2 partidas por Luna (cores trocadas)
+    games_per_luna: int = 18  # partidas de cada Luna por geração (par: cores trocadas)
+    hall_of_fame: int = 2  # campeãs passadas que cada Luna enfrenta (2 partidas cada)
     workers: int = 0  # 0 = número de CPUs
     seed: int = 42
     match: MatchConfig = field(default_factory=MatchConfig)
@@ -34,6 +51,10 @@ class EvolutionConfig:
             raise ValueError("population deve ser par e >= 2")
         if not 0 <= self.elite < self.population:
             raise ValueError("elite deve estar entre 0 e population - 1")
+        if self.games_per_luna < 2 or self.games_per_luna % 2:
+            raise ValueError("games_per_luna deve ser par e >= 2")
+        if not 0 <= 2 * self.hall_of_fame <= self.games_per_luna:
+            raise ValueError("hall_of_fame deve caber em games_per_luna (2 partidas cada)")
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -42,6 +63,9 @@ class EvolutionConfig:
     def from_dict(cls, d: dict) -> "EvolutionConfig":
         d = dict(d)
         d.pop("fallback", None)  # opção antiga, substituída pela régua 5/2/-1
+        if "rounds" in d:  # treinos antigos: 2 partidas por rodada e sem hall of fame
+            d["games_per_luna"] = 2 * d.pop("rounds")
+            d.setdefault("hall_of_fame", 0)
         m = dict(d.pop("match", {}))
         m["search"] = SearchConfig(**m.get("search", {}))
         return cls(match=MatchConfig(**m), **d)
@@ -71,9 +95,19 @@ def play_generation(
     config: EvolutionConfig,
     generation: int,
     executor: Optional[ProcessPoolExecutor] = None,
+    hall_of_fame: Optional[list[Genome]] = None,
 ) -> list[GameRecord]:
+    """Joga as partidas da geração: cada Luna faz ``games_per_luna`` partidas, das quais
+    2 contra cada uma de ``hall_of_fame`` campeãs sorteadas e o resto entre si."""
     rng = random.Random(f"{config.seed}-schedule-{generation}")
-    games = schedule(population, config.rounds, rng)
+    hall = hall_of_fame or []
+    k = min(config.hall_of_fame, len(hall))
+    games = schedule(population, (config.games_per_luna - 2 * k) // 2, rng)
+    for luna in population:
+        for champion in rng.sample(hall, k):
+            opponent = Genome(dict(champion.genes), id=f"campea-{champion.id}")
+            games.append((luna, opponent))
+            games.append((opponent, luna))
     tasks = [(w.to_dict(), b.to_dict(), config.match, rng.randrange(2**32)) for w, b in games]
     if executor is None:
         return [_play_task(t) for t in tasks]
@@ -134,6 +168,7 @@ def summarize(
         "best_mean_win_checks": best.mean_win_checks,
         "best_mean_mate_moves": best.mean_mate_moves,
         "best_checks_per_game": best.checks_per_game,
+        "best_games": best.games,
         "seconds": round(seconds, 2),
     }
 
@@ -151,11 +186,13 @@ def evolve(
     if storage.exists():
         config = EvolutionConfig.from_dict(storage.load_config())
         start, population = storage.load_state()
+        hall, carry = storage.load_hall_of_fame()
         log(f"Retomando {run_dir} na geração {start}")
     else:
         config = config or EvolutionConfig()
         storage.save_config(config.to_dict())
         start, population = 1, initial_population(config)
+        hall, carry = [], {}
         storage.save_state(start, population)
         log(f"Novo treino em {run_dir}")
 
@@ -165,10 +202,14 @@ def evolve(
     try:
         for generation in range(start, start + generations):
             t0 = time.perf_counter()
-            records = play_generation(population, config, generation, executor)
-            stats = collect_stats(records)
-            ranked_ids = rank(stats)
+            records = play_generation(population, config, generation, executor, hall)
             by_id = {g.id: g for g in population}
+            all_stats = collect_stats(records)
+            stats = {i: all_stats.get(i, Stats()) for i in by_id}  # sem as campeãs
+            for ident, previous in carry.items():
+                if ident in stats:
+                    stats[ident].merge(Stats.from_dict(previous))
+            ranked_ids = rank(stats)
             ranked = [by_id[i] for i in ranked_ids]
             summary = summarize(generation, ranked_ids, stats, records, time.perf_counter() - t0)
             storage.save_generation(
@@ -192,15 +233,22 @@ def evolve(
                     backend=config.match.backend,
                 ),
             )
+            champion = ranked[0]
+            if all(champion.genes != h.genes for h in hall):
+                hall.append(Genome(dict(champion.genes), id=champion.id))
             population = next_population(ranked, config, generation + 1)
-            storage.save_state(generation + 1, population)
+            # A elite (primeiras da nova população) leva os resultados acumulados.
+            carry = {g.id: stats[g.parents[0]].to_dict() for g in population[: config.elite]}
+            storage.save_state(generation + 1, population, hall, carry)
             summaries.append(summary)
             log(
                 f"Geração {generation}: {summary['games']} partidas, "
                 f"mates {summary['mate_rate']:.0%}, melhor {summary['best_id']} "
-                f"({summary['best_result_points']:g} pontos, V/E/D {summary['best_record']}, "
+                f"({summary['best_result_points']:g} pontos em {summary['best_games']} partidas, "
+                f"V/E/D {summary['best_record']}, "
                 f"xeques por vitória {summary['best_mean_win_checks']}, "
-                f"mate médio {summary['best_mean_mate_moves']}) em {summary['seconds']}s"
+                f"mate médio {summary['best_mean_mate_moves']}), "
+                f"{len(hall)} campeãs, em {summary['seconds']}s"
             )
     finally:
         if executor is not None:

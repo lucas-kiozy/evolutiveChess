@@ -3,7 +3,8 @@
 Layout de ``run_dir``::
 
     config.json               configuração do treino
-    state.json                próxima geração e população a avaliar (retomada)
+    state.json                próxima geração, população a avaliar, campeãs e
+                              resultados acumulados da elite (retomada)
     history.jsonl             um resumo por geração
     best_genome.json          melhor genoma da última geração avaliada
     generations/gen_0001.json população avaliada, estatísticas e partidas
@@ -81,15 +82,32 @@ class RunStorage:
     def load_generation(self, generation: int) -> dict:
         return _read_json(self.generation_path(generation))
 
-    def save_state(self, next_generation: int, population: list[Genome]) -> None:
+    def save_state(
+        self,
+        next_generation: int,
+        population: list[Genome],
+        hall_of_fame: Optional[list[Genome]] = None,
+        carry: Optional[dict] = None,
+    ) -> None:
         _write_json(
             self.state_path,
-            {"next_generation": next_generation, "population": [g.to_dict() for g in population]},
+            {
+                "next_generation": next_generation,
+                "population": [g.to_dict() for g in population],
+                "hall_of_fame": [g.to_dict() for g in hall_of_fame or []],
+                "carry": carry or {},
+            },
         )
 
     def load_state(self) -> tuple[int, list[Genome]]:
         data = _read_json(self.state_path)
         return data["next_generation"], [Genome.from_dict(d) for d in data["population"]]
+
+    def load_hall_of_fame(self) -> tuple[list[Genome], dict]:
+        """Campeãs das gerações anteriores e resultados acumulados da elite."""
+        data = _read_json(self.state_path)
+        hall = [Genome.from_dict(d) for d in data.get("hall_of_fame", [])]
+        return hall, data.get("carry", {})
 
     def load_best(self) -> Optional[Genome]:
         path = self.root / "best_genome.json"

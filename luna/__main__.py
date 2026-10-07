@@ -29,7 +29,8 @@ def main(argv: list[str] | None = None) -> None:
     t.add_argument("--generations", type=int, default=10)
     t.add_argument("--population", type=int, default=16)
     t.add_argument("--elite", type=int, default=2)
-    t.add_argument("--rounds", type=int, default=2)
+    t.add_argument("--games-per-luna", type=int, default=18)
+    t.add_argument("--hall-of-fame", type=int, default=2, help="campeãs passadas por Luna")
     t.add_argument("--mutation-rate", type=float, default=0.2)
     t.add_argument("--mutation-scale", type=float, default=0.05)
     t.add_argument("--depth", type=int, default=2)
@@ -76,7 +77,8 @@ def main(argv: list[str] | None = None) -> None:
         config = EvolutionConfig(
             population=args.population,
             elite=args.elite,
-            rounds=args.rounds,
+            games_per_luna=args.games_per_luna,
+            hall_of_fame=args.hall_of_fame,
             mutation_rate=args.mutation_rate,
             mutation_scale=args.mutation_scale,
             workers=args.workers,
