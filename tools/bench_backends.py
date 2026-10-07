@@ -51,7 +51,9 @@ def rodar_backend(nome: str, pares, profundidade: int, max_lances: int, semente:
 
 def formatar_tabela(linhas: list[tuple], coincidem: bool) -> str:
     cab = ("backend", "partidas", "meios-lances", "segundos", "meios-lances/s")
-    corpo = [(n, str(p), str(m), f"{s:.2f}", f"{m / s:.1f}" if s > 0 else "inf") for n, p, m, s in linhas]
+    corpo = [
+        (n, str(p), str(m), f"{s:.2f}", f"{m / s:.1f}" if s > 0 else "inf") for n, p, m, s in linhas
+    ]
     larg = [max(len(r[i]) for r in [cab, *corpo]) for i in range(len(cab))]
     fmt = "  ".join(f"{{:<{w}}}" for w in larg)
     saida = [fmt.format(*cab), fmt.format(*("-" * w for w in larg))]
@@ -65,7 +67,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--partidas", type=int, default=20)
     ap.add_argument("--profundidade", type=int, default=2)
     ap.add_argument("--semente", type=int, default=2026)
-    ap.add_argument("--max-lances", type=int, default=200, help="limite de meios-lances por partida")
+    ap.add_argument(
+        "--max-lances", type=int, default=200, help="limite de meios-lances por partida"
+    )
     args = ap.parse_args(argv)
 
     pares = gerar_pares(args.partidas, args.semente)
