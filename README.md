@@ -2,7 +2,7 @@
 
 Um jogo de xadrez em Python com uma inteligência evolutiva chamada **Luna**. A Luna aprende jogando contra outras Lunas, em várias partidas em paralelo, e cada geração seleciona os melhores descendentes por algoritmo genético. Quando a Luna atingir rating equivalente a ~1600, ela passa a jogar no [Lichess](https://lichess.org/), uma partida por vez, e continua se aperfeiçoando.
 
-> **Status atual:** as etapas 1 a 3 estão no `main`: o motor de xadrez com todas as regras e a Luna evoluindo por self-play paralelo. A medição de rating e o bot do Lichess estão em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4).
+> **Status atual:** as etapas 1 a 3 estão no `main`: o motor de xadrez com todas as regras e a Luna evoluindo por self-play paralelo. A medição de rating e o bot do Lichess também já estão no `main`; falta a Luna chegar a ~1600.
 > O relatório completo do que já foi feito e do que falta está em [docs/STATUS.md](docs/STATUS.md).
 
 ## Etapas do projeto
@@ -12,8 +12,8 @@ Um jogo de xadrez em Python com uma inteligência evolutiva chamada **Luna**. A 
 | 1 | Jogo de xadrez funcional com todas as regras validadas | **Concluída** ([PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2)) |
 | 2 | Luna: IA evolutiva com algoritmo genético | **Concluída** ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)) |
 | 3 | Self-play paralelo: Luna contra Luna, seleção dos melhores descendentes | **Concluída** ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)); treino longo em andamento |
-| 4 | Medição de rating (meta: ~1600) | Em andamento ([PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4)) |
-| 5 | Luna jogando no Lichess, partida a partida, e evoluindo | Em andamento ([PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4)) |
+| 4 | Medição de rating (meta: ~1600) | Em andamento: estimador pronto, falta medir a Luna |
+| 5 | Luna jogando no Lichess, partida a partida, e evoluindo | Em andamento: bot pronto, aguarda a Luna chegar a ~1600 |
 
 O detalhamento de cada etapa, com backlog e critérios de pronto, está em [docs/STATUS.md](docs/STATUS.md).
 
@@ -54,6 +54,8 @@ Por enquanto só a frente de documentação tem um agente definido no repositór
 ├── chess_engine/             # motor de xadrez em Python puro (etapa 1)
 ├── luna/                     # IA evolutiva: genoma, busca, algoritmo genético (etapas 2 e 3)
 │   └── versions/             # versões nomeadas da Luna
+├── rating/                   # estimativa de rating contra o Stockfish (etapa 4; guia em GUIA.md)
+├── lichess_bot/              # bot do Lichess, uma partida por vez (etapa 5; guia em GUIA.md)
 │   ├── API.md                # interface pública do motor
 │   └── tests/                # regras, perft e comparação com python-chess
 ├── docs/
@@ -62,8 +64,6 @@ Por enquanto só a frente de documentação tem um agente definido no repositór
 └── .claude/agents/
     └── documentador.md       # agente que mantém a documentação
 ```
-
-Os pacotes da medição de rating (`rating/`) e do bot do Lichess (`lichess_bot/`) entram aqui quando o PR #4 for mergeado.
 
 ## Como executar
 
@@ -89,11 +89,13 @@ python -m luna show --run-dir treinos/meu-treino
 python -m luna export --run-dir treinos/meu-treino --name luna-v1
 python -m luna versions
 
-# testes (pip install pytest -r luna/requirements.txt)
-python -m pytest chess_engine luna
+# testes (pip install pytest -r lichess_bot/requirements.txt)
+python -m pytest chess_engine luna rating lichess_bot
 ```
 
 Rodar `python -m luna train` de novo com o mesmo `--run-dir` continua o treino de onde parou.
+
+Para medir o rating da Luna contra o Stockfish e para colocá-la no Lichess, siga [rating/GUIA.md](rating/GUIA.md) e [lichess_bot/GUIA.md](lichess_bot/GUIA.md).
 
 ## Referências
 

@@ -5,7 +5,7 @@
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-**Último commit do `main` coberto:** `b96942f`
+**Último commit do `main` coberto:** `44c5756`
 
 Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
@@ -19,8 +19,8 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 1 | Jogo de xadrez com regras validadas | **Concluída** | Motor mergeado no `main` pelo [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) |
 | 2 | Luna: IA evolutiva com algoritmo genético | **Concluída** | Luna no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); faltam ajustes (backend padrão, versão `luna-v1`) |
 | 3 | Self-play paralelo e seleção de descendentes | **Concluída** | Laço evolutivo paralelo com a régua 5/2/-1 no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); treino longo em andamento |
-| 4 | Medição de rating (meta ~1600) | Em andamento | Estimador de rating em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) |
-| 5 | Luna jogando no Lichess | Em andamento | Bot do Lichess em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4); falta conta BOT e ligar a Luna |
+| 4 | Medição de rating (meta ~1600) | Em andamento | Estimador no `main` pelo [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4); falta ligar a Luna e medir |
+| 5 | Luna jogando no Lichess | Em andamento | Bot no `main` pelo [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4); falta a Luna chegar a ~1600, a conta BOT e o aprendizado online |
 
 ---
 
@@ -32,6 +32,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 2026-10-07 | README, relatório de status, referências e agente de documentação | 0 | Primeiro commit do `main` |
 | 2026-10-07 | Motor de xadrez com todas as regras, FEN, SAN, PGN e jogo no terminal | 1 | [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) |
 | 2026-10-07 | Luna: genoma, avaliação, busca alfa-beta, algoritmo genético, self-play paralelo, aptidão 5/2/-1, PGN por geração, versões nomeadas | 2 e 3 | [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) |
+| 2026-10-07 | Estimativa de rating contra Stockfish e bot do Lichess pela Bot API oficial | 4 e 5 | [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) |
 
 ---
 
@@ -74,7 +75,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 
 **Critério de pronto:** uma Luna joga partidas completas usando parâmetros vindos de um genoma, e uma população de Lunas pode ser criada, cruzada e mutada.
 
-**Concluída em 2026-10-07** com o merge do [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (pacote `luna/`). Conferido no `main`: `python -m luna train --backend chess_engine` roda uma geração completa. Os testes que usam o backend `python-chess` precisam da biblioteca instalada (`pip install -r luna/requirements.txt`).
+**Concluída em 2026-10-07** com o merge do [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (pacote `luna/`). Conferido no `main`: `python -m luna train --backend chess_engine` roda uma geração completa, e os testes de todos os pacotes passam (232 passaram, 7 pulados por serem lentos), com `python-chess` instalado.
 
 - [x] Definir o genoma: 14 pesos de avaliação (`luna/genome.py`)
 - [x] Função de avaliação parametrizada pelo genoma (`luna/evaluation.py`)
@@ -110,13 +111,13 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 
 **Critério de pronto:** o rating estimado da melhor Luna é calculado de forma reprodutível, com intervalo de confiança, contra adversários de força conhecida.
 
-Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pacote `rating/`, guia em `rating/GUIA.md`). Os itens `[~]` passam a `[x]` quando ele for mergeado.
+No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pacote `rating/`, guia em `rating/GUIA.md`). Precisa do Stockfish instalado na máquina.
 
-- [~] Adversário de referência: Stockfish com `UCI_Elo` calibrado (piso de 1320, o mínimo do Stockfish)
-- [~] Séries de partidas em paralelo contra esse adversário
-- [~] Estimativa do rating por máxima verossimilhança no modelo de Elo, com intervalo de confiança de 90%
-- [~] Critério "pronta para o Lichess": limite inferior do IC 90% maior ou igual a 1600
-- [~] Interface comum de jogador: `choose_move(fen, lances_uci) -> uci`
+- [x] Adversário de referência: Stockfish com `UCI_Elo` calibrado (piso de 1320, o mínimo do Stockfish)
+- [x] Séries de partidas em paralelo contra esse adversário
+- [x] Estimativa do rating por máxima verossimilhança no modelo de Elo, com intervalo de confiança de 90%
+- [x] Critério "pronta para o Lichess": limite inferior do IC 90% maior ou igual a 1600
+- [x] Interface comum de jogador: `choose_move(fen, lances_uci) -> uci`
 - [ ] Ligar a Luna real ao estimador (adaptador curto, exemplo em `rating/GUIA.md`)
 - [ ] Medir a melhor Luna de cada geração
 
@@ -124,11 +125,11 @@ Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pa
 
 **Critério de pronto:** a Luna joga partidas no Lichess por uma conta BOT, uma partida por vez, e continua evoluindo com os resultados.
 
-Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pacote `lichess_bot/`, guia em `lichess_bot/GUIA.md`).
+No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pacote `lichess_bot/`, guia em `lichess_bot/GUIA.md`).
 
-- [~] Integração com a Bot API oficial do Lichess
-- [~] Uma partida por vez, em sequência
-- [~] Cada partida gravada em `lichess_bot/runs/`, com gancho `on_game_finished` para o aprendizado
+- [x] Integração com a Bot API oficial do Lichess
+- [x] Uma partida por vez, em sequência
+- [x] Cada partida gravada em `lichess_bot/runs/`, com gancho `on_game_finished` para o aprendizado
 - [ ] **Lucas:** criar a conta BOT e o token de API quando a Luna chegar a ~1600 (o token fica fora do repositório)
 - [ ] Ligar a Luna real ao bot
 - [ ] Definir como a Luna aprende com as partidas do Lichess (ver "Decisões em aberto", item 5)
@@ -145,6 +146,7 @@ Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pa
 | 2026-10-07 | Na derrota, a Luna mantém os pontos do material capturado: derrota = -5 + material | Lucas |
 | 2026-10-07 | Régua de aptidão por partida, somada na geração: vitória +5, empate +2, derrota -1 (substitui o -5). Vitória vale sempre mais que empate. Entre vitórias, melhor é a com menos xeques ("ser mais objetivo no ataque"); desempates na ordem: pontos de captura, menos xeques nas vitórias, menos lances até o mate | Lucas |
 | 2026-10-07 | Atualizações da documentação vão direto no `main`, sem PR | Lucas |
+| 2026-10-07 | "Rating 1600" = partidas contra Stockfish com Elo limitado; a Luna está pronta para o Lichess quando o limite inferior do intervalo de confiança de 90% chegar a 1600 | Lucas, ao mergear o PR #4 |
 
 ---
 
@@ -154,8 +156,7 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 
 1. **Capturas: desempate ou soma.** Na régua 5/2/-1, a frente da Luna deixou os pontos de captura só como desempate, porque somados um empate com muitas capturas (até 7,4) passaria de uma vitória (5). Falta o Lucas confirmar.
 2. **Motor de regras próprio ou biblioteca.** Resolvido: o motor próprio (`chess_engine`) está no `main`; `python-chess` fica só como referência nos testes. Falta tornar `chess_engine` o backend padrão da Luna (PR #1).
-3. **Como medir "rating equivalente a 1600".** Proposta no PR #4: partidas contra Stockfish com Elo limitado e liberação quando o limite inferior do intervalo de confiança de 90% chegar a 1600. Vira decisão quando o PR for mergeado.
-4. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
+3. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
 
 ---
 
@@ -178,3 +179,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | PR #2 mergeado: etapa 1 concluída |
 | 2026-10-07 | Lucas definiu a régua 5/2/-1; PR #1 aplicou; decisões em aberto renumeradas |
 | 2026-10-07 | PR #1 mergeado: etapas 2 e 3 concluídas |
+| 2026-10-07 | PR #4 mergeado: ferramentas das etapas 4 e 5 no `main` |
