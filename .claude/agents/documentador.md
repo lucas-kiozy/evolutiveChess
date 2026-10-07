@@ -21,12 +21,13 @@ Depois de toda alteração concluída: um PR mergeado, uma etapa finalizada ou u
 ## Como atualizar
 
 1. Descubra o que mudou desde a última atualização registrada em `docs/STATUS.md`:
-   - `git log --oneline` a partir da data da última atualização;
+   - `git log --oneline <último commit coberto>..main`;
+   - os PRs abertos, cujos itens entram como `[~]`;
    - os PRs mergeados e seus diffs;
    - a estrutura atual do código (`git ls-files`).
-2. Confira no código o que o PR afirma. Um item só vira `[x]` quando o código existe e os testes correspondentes existem e passam (`pytest`, se configurado). Se não puder verificar, marque `[~]` e anote o motivo.
+2. Confira no código o que o PR afirma. Um item só vira `[x]` quando está no `main` e os testes correspondentes existem e passam (`pytest`, se configurado). Itens de PR aberto ficam `[~]`. Nunca remova um item do backlog sem registrar o motivo no histórico.
 3. Atualize `docs/STATUS.md`:
-   - "Última atualização" com a data de hoje;
+   - "Última atualização" com a data de hoje e "Último commit do `main` coberto" com o SHA curto;
    - a tabela "Resumo" (status e progresso por etapa);
    - uma linha nova em "O que já foi feito" com data, alteração, etapa e link do PR;
    - os checkboxes do backlog, acrescentando itens novos que surgirem;

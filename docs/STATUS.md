@@ -3,9 +3,11 @@
 **Última atualização:** 2026-10-07
 **Atualizado por:** agente de documentação ([.claude/agents/documentador.md](../.claude/agents/documentador.md))
 
-Este relatório é atualizado depois de cada alteração concluída (PR mergeado) no repositório. Ele mostra o que já foi feito, o que está em andamento e o backlog de cada etapa.
+Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-Legenda: `[x]` concluído · `[~]` em andamento · `[ ]` não iniciado
+**Último commit do `main` coberto:** `a3fb223`
+
+Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
 ---
 
@@ -50,6 +52,7 @@ Legenda: `[x]` concluído · `[~]` em andamento · `[ ]` não iniciado
 Em revisão no [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) (pacote `chess_engine/`, Python puro; interface descrita em `chess_engine/API.md`). Os itens marcados `[~]` estão no PR e passam a `[x]` quando ele for mergeado.
 
 - [~] Representação do tabuleiro e das peças
+- [~] Leitura e escrita de posições em FEN (falta validar FEN inválida com mais rigor, apontado na revisão de código)
 - [~] Geração de lances de todas as peças
 - [~] Roque (curto e longo, com todas as restrições)
 - [~] Captura *en passant*
@@ -60,8 +63,9 @@ Em revisão no [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) (pa
 - [~] `play_game` com contagem de lances e de xeques por cor, usada na aptidão da Luna
 - [~] Testes de *perft* em 21 posições de referência
 - [~] 300 partidas aleatórias comparadas com `python-chess`, sem divergência
+- [~] Notação algébrica (SAN): `san()`, `parse_san()`, `push_san()`
+- [ ] Exportação de partidas em PGN
 - [~] Jogo no terminal: `python -m chess_engine`
-- [ ] Integração contínua (GitHub Actions) rodando os testes a cada PR
 
 ### Etapa 2 — Luna: IA evolutiva com algoritmo genético
 
@@ -77,7 +81,7 @@ Em andamento no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (r
 - [~] Elitismo (preservar os melhores entre gerações)
 - [~] Salvar e carregar gerações com retomada do treino (`luna/storage.py`, pasta `luna/runs/<nome>/`)
 - [~] Linha de comando: `python -m luna train` e `python -m luna show`
-- [ ] Histórico de evolução por geração (aptidão média e máxima)
+- [~] Histórico de evolução por geração (`history.jsonl`) — PR #1
 - [~] Adaptador para o motor próprio (`--backend chess_engine`), testado contra `python-chess` — PR #1
 - [ ] Tornar `chess_engine` o backend padrão depois que o PR #2 entrar no `main`
 - [~] Velocidade: cerca de 15 s por geração de 8 partidas (8 Lunas, profundidade 2, 4 CPUs)
@@ -86,9 +90,9 @@ Em andamento no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (r
 
 **Critério de pronto:** uma geração inteira joga em paralelo, a aptidão é calculada pelo critério definido e a próxima geração é gerada automaticamente, em ciclo.
 
-- [~] Partidas Luna contra Luna em paralelo (`ProcessPoolExecutor`, `luna/match.py`) — PR #1
-- [ ] Alternância de cores garantida (cada par joga de brancas e de pretas)
-- [ ] Limite de lances por partida, para evitar partidas infinitas
+- [~] Partidas Luna contra Luna em paralelo (`ProcessPoolExecutor` em `luna/evolution.py`, partida em `luna/match.py`) — PR #1
+- [~] Alternância de cores: cada par joga duas partidas com cores trocadas (`schedule()` em `luna/evolution.py`) — PR #1
+- [~] Limite de 200 meios-lances por partida, que termina em empate (`MatchConfig.max_plies`) — PR #1
 - [~] Cálculo de aptidão (`luna/fitness.py`) — PR #1:
   - [~] 1º critério: vitória com **menos lances** até o xeque-mate
   - [~] 2º critério (desempate): **menos xeques** dados durante a partida
@@ -158,3 +162,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | Etapas 4 e 5 em revisão com o PR #4 (estimador de rating e bot do Lichess) |
 | 2026-10-07 | Lucas decidiu a pontuação de empates e derrotas; seção "Decisões tomadas" criada |
 | 2026-10-07 | PR #1 aplicou a nova pontuação e ganhou adaptador para o `chess_engine` |
+| 2026-10-07 | Correções da revisão de código: limite de lances, alternância de cores e histórico marcados como `[~]`; FEN e SAN/PGN de volta ao backlog da etapa 1; regra para PRs em revisão explicitada |

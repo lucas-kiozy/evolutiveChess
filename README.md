@@ -29,7 +29,7 @@ Definido pelo Lucas para escolher os melhores descendentes:
 
 ## Organização do trabalho
 
-O projeto é tocado por frentes de trabalho (agentes) com focos diferentes:
+O projeto é tocado por frentes de trabalho com focos diferentes, cada uma numa conversa própria do projeto no Claude:
 
 | Frente | Responsabilidade |
 |--------|------------------|
@@ -38,7 +38,7 @@ O projeto é tocado por frentes de trabalho (agentes) com focos diferentes:
 | Rating e Lichess | Medição de rating contra adversários calibrados, integração com a API de bots do Lichess |
 | Documentação | Este README e o relatório em `docs/`, atualizados a cada alteração concluída |
 
-A definição do agente de documentação está em [.claude/agents/documentador.md](.claude/agents/documentador.md).
+Por enquanto só a frente de documentação tem um agente definido no repositório, em [.claude/agents/documentador.md](.claude/agents/documentador.md).
 
 ## Estrutura do repositório
 
