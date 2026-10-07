@@ -5,7 +5,7 @@
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-**Último commit do `main` coberto:** `a3fb223`
+**Último commit do `main` coberto:** `d047ba3`
 
 Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
@@ -16,7 +16,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | # | Etapa | Status | Progresso |
 |---|-------|--------|-----------|
 | 0 | Base do projeto (repositório, documentação, frentes de trabalho) | Em andamento | Repositório e documentação no `main` |
-| 1 | Jogo de xadrez com regras validadas | Em andamento | Motor completo em revisão no [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2); falta o merge |
+| 1 | Jogo de xadrez com regras validadas | **Concluída** | Motor mergeado no `main` pelo [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) |
 | 2 | Luna: IA evolutiva com algoritmo genético | Em andamento | Primeira versão em revisão no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (rascunho) |
 | 3 | Self-play paralelo e seleção de descendentes | Em andamento | Laço evolutivo paralelo no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); falta definir a aptidão sem mate |
 | 4 | Medição de rating (meta ~1600) | Em andamento | Estimador de rating em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) |
@@ -30,6 +30,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 |------|-----------|-------|------------|
 | 2026-10-07 | Repositório criado (vazio) | 0 | — |
 | 2026-10-07 | README, relatório de status, referências e agente de documentação | 0 | Primeiro commit do `main` |
+| 2026-10-07 | Motor de xadrez com todas as regras, FEN, SAN, PGN e jogo no terminal | 1 | [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) |
 
 ---
 
@@ -49,24 +50,24 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 
 **Critério de pronto:** um humano consegue jogar uma partida completa, e todas as regras passam em testes automatizados, incluindo contagem de nós por *perft* em posições de referência.
 
-Em revisão no [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) (pacote `chess_engine/`, Python puro; interface descrita em `chess_engine/API.md`). Os itens marcados `[~]` estão no PR e passam a `[x]` quando ele for mergeado.
+**Concluída em 2026-10-07** com o merge do [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) (pacote `chess_engine/`, Python puro; interface descrita em `chess_engine/API.md`). No `main`, `pytest chess_engine` passa com 97 testes (7 pulados: os lentos e os que comparam com `python-chess`, que precisa estar instalado).
 
-- [~] Representação do tabuleiro e das peças
-- [~] Leitura e escrita de posições em FEN, com validação de FEN inválida (inclusive roque sem rei ou torre)
-- [~] Geração de lances de todas as peças
-- [~] Roque (curto e longo, com todas as restrições)
-- [~] Captura *en passant*
-- [~] Promoção de peão
-- [~] Filtro de lances legais (não deixar o próprio rei em xeque)
-- [~] Detecção de xeque, xeque-mate e afogamento
-- [~] Empates: repetição tripla e quíntupla, regras dos 50 e 75 lances, material insuficiente
-- [~] `play_game` com contagem de lances e de xeques por cor, usada na aptidão da Luna
-- [~] Testes de *perft* em 21 posições de referência
-- [~] 300 partidas aleatórias comparadas com `python-chess`, sem divergência (406 testes passando)
-- [~] Notação algébrica (SAN): `san()`, `parse_san()`, `push_san()`
-- [~] Exportação de partidas em PGN (`to_pgn`, `GameResult.pgn`), lida sem erros pelo `python-chess`
-- [~] Contadores de `play_game` contam só a própria partida (correção da revisão de código)
-- [~] Jogo no terminal: `python -m chess_engine`
+- [x] Representação do tabuleiro e das peças
+- [x] Leitura e escrita de posições em FEN, com validação de FEN inválida (inclusive roque sem rei ou torre)
+- [x] Geração de lances de todas as peças
+- [x] Roque (curto e longo, com todas as restrições)
+- [x] Captura *en passant*
+- [x] Promoção de peão
+- [x] Filtro de lances legais (não deixar o próprio rei em xeque)
+- [x] Detecção de xeque, xeque-mate e afogamento
+- [x] Empates: repetição tripla e quíntupla, regras dos 50 e 75 lances, material insuficiente
+- [x] `play_game` com contagem de lances e de xeques por cor, usada na aptidão da Luna
+- [x] Testes de *perft* em 21 posições de referência
+- [x] 300 partidas aleatórias comparadas com `python-chess`, sem divergência (406 testes passando)
+- [x] Notação algébrica (SAN): `san()`, `parse_san()`, `push_san()`
+- [x] Exportação de partidas em PGN (`to_pgn`, `GameResult.pgn`), lida sem erros pelo `python-chess`
+- [x] Contadores de `play_game` contam só a própria partida (correção da revisão de código)
+- [x] Jogo no terminal: `python -m chess_engine`
 
 ### Etapa 2 — Luna: IA evolutiva com algoritmo genético
 
@@ -172,3 +173,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | PR #2 corrigiu os achados da revisão e ganhou exportação PGN |
 | 2026-10-07 | PR #1 passou a gravar as partidas de cada geração em PGN |
 | 2026-10-07 | PR #1 ganhou versões nomeadas da Luna; treino de 600 partidas registrado |
+| 2026-10-07 | PR #2 mergeado: etapa 1 concluída |
