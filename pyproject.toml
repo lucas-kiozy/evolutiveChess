@@ -11,14 +11,15 @@ dependencies = []
 
 [project.optional-dependencies]
 luna = ["chess>=1.10"]
-dev = ["pytest>=8", "ruff>=0.6", "chess>=1.10"]
+lichess = ["chess>=1.10", "requests>=2.28"]
+dev = ["pytest>=8", "ruff>=0.6", "chess>=1.10", "requests>=2.28"]
 
 [tool.setuptools.packages.find]
-include = ["chess_engine*", "luna*", "lichess_bot*"]
+include = ["chess_engine*", "luna*", "rating*", "lichess_bot*"]
 exclude = ["*.tests*"]
 
 [tool.pytest.ini_options]
-testpaths = ["chess_engine/tests", "luna/tests"]
+testpaths = ["chess_engine/tests", "luna/tests", "rating/tests", "lichess_bot/tests"]
 addopts = "-q"
 
 [tool.ruff]
