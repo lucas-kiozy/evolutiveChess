@@ -19,13 +19,19 @@ O detalhamento de cada etapa, com backlog e critérios de pronto, está em [docs
 
 ## Critério de aptidão da Luna
 
-Definido pelo Lucas para escolher os melhores descendentes:
+Definido pelo Lucas para escolher os melhores descendentes. Cada partida dá pontos à Luna, e os pontos são somados em todas as partidas da geração:
 
-1. **Vitória com menos jogadas:** vence a Luna que precisou de menos lances para dar xeque-mate.
-2. **Desempate:** se o critério acima empatar, vence a Luna que deu **menos xeques** durante a partida.
+| Resultado | Pontos |
+|-----------|--------|
+| Vitória (xeque-mate) | +5 |
+| Empate | +2 |
+| Derrota | -1 |
 
-3. **Partidas sem mate:** num empate, a Luna soma pontos pelo material que capturou: peão +0,1, cavalo +0,3, bispo +0,4, torre +0,6, dama +2.
-4. **Derrota:** cada derrota recebe -5 pontos, e a Luna mantém os pontos do material que capturou.
+Se duas Lunas empatarem na soma, os desempates são, nesta ordem:
+
+1. **Mais pontos de captura** em empates e derrotas: peão 0,1, cavalo 0,3, bispo 0,4, torre 0,6, dama 2.
+2. **Menos xeques nas vitórias:** o ideal é vencer sendo objetivo no ataque.
+3. **Menos lances até o xeque-mate.**
 
 ## Organização do trabalho
 

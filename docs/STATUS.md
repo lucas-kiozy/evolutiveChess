@@ -142,6 +142,8 @@ Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pa
 | 2026-10-07 | O primeiro commit (documentação) foi direto no `main`; o resto segue por PR | Lucas |
 | 2026-10-07 | Aptidão em partidas sem mate: empate pontua pelo material capturado (peão +0,1, cavalo +0,3, bispo +0,4, torre +0,6, dama +2); cada derrota recebe -5 | Lucas |
 | 2026-10-07 | Na derrota, a Luna mantém os pontos do material capturado: derrota = -5 + material | Lucas |
+| 2026-10-07 | Régua de aptidão por partida, somada na geração: vitória +5, empate +2, derrota -1 (substitui o -5). Vitória vale sempre mais que empate. Entre vitórias, melhor é a com menos xeques ("ser mais objetivo no ataque"); desempates na ordem: pontos de captura, menos xeques nas vitórias, menos lances até o mate | Lucas |
+| 2026-10-07 | Atualizações da documentação vão direto no `main`, sem PR | Lucas |
 
 ---
 
@@ -149,11 +151,10 @@ Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pa
 
 Pontos que precisam de decisão do Lucas ou da frente responsável antes ou durante a implementação:
 
-1. **Vitória contra empate.** Assumido como padrão que qualquer vitória fica acima de qualquer empate, mesmo um empate com muitas capturas. Falta confirmação do Lucas.
-2. **Número de mates contra média de lances.** Hoje a Luna é ordenada pela média de lances até o mate, sem contar quantos mates deu: 1 mate em 30 lances fica à frente de 4 mates em 31. Contar primeiro o número de mates e depois a média? (apontado na revisão de código)
-3. **Motor de regras próprio ou biblioteca.** Implementar as regras do zero ou usar uma biblioteca consolidada como [`python-chess`](https://python-chess.readthedocs.io/) como referência de validação. Por enquanto a Luna usa `python-chess` como adaptador provisório, isolado em `luna/game_interface.py`, para trocar pelo motor próprio quando ele ficar pronto.
-4. **Como medir "rating equivalente a 1600".** Proposta no PR #4: partidas contra Stockfish com Elo limitado e liberação quando o limite inferior do intervalo de confiança de 90% chegar a 1600. Vira decisão quando o PR for mergeado.
-5. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
+1. **Capturas: desempate ou soma.** Na régua 5/2/-1, a frente da Luna deixou os pontos de captura só como desempate, porque somados um empate com muitas capturas (até 7,4) passaria de uma vitória (5). Falta o Lucas confirmar.
+2. **Motor de regras próprio ou biblioteca.** Resolvido: o motor próprio (`chess_engine`) está no `main`; `python-chess` fica só como referência nos testes. Falta tornar `chess_engine` o backend padrão da Luna (PR #1).
+3. **Como medir "rating equivalente a 1600".** Proposta no PR #4: partidas contra Stockfish com Elo limitado e liberação quando o limite inferior do intervalo de confiança de 90% chegar a 1600. Vira decisão quando o PR for mergeado.
+4. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
 
 ---
 
@@ -174,3 +175,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | PR #1 passou a gravar as partidas de cada geração em PGN |
 | 2026-10-07 | PR #1 ganhou versões nomeadas da Luna; treino de 600 partidas registrado |
 | 2026-10-07 | PR #2 mergeado: etapa 1 concluída |
+| 2026-10-07 | Lucas definiu a régua 5/2/-1; PR #1 aplicou; decisões em aberto renumeradas |
