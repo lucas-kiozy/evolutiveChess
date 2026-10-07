@@ -2,7 +2,7 @@
 
 Um jogo de xadrez em Python com uma inteligência evolutiva chamada **Luna**. A Luna aprende jogando contra outras Lunas, em várias partidas em paralelo, e cada geração seleciona os melhores descendentes por algoritmo genético. Quando a Luna atingir rating equivalente a ~1600, ela passa a jogar no [Lichess](https://lichess.org/), uma partida por vez, e continua se aperfeiçoando.
 
-> **Status atual:** a primeira versão da Luna está em revisão no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1). O motor de xadrez, com todas as regras, está em revisão no [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2).
+> **Status atual:** a primeira versão da Luna está em revisão no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1). O motor de xadrez, com todas as regras, está em revisão no [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2), e a medição de rating com o bot do Lichess no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4).
 > O relatório completo do que já foi feito e do que falta está em [docs/STATUS.md](docs/STATUS.md).
 
 ## Etapas do projeto
@@ -12,8 +12,8 @@ Um jogo de xadrez em Python com uma inteligência evolutiva chamada **Luna**. A 
 | 1 | Jogo de xadrez funcional com todas as regras validadas | Em andamento ([PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2)) |
 | 2 | Luna: IA evolutiva com algoritmo genético | Em andamento ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)) |
 | 3 | Self-play paralelo: Luna contra Luna, seleção dos melhores descendentes | Em andamento ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)) |
-| 4 | Medição de rating (meta: ~1600) | Não iniciada |
-| 5 | Luna jogando no Lichess, partida a partida, e evoluindo | Não iniciada |
+| 4 | Medição de rating (meta: ~1600) | Em andamento ([PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4)) |
+| 5 | Luna jogando no Lichess, partida a partida, e evoluindo | Em andamento ([PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4)) |
 
 O detalhamento de cada etapa, com backlog e critérios de pronto, está em [docs/STATUS.md](docs/STATUS.md).
 

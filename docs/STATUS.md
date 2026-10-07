@@ -17,8 +17,8 @@ Legenda: `[x]` concluído · `[~]` em andamento · `[ ]` não iniciado
 | 1 | Jogo de xadrez com regras validadas | Em andamento | Motor completo em revisão no [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2); falta o merge |
 | 2 | Luna: IA evolutiva com algoritmo genético | Em andamento | Primeira versão em revisão no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (rascunho) |
 | 3 | Self-play paralelo e seleção de descendentes | Em andamento | Laço evolutivo paralelo no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); falta definir a aptidão sem mate |
-| 4 | Medição de rating (meta ~1600) | Não iniciada | 0% |
-| 5 | Luna jogando no Lichess | Não iniciada | 0% |
+| 4 | Medição de rating (meta ~1600) | Em andamento | Estimador de rating em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) |
+| 5 | Luna jogando no Lichess | Em andamento | Bot do Lichess em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4); falta conta BOT e ligar a Luna |
 
 ---
 
@@ -100,19 +100,28 @@ Em andamento no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (r
 
 **Critério de pronto:** o rating estimado da melhor Luna é calculado de forma reprodutível, com intervalo de confiança, contra adversários de força conhecida.
 
-- [ ] Escolher adversários de referência com força calibrada (por exemplo, Stockfish com nível ou Elo limitado)
-- [ ] Rodar séries de partidas da melhor Luna de cada geração contra esses adversários
-- [ ] Estimar o rating (Elo ou Glicko-2) com intervalo de confiança
-- [ ] Gatilho: quando o rating estimado atingir ~1600, liberar a etapa 5
+Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pacote `rating/`, guia em `rating/GUIA.md`). Os itens `[~]` passam a `[x]` quando ele for mergeado.
+
+- [~] Adversário de referência: Stockfish com `UCI_Elo` calibrado (piso de 1320, o mínimo do Stockfish)
+- [~] Séries de partidas em paralelo contra esse adversário
+- [~] Estimativa do rating por máxima verossimilhança no modelo de Elo, com intervalo de confiança de 90%
+- [~] Critério "pronta para o Lichess": limite inferior do IC 90% maior ou igual a 1600
+- [~] Interface comum de jogador: `choose_move(fen, lances_uci) -> uci`
+- [ ] Ligar a Luna real ao estimador (adaptador curto, exemplo em `rating/GUIA.md`)
+- [ ] Medir a melhor Luna de cada geração
 
 ### Etapa 5 — Luna jogando no Lichess
 
 **Critério de pronto:** a Luna joga partidas no Lichess por uma conta BOT, uma partida por vez, e continua evoluindo com os resultados.
 
-- [ ] Criar conta BOT no Lichess e token de API (guardado fora do repositório)
-- [ ] Integração com a API de bots do Lichess (aceitar desafios, receber o estado da partida, enviar lances)
-- [ ] Jogar uma partida por vez, em sequência
-- [ ] Usar os resultados das partidas online para continuar a evolução
+Em revisão no [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4) (pacote `lichess_bot/`, guia em `lichess_bot/GUIA.md`).
+
+- [~] Integração com a Bot API oficial do Lichess
+- [~] Uma partida por vez, em sequência
+- [~] Cada partida gravada em `lichess_bot/runs/`, com gancho `on_game_finished` para o aprendizado
+- [ ] **Lucas:** criar a conta BOT e o token de API quando a Luna chegar a ~1600 (o token fica fora do repositório)
+- [ ] Ligar a Luna real ao bot
+- [ ] Definir como a Luna aprende com as partidas do Lichess (ver "Decisões em aberto", item 5)
 - [ ] Acompanhar o rating da Luna no Lichess ao longo do tempo
 
 ---
@@ -124,7 +133,8 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 1. **Como ranquear Lunas que não dão mate.** O critério atual cobra vitórias (menos lances até o mate) com desempate por menos xeques. Ainda não está definido quanto vale um empate (afogamento, repetição, 50 lances, material insuficiente) nem uma partida interrompida pelo limite de lances. Isso já é bloqueante: na primeira medição do PR #1, com busca de profundidade 2, houve **0 mates em 8 partidas**, então sem essa regra a seleção não distingue as Lunas.
 2. **Pontuação de derrotas.** Se uma Luna perde, ela recebe aptidão zero ou ganha algo por ter resistido mais lances?
 3. **Motor de regras próprio ou biblioteca.** Implementar as regras do zero ou usar uma biblioteca consolidada como [`python-chess`](https://python-chess.readthedocs.io/) como referência de validação. Por enquanto a Luna usa `python-chess` como adaptador provisório, isolado em `luna/game_interface.py`, para trocar pelo motor próprio quando ele ficar pronto.
-4. **Como medir "rating equivalente a 1600".** Rating Elo/Glicko contra quais adversários de referência, com quantas partidas.
+4. **Como medir "rating equivalente a 1600".** Proposta no PR #4: partidas contra Stockfish com Elo limitado e liberação quando o limite inferior do intervalo de confiança de 90% chegar a 1600. Vira decisão quando o PR for mergeado.
+5. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
 
 ---
 
@@ -135,3 +145,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | Criação do relatório com as etapas definidas pelo Lucas e o backlog inicial |
 | 2026-10-07 | Etapas 2 e 3 em andamento com o PR #1 (Luna); decisão sobre partidas sem mate passa a ser bloqueante |
 | 2026-10-07 | Etapa 1 em revisão com o PR #2 (motor de xadrez com todas as regras) |
+| 2026-10-07 | Etapas 4 e 5 em revisão com o PR #4 (estimador de rating e bot do Lichess) |
