@@ -14,7 +14,7 @@ Legenda: `[x]` concluído · `[~]` em andamento · `[ ]` não iniciado
 | # | Etapa | Status | Progresso |
 |---|-------|--------|-----------|
 | 0 | Base do projeto (repositório, documentação, frentes de trabalho) | Em andamento | Repositório e documentação no `main` |
-| 1 | Jogo de xadrez com regras validadas | Em andamento | Motor em desenvolvimento (pacote `chess_engine/`), ainda sem PR mergeado |
+| 1 | Jogo de xadrez com regras validadas | Em andamento | Motor completo em revisão no [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2); falta o merge |
 | 2 | Luna: IA evolutiva com algoritmo genético | Em andamento | Primeira versão em revisão no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (rascunho) |
 | 3 | Self-play paralelo e seleção de descendentes | Em andamento | Laço evolutivo paralelo no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); falta definir a aptidão sem mate |
 | 4 | Medição de rating (meta ~1600) | Não iniciada | 0% |
@@ -47,18 +47,21 @@ Legenda: `[x]` concluído · `[~]` em andamento · `[ ]` não iniciado
 
 **Critério de pronto:** um humano consegue jogar uma partida completa, e todas as regras passam em testes automatizados, incluindo contagem de nós por *perft* em posições de referência.
 
-- [ ] Representação do tabuleiro e das peças
-- [ ] Leitura e escrita de posições em FEN
-- [ ] Geração de lances de todas as peças
-- [ ] Roque (curto e longo, com todas as restrições: rei/torre não movidos, casas livres, sem passar por xeque)
-- [ ] Captura *en passant*
-- [ ] Promoção de peão (dama, torre, bispo, cavalo)
-- [ ] Filtro de lances legais (não deixar o próprio rei em xeque)
-- [ ] Detecção de xeque, xeque-mate e afogamento
-- [ ] Empates: repetição tripla, regra dos 50 lances, material insuficiente
-- [ ] Registro de partidas em notação algébrica (SAN) e exportação em PGN
-- [ ] Testes de *perft* contra valores de referência publicados
-- [ ] Interface para jogar (terminal, no mínimo)
+Em revisão no [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) (pacote `chess_engine/`, Python puro; interface descrita em `chess_engine/API.md`). Os itens marcados `[~]` estão no PR e passam a `[x]` quando ele for mergeado.
+
+- [~] Representação do tabuleiro e das peças
+- [~] Geração de lances de todas as peças
+- [~] Roque (curto e longo, com todas as restrições)
+- [~] Captura *en passant*
+- [~] Promoção de peão
+- [~] Filtro de lances legais (não deixar o próprio rei em xeque)
+- [~] Detecção de xeque, xeque-mate e afogamento
+- [~] Empates: repetição tripla e quíntupla, regras dos 50 e 75 lances, material insuficiente
+- [~] `play_game` com contagem de lances e de xeques por cor, usada na aptidão da Luna
+- [~] Testes de *perft* em 21 posições de referência
+- [~] 300 partidas aleatórias comparadas com `python-chess`, sem divergência
+- [~] Jogo no terminal: `python -m chess_engine`
+- [ ] Integração contínua (GitHub Actions) rodando os testes a cada PR
 
 ### Etapa 2 — Luna: IA evolutiva com algoritmo genético
 
@@ -131,3 +134,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 |------|-------------|
 | 2026-10-07 | Criação do relatório com as etapas definidas pelo Lucas e o backlog inicial |
 | 2026-10-07 | Etapas 2 e 3 em andamento com o PR #1 (Luna); decisão sobre partidas sem mate passa a ser bloqueante |
+| 2026-10-07 | Etapa 1 em revisão com o PR #2 (motor de xadrez com todas as regras) |
