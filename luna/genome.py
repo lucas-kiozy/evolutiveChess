@@ -65,7 +65,9 @@ class Genome:
 
     @classmethod
     def from_dict(cls, data: dict) -> "Genome":
-        return cls(dict(data["genes"]), id=data.get("id", ""), parents=tuple(data.get("parents", ())))
+        return cls(
+            dict(data["genes"]), id=data.get("id", ""), parents=tuple(data.get("parents", ()))
+        )
 
 
 def clip(name: str, value: float) -> float:

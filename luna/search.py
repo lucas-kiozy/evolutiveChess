@@ -86,7 +86,9 @@ class Searcher:
         """Empate visto do lado a jogar no nó: ruim para a raiz, bom para o adversário."""
         return -self.config.contempt if ply % 2 == 0 else self.config.contempt
 
-    def _quiescence(self, state: GameState, alpha: float, beta: float, ply: int, qdepth: int) -> float:
+    def _quiescence(
+        self, state: GameState, alpha: float, beta: float, ply: int, qdepth: int
+    ) -> float:
         stand_pat = evaluate(state, self.genome)
         if qdepth <= 0 or stand_pat >= beta:
             return stand_pat

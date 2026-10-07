@@ -75,7 +75,9 @@ def test_same_game_with_evolved_genomes(seed):
     white, black = Genome.random(rng, id="w"), Genome.random(rng, id="b")
     records = []
     for name in BACKENDS:
-        cfg = MatchConfig(search=SearchConfig(depth=1, quiescence_depth=2, noise=5), max_plies=80, backend=name)
+        cfg = MatchConfig(
+            search=SearchConfig(depth=1, quiescence_depth=2, noise=5), max_plies=80, backend=name
+        )
         records.append(play_game(white, black, cfg, seed=seed).to_dict())
     assert records[0] == records[1]
 
@@ -98,6 +100,8 @@ def test_backends_agree_along_random_games():
 def test_same_game_on_both_backends():
     records = []
     for name in BACKENDS:
-        cfg = MatchConfig(search=SearchConfig(depth=1, quiescence_depth=2), max_plies=40, backend=name)
+        cfg = MatchConfig(
+            search=SearchConfig(depth=1, quiescence_depth=2), max_plies=40, backend=name
+        )
         records.append(play_game(Genome.reference(id="w"), Genome.reference(id="b"), cfg, seed=5))
     assert records[0].to_dict() == records[1].to_dict()

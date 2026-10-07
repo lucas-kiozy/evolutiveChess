@@ -58,7 +58,9 @@ def main(argv: list[str] | None = None) -> None:
     if args.command == "export":
         from luna.versions import export_version
 
-        path = export_version(args.run_dir, args.name, args.generation, args.notes, overwrite=args.overwrite)
+        path = export_version(
+            args.run_dir, args.name, args.generation, args.notes, overwrite=args.overwrite
+        )
         print(f"Versão salva em {path}")
         return
     if args.command == "versions":
@@ -66,7 +68,9 @@ def main(argv: list[str] | None = None) -> None:
 
         for v in list_versions():
             src = v.source
-            print(f"{v.name}: geração {src.get('generation')} de {src.get('run_dir')} ({v.created})")
+            print(
+                f"{v.name}: geração {src.get('generation')} de {src.get('run_dir')} ({v.created})"
+            )
         return
     if args.command == "train":
         config = EvolutionConfig(
