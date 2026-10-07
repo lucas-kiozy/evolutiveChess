@@ -9,7 +9,7 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass, field
 from typing import Callable, Optional
 
-from luna.fitness import FALLBACKS, collect_stats, rank
+from luna.fitness import collect_stats, rank
 from luna.genome import Genome, crossover, mutate
 from luna.match import GameRecord, MatchConfig, play_game
 from luna.pgn import games_to_pgn
@@ -27,7 +27,6 @@ class EvolutionConfig:
     rounds: int = 2  # rodadas por geração; cada rodada = 2 partidas por Luna (cores trocadas)
     workers: int = 0  # 0 = número de CPUs
     seed: int = 42
-    fallback: str = "captures"  # pontuação de empates e derrotas; ver fitness.py
     match: MatchConfig = field(default_factory=MatchConfig)
 
     def __post_init__(self) -> None:
@@ -35,8 +34,6 @@ class EvolutionConfig:
             raise ValueError("population deve ser par e >= 2")
         if not 0 <= self.elite < self.population:
             raise ValueError("elite deve estar entre 0 e population - 1")
-        if self.fallback not in FALLBACKS:
-            raise ValueError(f"fallback deve ser um de {FALLBACKS}")
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -44,6 +41,7 @@ class EvolutionConfig:
     @classmethod
     def from_dict(cls, d: dict) -> "EvolutionConfig":
         d = dict(d)
+        d.pop("fallback", None)  # opção antiga, substituída pela régua 5/2/-1
         m = dict(d.pop("match", {}))
         m["search"] = SearchConfig(**m.get("search", {}))
         return cls(match=MatchConfig(**m), **d)
@@ -129,6 +127,9 @@ def summarize(generation: int, ranked_ids: list[str], stats: dict, records: list
         "mean_checks_per_game": sum(r.white_checks + r.black_checks for r in records) / max(1, len(records)),
         "terminations": terminations,
         "best_id": ranked_ids[0],
+        "best_result_points": best.result_points,
+        "best_record": [best.wins, best.draws, best.losses],
+        "best_mean_win_checks": best.mean_win_checks,
         "best_mean_mate_moves": best.mean_mate_moves,
         "best_checks_per_game": best.checks_per_game,
         "seconds": round(seconds, 2),
@@ -164,7 +165,7 @@ def evolve(
             t0 = time.perf_counter()
             records = play_generation(population, config, generation, executor)
             stats = collect_stats(records)
-            ranked_ids = rank(stats, config.fallback)
+            ranked_ids = rank(stats)
             by_id = {g.id: g for g in population}
             ranked = [by_id[i] for i in ranked_ids]
             summary = summarize(generation, ranked_ids, stats, records, time.perf_counter() - t0)
@@ -195,8 +196,9 @@ def evolve(
             log(
                 f"Geração {generation}: {summary['games']} partidas, "
                 f"mates {summary['mate_rate']:.0%}, melhor {summary['best_id']} "
-                f"(mate médio {summary['best_mean_mate_moves']}, "
-                f"xeques/partida {summary['best_checks_per_game']:.2f}) em {summary['seconds']}s"
+                f"({summary['best_result_points']:g} pontos, V/E/D {summary['best_record']}, "
+                f"xeques por vitória {summary['best_mean_win_checks']}, "
+                f"mate médio {summary['best_mean_mate_moves']}) em {summary['seconds']}s"
             )
     finally:
         if executor is not None:

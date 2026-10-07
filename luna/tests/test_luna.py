@@ -98,49 +98,51 @@ def test_crossover_takes_genes_from_parents():
         assert child.genes[n] in (a.genes[n], b.genes[n])
 
 
-def test_fitness_follows_lucas_criterion():
+def test_result_scale_decides_first():
     records = [
-        record("rapida", "x", "white", mate_moves=20, wc=5),
-        record("lenta", "y", "white", mate_moves=40, wc=0),
-        record("rapida_calma", "z", "white", mate_moves=20, wc=1),
-        record("sem_mate", "w", None),
-    ]
-    order = rank(collect_stats(records))
-    # Menos lances até o mate primeiro; empate decidido por menos xeques.
-    assert order.index("rapida_calma") < order.index("rapida") < order.index("lenta")
-    assert order.index("lenta") < order.index("sem_mate")
-
-
-def test_mate_tiebreak_uses_checks_of_mating_games():
-    records = [
-        # Mesmo mate em 20; "a" deu mais xeques no total, mas menos na partida do mate.
-        record("a", "x", "white", mate_moves=20, wc=1),
-        record("y", "a", None, bc=9),
-        record("b", "z", "white", mate_moves=20, wc=2),
-    ]
-    order = rank(collect_stats(records))
-    assert order.index("a") < order.index("b")
-
-
-def test_draw_and_loss_scoring():
-    records = [
-        # "comeu_dama" empata tendo capturado uma dama: 2,0
-        record("comeu_dama", "a", None, wcap={"Q": 1}),
-        # "comeu_pecas" empata com torre + bispo + 2 peões: 0,6 + 0,4 + 0,2 = 1,2
-        record("comeu_pecas", "b", None, wcap={"R": 1, "B": 1, "P": 2}),
-        # "perdeu" capturou uma dama mas levou mate: 2 - 5 = -3
-        record("c", "perdeu", "white", mate_moves=30, bcap={"Q": 1}),
+        # "vence_perde": 5 - 1 = 4; "dois_empates": 2 + 2 = 4; "vence_tudo": 10
+        record("vence_perde", "x", "white", mate_moves=30),
+        record("y", "vence_perde", "white", mate_moves=30),
+        record("dois_empates", "z", None, wcap={"Q": 1}),
+        record("w", "dois_empates", None),
+        record("vence_tudo", "a", "white", mate_moves=40, wc=9),
+        record("b", "vence_tudo", "black", mate_moves=40, bc=9),
     ]
     stats = collect_stats(records)
-    assert stats["comeu_dama"].mean_non_win_points == pytest.approx(2.0)
-    assert stats["comeu_pecas"].mean_non_win_points == pytest.approx(1.2)
-    assert stats["perdeu"].mean_non_win_points == pytest.approx(-3.0)
+    assert stats["vence_perde"].result_points == 4
+    assert stats["dois_empates"].result_points == 4
+    assert stats["vence_tudo"].result_points == 10
     order = rank(stats)
-    # Quem deu mate continua na frente; depois, mais pontos de empate/derrota.
-    assert order[0] == "c"
-    assert order.index("comeu_dama") < order.index("comeu_pecas") < order.index("perdeu")
-    # No modo puro só os xeques contam entre quem não deu mate (aqui todos zero).
-    assert rank(stats, "pure")[0] == "c"
+    assert order[0] == "vence_tudo"
+    # Mesma soma na régua: desempata pelos pontos de captura (dama = 2).
+    assert order.index("dois_empates") < order.index("vence_perde")
+
+
+def test_win_always_beats_draw_with_many_captures():
+    everything = {"P": 8, "N": 2, "B": 2, "R": 2, "Q": 1}
+    records = [
+        record("venceu", "x", "white", mate_moves=60, wc=30),
+        record("empatou", "y", None, wcap=everything),
+    ]
+    assert rank(collect_stats(records))[0] == "venceu"
+
+
+def test_captures_count_in_losses():
+    records = [record("c", "perdeu", "white", mate_moves=30, bcap={"Q": 1, "P": 2})]
+    s = collect_stats(records)["perdeu"]
+    assert s.result_points == -1
+    assert s.capture_points == pytest.approx(2.2)
+
+
+def test_wins_tiebreak_fewer_checks_then_fewer_moves():
+    records = [
+        record("objetiva", "x", "white", mate_moves=40, wc=1),
+        record("rapida", "y", "white", mate_moves=20, wc=6),
+        record("rapida_calma", "z", "white", mate_moves=20, wc=1),
+    ]
+    order = [i for i in rank(collect_stats(records)) if i in ("objetiva", "rapida", "rapida_calma")]
+    # Menos xeques primeiro; com xeques iguais, menos lances até o mate.
+    assert order == ["rapida_calma", "objetiva", "rapida"]
 
 
 def test_game_records_captures():
