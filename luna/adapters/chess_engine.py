@@ -80,10 +80,7 @@ class ChessEngineGame:
         return self._board.gives_check(move)
 
     def is_repetition(self) -> bool:
-        board = self._board
-        # ``repetitions()`` público foi pedido ao motor; até lá usa o interno.
-        count = board.repetitions() if hasattr(board, "repetitions") else board._repetitions()
-        return count >= 2
+        return self._board.repetitions() >= 2
 
     def outcome(self, claim_draw: bool = True) -> Optional[Outcome]:
         result = self._board.outcome(claim_draw=claim_draw)
