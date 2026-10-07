@@ -12,7 +12,7 @@ Empates e derrotas (``fallback="captures"``, o padrão):
 Agregação sobre as várias partidas de uma geração:
 - Lunas que deram pelo menos um mate vêm antes das demais e são ordenadas pela
   menor média de lances até o mate, com desempate pela menor média de xeques
-  por partida.
+  dados nas partidas que terminaram com o mate dela.
 - As demais são ordenadas pela maior média de pontos nas partidas sem vitória,
   com o mesmo desempate por xeques.
 
@@ -45,12 +45,17 @@ class Stats:
     losses: int = 0
     mates: int = 0
     mate_moves: list[int] = field(default_factory=list)
+    mate_checks: list[int] = field(default_factory=list)  # xeques dados em cada partida vencida
     checks_given: int = 0
     non_win_points: float = 0.0  # soma da pontuação de empates e derrotas
 
     @property
     def mean_mate_moves(self) -> float | None:
         return sum(self.mate_moves) / len(self.mate_moves) if self.mate_moves else None
+
+    @property
+    def mean_mate_checks(self) -> float | None:
+        return sum(self.mate_checks) / len(self.mate_checks) if self.mate_checks else None
 
     @property
     def checks_per_game(self) -> float:
@@ -64,6 +69,7 @@ class Stats:
     def to_dict(self) -> dict:
         d = asdict(self)
         d["mean_mate_moves"] = self.mean_mate_moves
+        d["mean_mate_checks"] = self.mean_mate_checks
         d["checks_per_game"] = self.checks_per_game
         d["mean_non_win_points"] = self.mean_non_win_points
         return d
@@ -75,13 +81,15 @@ def collect_stats(records: Iterable[GameRecord]) -> dict[str, Stats]:
         for color, ident in (("white", r.white_id), ("black", r.black_id)):
             s = stats.setdefault(ident, Stats())
             s.games += 1
-            s.checks_given += r.white_checks if color == "white" else r.black_checks
+            checks = r.white_checks if color == "white" else r.black_checks
+            s.checks_given += checks
             captures = r.white_captures if color == "white" else r.black_captures
             if r.winner == color:
                 s.wins += 1
                 if r.mate_moves is not None:
                     s.mates += 1
                     s.mate_moves.append(r.mate_moves)
+                    s.mate_checks.append(checks)
             elif r.winner is None:
                 s.draws += 1
                 s.non_win_points += capture_score(captures)
@@ -96,7 +104,7 @@ def sort_key(s: Stats, fallback: str = "captures") -> tuple:
     if fallback not in FALLBACKS:
         raise ValueError(f"fallback deve ser um de {FALLBACKS}")
     if s.mates:
-        return (0, s.mean_mate_moves, s.checks_per_game)
+        return (0, s.mean_mate_moves, s.mean_mate_checks)
     if fallback == "captures":
         return (1, -s.mean_non_win_points, s.checks_per_game)
     return (1, 0.0, s.checks_per_game)

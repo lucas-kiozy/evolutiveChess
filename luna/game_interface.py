@@ -28,7 +28,9 @@ class Outcome:
     """Resultado de uma partida terminada."""
 
     winner: Optional[bool]  # True = brancas, False = pretas, None = empate
-    termination: str  # "checkmate", "stalemate", "repetition", "fifty_moves", ...
+    # Um de: "checkmate", "stalemate", "insufficient_material", "seventyfive_moves",
+    # "fivefold_repetition", "fifty_moves", "threefold_repetition".
+    termination: str
 
 
 @runtime_checkable
@@ -69,16 +71,19 @@ class GameState(Protocol):
     def gives_check(self, move: Move) -> bool: ...
 
     def is_repetition(self) -> bool:
-        """A posição atual já apareceu antes nesta partida?"""
+        """A posição atual (peças, vez, roques e en passant) já apareceu pelo menos
+        uma vez antes nesta partida, contando o histórico anterior à busca?"""
 
     def outcome(self, claim_draw: bool = True) -> Optional[Outcome]:
-        """Resultado se a partida acabou, senão None."""
+        """Resultado se a partida acabou, senão None. Com ``claim_draw`` os empates
+        por 50 lances e tripla repetição encerram a partida."""
 
     def pieces(self) -> Iterable[tuple[int, str, bool]]:
         """(casa, peça, é_branca) para cada peça no tabuleiro."""
 
     def mobility(self, white: bool) -> int:
-        """Quantidade de casas atacadas pelas peças da cor que não estão
-        ocupadas por peças da mesma cor (aproximação pseudo-legal barata)."""
+        """Soma, para cavalos, bispos, torres e damas da cor (peões e rei ficam de
+        fora), das casas que cada peça ataca e não estão ocupadas por peça da
+        mesma cor. Ignora cravadas: é uma aproximação pseudo-legal barata."""
 
     def fen(self) -> str: ...

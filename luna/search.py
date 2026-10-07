@@ -17,6 +17,7 @@ from luna.genome import Genome
 
 _ORDER_VALUE = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9, "K": 0}
 INF = float("inf")
+MAX_PLY = 1000  # escores acima de MATE_SCORE - MAX_PLY são mates
 
 
 @dataclass
@@ -43,18 +44,23 @@ class Searcher:
         moves = self._ordered(state, sorted(state.legal_moves(), key=state.uci))
         if not moves:
             return None
+        noise = self.config.noise
         best_move, best_score = moves[0], -INF
-        alpha, beta = -INF, INF
         for move in moves:
+            # Um lance só pode superar o melhor (já com ruído) se o valor real passar de
+            # best_score - noise. Abaixo desse piso o alfa-beta devolve só um limite
+            # superior, e nem o maior ruído possível o faria vencer. O ruído entra
+            # apenas na comparação, nunca em alpha, e não se aplica a mates.
+            alpha = best_score - noise
             state.push(move)
-            score = -self._negamax(state, self.config.depth - 1, -beta, -alpha, 1)
+            score = -self._negamax(state, self.config.depth - 1, -INF, -alpha, 1)
             state.pop()
-            if self.config.noise:
-                score += self.rng.uniform(-self.config.noise, self.config.noise)
+            if score <= alpha:
+                continue
+            if noise and abs(score) < MATE_SCORE - MAX_PLY:
+                score += self.rng.uniform(-noise, noise)
             if score > best_score:
                 best_move, best_score = move, score
-            if score > alpha:
-                alpha = score
         return best_move
 
     def _negamax(self, state: GameState, depth: int, alpha: float, beta: float, ply: int) -> float:

@@ -54,6 +54,24 @@ def test_search_finds_mate_in_one():
     assert state.uci(move) == "a1a8"
 
 
+@pytest.mark.parametrize("seed", range(10))
+def test_search_finds_mate_in_one_with_noise(seed):
+    for fen in ("7k/8/5K2/8/8/8/8/6Q1 w - - 0 1", "6k1/5ppp/8/8/8/8/8/R5K1 w - - 0 1"):
+        state = new_game(fen=fen)
+        searcher = Searcher(Genome.reference(), SearchConfig(depth=2, noise=50), random.Random(seed))
+        state.push(searcher.choose_move(state))
+        assert state.is_checkmate()
+
+
+def test_noise_only_picks_among_near_best_moves():
+    # Brancas podem capturar a dama preta de graça; com ruído de 20 centipeões
+    # nenhum outro lance chega perto, então a captura tem de ser escolhida.
+    state = new_game(fen="4k3/8/8/3q4/8/8/8/3RK3 w - - 0 1")
+    for seed in range(10):
+        searcher = Searcher(Genome.reference(), SearchConfig(depth=2, noise=20), random.Random(seed))
+        assert state.uci(searcher.choose_move(state)) == "d1d5"
+
+
 def test_search_prefers_shorter_mate():
     # Dama e rei contra rei: há mate em 1 (Qg7#), a busca em profundidade 3 deve escolhê-lo.
     state = new_game(fen="7k/8/5K2/8/8/8/8/6Q1 w - - 0 1")
@@ -91,6 +109,17 @@ def test_fitness_follows_lucas_criterion():
     # Menos lances até o mate primeiro; empate decidido por menos xeques.
     assert order.index("rapida_calma") < order.index("rapida") < order.index("lenta")
     assert order.index("lenta") < order.index("sem_mate")
+
+
+def test_mate_tiebreak_uses_checks_of_mating_games():
+    records = [
+        # Mesmo mate em 20; "a" deu mais xeques no total, mas menos na partida do mate.
+        record("a", "x", "white", mate_moves=20, wc=1),
+        record("y", "a", None, bc=9),
+        record("b", "z", "white", mate_moves=20, wc=2),
+    ]
+    order = rank(collect_stats(records))
+    assert order.index("a") < order.index("b")
 
 
 def test_draw_and_loss_scoring():
