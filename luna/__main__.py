@@ -37,7 +37,7 @@ def main(argv: list[str] | None = None) -> None:
     t.add_argument("--max-plies", type=int, default=200)
     t.add_argument("--opening-plies", type=int, default=2)
     t.add_argument("--backend", choices=["python-chess", "chess_engine"], default="python-chess")
-    t.add_argument("--fallback", choices=["pure", "points"], default="pure")
+    t.add_argument("--fallback", choices=["captures", "pure"], default="captures")
     t.add_argument("--workers", type=int, default=0, help="0 = número de CPUs")
     t.add_argument("--seed", type=int, default=42)
 

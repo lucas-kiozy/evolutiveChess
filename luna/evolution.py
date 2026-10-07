@@ -25,7 +25,7 @@ class EvolutionConfig:
     rounds: int = 2  # rodadas por geração; cada rodada = 2 partidas por Luna (cores trocadas)
     workers: int = 0  # 0 = número de CPUs
     seed: int = 42
-    fallback: str = "pure"  # "pure" (só o critério do Lucas) ou "points"; ver fitness.py
+    fallback: str = "captures"  # pontuação de empates e derrotas; ver fitness.py
     match: MatchConfig = field(default_factory=MatchConfig)
 
     def __post_init__(self) -> None:

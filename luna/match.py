@@ -33,6 +33,8 @@ class GameRecord:
     mate_moves: Optional[int]  # lances do vencedor até o mate; None se não houve mate
     material_balance: int  # material das brancas menos das pretas (escala 1/3/3/5/9)
     moves: list[str]
+    white_captures: dict[str, int] = field(default_factory=dict)  # peças pretas capturadas
+    black_captures: dict[str, int] = field(default_factory=dict)  # peças brancas capturadas
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -51,6 +53,7 @@ def play_game(
         False: Searcher(black, config.search, rng),
     }
     checks = {True: 0, False: 0}
+    captures: dict[bool, dict[str, int]] = {True: {}, False: {}}
     moves: list[str] = []
 
     outcome = None
@@ -65,6 +68,9 @@ def play_game(
             move = searchers[mover].choose_move(state)
             if move is None:  # não deveria acontecer: outcome já cobre sem lances
                 break
+        victim = state.captured_piece(move)
+        if victim:
+            captures[mover][victim] = captures[mover].get(victim, 0) + 1
         state.push(move)
         moves.append(state.uci(move))
         if state.is_check():
@@ -98,4 +104,6 @@ def play_game(
         mate_moves=mate_moves,
         material_balance=balance,
         moves=moves,
+        white_captures=captures[True],
+        black_captures=captures[False],
     )

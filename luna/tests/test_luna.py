@@ -13,12 +13,13 @@ from luna.search import SearchConfig, Searcher
 from luna.storage import RunStorage
 
 
-def record(white, black, winner, mate_moves=None, wc=0, bc=0, termination=None):
+def record(white, black, winner, mate_moves=None, wc=0, bc=0, termination=None,
+           wcap=None, bcap=None):
     return GameRecord(
         white_id=white, black_id=black, winner=winner,
         termination=termination or ("checkmate" if mate_moves else "max_plies"),
         plies=0, white_checks=wc, black_checks=bc, mate_moves=mate_moves,
-        material_balance=0, moves=[],
+        material_balance=0, moves=[], white_captures=wcap or {}, black_captures=bcap or {},
     )
 
 
@@ -92,18 +93,39 @@ def test_fitness_follows_lucas_criterion():
     assert order.index("lenta") < order.index("sem_mate")
 
 
-def test_points_fallback_only_affects_non_mating():
+def test_draw_and_loss_scoring():
     records = [
-        record("mate", "a", "white", mate_moves=30, wc=9),
-        record("ganhou_no_tempo", "b", "white", wc=3, termination="max_plies"),
-        record("empatou_calmo", "c", None, wc=0),
+        # "comeu_dama" empata tendo capturado uma dama: 2,0
+        record("comeu_dama", "a", None, wcap={"Q": 1}),
+        # "comeu_pecas" empata com torre + bispo + 2 peões: 0,6 + 0,4 + 0,2 = 1,2
+        record("comeu_pecas", "b", None, wcap={"R": 1, "B": 1, "P": 2}),
+        # "perdeu" capturou uma dama mas levou mate: 2 - 5 = -3
+        record("c", "perdeu", "white", mate_moves=30, bcap={"Q": 1}),
     ]
     stats = collect_stats(records)
-    pure = rank(stats, "pure")
-    points = rank(stats, "points")
-    assert pure[0] == points[0] == "mate"
-    assert pure.index("empatou_calmo") < pure.index("ganhou_no_tempo")
-    assert points.index("ganhou_no_tempo") < points.index("empatou_calmo")
+    assert stats["comeu_dama"].mean_non_win_points == pytest.approx(2.0)
+    assert stats["comeu_pecas"].mean_non_win_points == pytest.approx(1.2)
+    assert stats["perdeu"].mean_non_win_points == pytest.approx(-3.0)
+    order = rank(stats)
+    # Quem deu mate continua na frente; depois, mais pontos de empate/derrota.
+    assert order[0] == "c"
+    assert order.index("comeu_dama") < order.index("comeu_pecas") < order.index("perdeu")
+    # No modo puro só os xeques contam entre quem não deu mate (aqui todos zero).
+    assert rank(stats, "pure")[0] == "c"
+
+
+def test_game_records_captures():
+    cfg = MatchConfig(search=SearchConfig(depth=1, quiescence_depth=2), max_plies=60)
+    r = play_game(Genome.reference(id="a"), Genome.reference(id="b"), cfg, seed=3)
+    remaining = {"P": 0, "N": 0, "B": 0, "R": 0, "Q": 0}
+    state = new_game()
+    for m in r.moves:
+        state.push(state.parse_uci(m))
+    for _, piece, _ in state.pieces():
+        if piece in remaining:
+            remaining[piece] += 1
+    captured = sum(r.white_captures.values()) + sum(r.black_captures.values())
+    assert captured == 30 - sum(remaining.values()) or any(len(m) == 5 for m in r.moves)
 
 
 def test_schedule_balances_colors():
