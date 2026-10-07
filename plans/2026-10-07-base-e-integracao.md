@@ -28,7 +28,7 @@ Itens do backlog cobertos aqui (Etapa 0): estrutura de pacote Python, ferramenta
 
 ## Tarefas
 
-### Tarefa 1: `pyproject.toml` na raiz
+### Task 1 (Tarefa 1): `pyproject.toml` na raiz
 
 **Arquivos:** criar `pyproject.toml`, criar `.gitignore` na raiz.
 **Toca pasta com dono?** Não.
@@ -55,7 +55,7 @@ ruff check .                        # roda; erros nas pastas com dono são relat
 
 O relatório do implementador lista a saída do `ruff check .` por pasta.
 
-### Tarefa 2: integração contínua no GitHub Actions
+### Task 2 (Tarefa 2): integração contínua no GitHub Actions
 
 **Arquivos:** criar `.github/workflows/ci.yml`.
 **Toca pasta com dono?** Não.
@@ -68,7 +68,7 @@ O relatório do implementador lista a saída do `ruff check .` por pasta.
 
 **Teste de aceitação:** o workflow passa no `actionlint` (ou, sem ele, num YAML parse + revisão), e o PR desta tarefa mostra o job `testes` verde nas quatro versões.
 
-### Tarefa 3: adaptador `chess_engine` para a Luna
+### Task 3 (Tarefa 3): adaptador `chess_engine` para a Luna
 
 **Arquivos:** criar `luna/adapters/chess_engine.py`, editar `luna/adapters/__init__.py` (registrar o backend), criar `luna/tests/test_adapter_chess_engine.py`.
 **Toca pasta com dono?** Sim, `luna/`. Só começa com confirmação do Lucas e com os PRs #1 e #2 mergeados.
@@ -87,7 +87,7 @@ O relatório do implementador lista a saída do `ruff check .` por pasta.
   3. Posições pontuais: en passant (`captured_piece == "P"`), promoção (`is_promotion`), mate do pastor (`outcome().termination == "checkmate"`, `winner is True`).
   4. Uma partida Luna × Luna curta (profundidade 1) com `backend="chess-engine"` termina sem erro.
 
-### Tarefa 4: comparação de velocidade entre os backends
+### Task 4 (Tarefa 4): comparação de velocidade entre os backends
 
 **Arquivos:** criar `tools/bench_backends.py`.
 **Toca pasta com dono?** Não (só lê `luna/` e `chess_engine/`).
