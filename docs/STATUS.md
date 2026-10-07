@@ -52,7 +52,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 Em revisão no [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) (pacote `chess_engine/`, Python puro; interface descrita em `chess_engine/API.md`). Os itens marcados `[~]` estão no PR e passam a `[x]` quando ele for mergeado.
 
 - [~] Representação do tabuleiro e das peças
-- [~] Leitura e escrita de posições em FEN (falta validar FEN inválida com mais rigor, apontado na revisão de código)
+- [~] Leitura e escrita de posições em FEN, com validação de FEN inválida (inclusive roque sem rei ou torre)
 - [~] Geração de lances de todas as peças
 - [~] Roque (curto e longo, com todas as restrições)
 - [~] Captura *en passant*
@@ -62,9 +62,10 @@ Em revisão no [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) (pa
 - [~] Empates: repetição tripla e quíntupla, regras dos 50 e 75 lances, material insuficiente
 - [~] `play_game` com contagem de lances e de xeques por cor, usada na aptidão da Luna
 - [~] Testes de *perft* em 21 posições de referência
-- [~] 300 partidas aleatórias comparadas com `python-chess`, sem divergência
+- [~] 300 partidas aleatórias comparadas com `python-chess`, sem divergência (406 testes passando)
 - [~] Notação algébrica (SAN): `san()`, `parse_san()`, `push_san()`
-- [ ] Exportação de partidas em PGN
+- [~] Exportação de partidas em PGN (`to_pgn`, `GameResult.pgn`), lida sem erros pelo `python-chess`
+- [~] Contadores de `play_game` contam só a própria partida (correção da revisão de código)
 - [~] Jogo no terminal: `python -m chess_engine`
 
 ### Etapa 2 — Luna: IA evolutiva com algoritmo genético
@@ -167,3 +168,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | Correções da revisão de código: limite de lances, alternância de cores e histórico marcados como `[~]`; FEN e SAN/PGN de volta ao backlog da etapa 1; regra para PRs em revisão explicitada |
 | 2026-10-07 | PR #1 corrigiu o ruído na busca: 75% a 88% das partidas agora terminam em mate; nova decisão em aberto sobre número de mates |
 | 2026-10-07 | Lucas confirmou que a derrota mantém os pontos de captura |
+| 2026-10-07 | PR #2 corrigiu os achados da revisão e ganhou exportação PGN |
