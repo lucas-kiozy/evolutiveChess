@@ -82,7 +82,12 @@ class GameState(Protocol):
         por 50 lances e tripla repetição encerram a partida."""
 
     def pieces(self) -> Iterable[tuple[int, str, bool]]:
-        """(casa, peça, é_branca) para cada peça no tabuleiro."""
+        """(casa, peça, é_branca) para cada peça, em ordem crescente de casa (a1 primeiro).
+
+        A ordem faz parte do contrato: a avaliação soma números de ponto flutuante
+        nessa ordem, e ordens diferentes dariam escores diferentes no último dígito,
+        o que muda o desempate entre lances e faz os backends jogarem partidas
+        diferentes."""
 
     def mobility(self, white: bool) -> int:
         """Soma, para cavalos, bispos, torres e damas da cor (peões e rei ficam de

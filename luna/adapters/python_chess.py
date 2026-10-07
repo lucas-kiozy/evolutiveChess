@@ -108,7 +108,10 @@ class PythonChessGame:
         return Outcome(winner=result.winner, termination=_TERMINATION[result.termination])
 
     def pieces(self) -> Iterable[tuple[int, str, bool]]:
-        for square, piece in self._board.piece_map().items():
+        # Em ordem crescente de casa, como pede a interface (piece_map() vem de h8 para a1).
+        piece_map = self._board.piece_map()
+        for square in sorted(piece_map):
+            piece = piece_map[square]
             yield square, _SYMBOL[piece.piece_type], piece.color == chess.WHITE
 
     def mobility(self, white: bool) -> int:
