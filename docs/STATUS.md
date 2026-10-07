@@ -98,9 +98,8 @@ Em andamento no [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1) (r
 - [~] Alternância de cores: cada par joga duas partidas com cores trocadas (`schedule()` em `luna/evolution.py`) — PR #1
 - [~] Limite de 200 meios-lances por partida, que termina em empate (`MatchConfig.max_plies`) — PR #1
 - [~] Cálculo de aptidão (`luna/fitness.py`) — PR #1:
-  - [~] 1º critério: vitória com **menos lances** até o xeque-mate
-  - [~] 2º critério (desempate): **menos xeques** dados nas partidas que terminaram em mate
-  - [~] Empates e derrotas pontuam por material capturado, -5 por derrota; Lunas com mate ficam à frente e as demais são ordenadas pela média desses pontos — PR #1
+  - [~] Régua por partida somada na geração: vitória +5, empate +2, derrota -1
+  - [~] Desempates: pontos de captura, depois menos xeques nas vitórias, depois menos lances até o mate
 - [~] Laço contínuo: jogar → avaliar → selecionar → reproduzir → repetir — PR #1
 - [~] Treino longo e análise dos resultados: um treino de 600 partidas chegou à geração 15 com cerca de 85% a 90% das partidas terminando em mate (arquivos do treino fora do repositório). Num treino curto, depois da correção do ruído, 75% a 88% das partidas terminam em mate, e a melhor Luna dá mate em 25 a 27 lances em média
 - [~] Registro das partidas de cada geração em PGN (`generations/gen_NNNN.pgn`, com ids das Lunas, resultado, término e xeques de cada lado) — PR #1
