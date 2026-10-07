@@ -12,7 +12,7 @@ Um jogo de xadrez em Python com uma inteligência evolutiva chamada **Luna**. A 
 | 1 | Jogo de xadrez funcional com todas as regras validadas | **Concluída** ([PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2)) |
 | 2 | Luna: IA evolutiva com algoritmo genético | **Concluída** ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)) |
 | 3 | Self-play paralelo: Luna contra Luna, seleção dos melhores descendentes | **Concluída** ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)); treino longo em andamento |
-| 4 | Medição de rating (meta: ~1600) | Em andamento: estimador pronto, falta medir a Luna |
+| 4 | Medição de rating (meta: ~1600) | Em andamento: primeira medição abaixo de ~1320 |
 | 5 | Luna jogando no Lichess, partida a partida, e evoluindo | Em andamento: bot pronto, aguarda a Luna chegar a ~1600 |
 
 O detalhamento de cada etapa, com backlog e critérios de pronto, está em [docs/STATUS.md](docs/STATUS.md).
@@ -46,26 +46,35 @@ O projeto é tocado por frentes de trabalho com focos diferentes, cada uma numa 
 
 Por enquanto só a frente de documentação tem um agente definido no repositório, em [.claude/agents/documentador.md](.claude/agents/documentador.md).
 
+O repositório também traz três skills do Claude, em `.claude/skills/`, que usam o código do projeto:
+
+| Skill | Para que serve |
+|-------|----------------|
+| `luna-treino` | Treinar a Luna: rodar ou retomar gerações e resumir o treino |
+| `validar-regras-xadrez` | Conferir se um lance ou uma posição é legal no `chess_engine` e explicar o motivo |
+| `relatorio-evolucao-luna` | Relatório de evolução da Luna: tendência de mates, genes que mudaram, gráfico e Elo entre gerações |
+
 ## Estrutura do repositório
 
 ```
 .
-├── README.md                 # visão geral (este arquivo)
-├── chess_engine/             # motor de xadrez em Python puro (etapa 1)
-├── luna/                     # IA evolutiva: genoma, busca, algoritmo genético (etapas 2 e 3)
-│   └── versions/             # versões nomeadas da Luna
-├── rating/                   # estimativa de rating contra o Stockfish (etapa 4; guia em GUIA.md)
-├── lichess_bot/              # bot do Lichess, uma partida por vez (etapa 5; guia em GUIA.md)
-├── plans/                    # planos de implementação
-├── pyproject.toml            # pacote e dependências (pip install -e ".[dev]")
-├── .github/workflows/ci.yml  # testes e lint a cada PR
-│   ├── API.md                # interface pública do motor
-│   └── tests/                # regras, perft e comparação com python-chess
+├── README.md                   # visão geral (este arquivo)
+├── chess_engine/               # motor de xadrez em Python puro (etapa 1)
+│   ├── API.md                  # interface pública do motor
+│   └── tests/                  # regras, perft e comparação com python-chess
+├── luna/                       # IA evolutiva: genoma, busca, algoritmo genético (etapas 2 e 3)
+│   └── versions/               # versões nomeadas da Luna
+├── rating/                     # estimativa de rating contra o Stockfish (etapa 4; guia em GUIA.md)
+├── lichess_bot/                # bot do Lichess, uma partida por vez (etapa 5; guia em GUIA.md)
 ├── docs/
-│   ├── STATUS.md             # relatório: o que foi feito e backlog
-│   └── REFERENCIAS.md        # base científica e técnica do projeto
-└── .claude/agents/
-    └── documentador.md       # agente que mantém a documentação
+│   ├── STATUS.md               # relatório: o que foi feito e backlog
+│   └── REFERENCIAS.md          # base científica e técnica do projeto
+├── plans/                      # planos de implementação
+├── pyproject.toml              # pacote e dependências (pip install -e ".[dev]")
+├── .github/workflows/ci.yml    # testes e lint a cada PR
+└── .claude/
+    ├── agents/documentador.md  # agente que mantém a documentação
+    └── skills/                 # skills de treino, validação de regras e relatório da Luna
 ```
 
 ## Como executar

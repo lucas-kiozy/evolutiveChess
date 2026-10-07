@@ -13,6 +13,9 @@ Base científica e técnica das escolhas do projeto. Artigos revisados por pares
 - **Holland, J. H. (1975).** *Adaptation in Natural and Artificial Systems*. University of Michigan Press.
   Obra que fundamenta os algoritmos genéticos (seleção, cruzamento, mutação).
 
+- **Jin, Y., & Branke, J. (2005).** Evolutionary optimization in uncertain environments: a survey. *IEEE Transactions on Evolutionary Computation*, 9(3), 303–317.
+  Revisão sobre algoritmos evolutivos com avaliação de aptidão ruidosa. Mostra que, quando a aptidão vem de poucas amostras, a seleção fica próxima do acaso, e que avaliar cada indivíduo em mais amostras (ou usar uma população maior) reduz o efeito. É o caso do primeiro treino da Luna, com 4 partidas por Luna em cada geração.
+
 ## Busca
 
 - **Knuth, D. E., & Moore, R. W. (1975).** An analysis of alpha-beta pruning. *Artificial Intelligence*, 6(4), 293–326.
