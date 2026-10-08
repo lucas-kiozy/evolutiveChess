@@ -170,6 +170,11 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 - [x] Ligar a Luna real ao bot: `python -m lichess_bot play --player luna.player:official_factory` usa a Luna oficial — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 - [ ] Definir como a Luna aprende com as partidas do Lichess (ver "Decisões em aberto", item 5)
 - [ ] Acompanhar o rating da Luna no Lichess ao longo do tempo
+- [~] Desistência da Luna (`rating/resign.py`): abandona com avaliação de -1000 centipeões ou pior, ou mate contra, por 3 lances seguidos (o mesmo padrão do lichess-bot). No rating é opcional, com `--resign` — [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14)
+- [~] Ritmo de lances no Lichess (`lichess_bot/pacing.py`): lances 1 a 6 em 20 s, 7 a 40 em 1 a 16 s, do 41 em diante em 16 a 90 s, sempre limitado pelo relógio. Treino e rating continuam sem espera — [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14)
+- [~] O bot só aceita partidas rápidas ou clássicas, com base + 60 × incremento de pelo menos 1.500 s, e o desafio automático passa a ser 30+20 — [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14)
+- [~] Vitória por desistência do adversário registrada na partida, valendo 1 ponto no rating — [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14)
+- [ ] Frente da Luna: expor a última avaliação (`last_score`) da jogadora, para a desistência funcionar com a Luna real
 
 ---
 
@@ -194,6 +199,7 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 Pontos que precisam de decisão do Lucas ou da frente responsável antes ou durante a implementação:
 
 1. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
+2. **Quanto vale, na aptidão do treino, a vitória por desistência do adversário.** A régua 5/2/-1 só prevê vitória por mate; com a desistência ([PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14)), falta o Lucas decidir se ela conta como vitória (+5) ou vale outro valor.
 
 ---
 
@@ -232,3 +238,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-08 | PR #12 mergeado; terceiro treino (28 gerações, 6.324 partidas) e medições em profundidade 3: `luna-v2` 1663 ± 48, candidata 1633 ± 49 |
 | 2026-10-08 | Catraca de promoção: a `candidata-pr11-g28` venceu a `luna-v2` (+182 ± 51 Elo) e virou a `luna-v3`, que ainda vai entrar no `main` |
 | 2026-10-08 | PR #13 mergeado (268 testes passando, 7 pulados): `luna-v3` oficial no `main` |
+| 2026-10-08 | PR #14 aberto: desistência, ritmo de lances e ritmos aceitos no Lichess; nova decisão em aberto sobre o valor da vitória por desistência |
