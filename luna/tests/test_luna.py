@@ -207,6 +207,7 @@ def test_evolve_saves_and_resumes(tmp_path):
         games_per_luna=4,
         hall_of_fame=1,
         seed=3,
+        boundary_games=0,
         match=MatchConfig(search=SearchConfig(depth=1, quiescence_depth=0), max_plies=20),
     )
     run = tmp_path / "run"

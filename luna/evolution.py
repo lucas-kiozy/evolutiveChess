@@ -10,6 +10,13 @@ algoritmos genéticos com avaliação ruidosa:
 - parte das partidas é contra campeãs de gerações passadas, o "hall of fame" de
   Rosin e Belew (1997), que dá adversárias fixas e mostra se há progresso.
 
+Depois da análise de 2026-10-08, o Lucas decidiu ordenar as Lunas pela força
+estimada com Bradley–Terry (``luna.ranking``), e não mais pela soma da régua. Quando
+a última vaga da elite fica separada da seguinte por menos que o erro das duas, elas
+jogam ``boundary_games`` partidas extras pareadas antes de fechar a elite: é a ideia
+das corridas, que gastam partidas onde a decisão está em jogo (Maron e Moore, 1997,
+Artificial Intelligence Review 11:193-225).
+
 Referências: Y. Jin, J. Branke, "Evolutionary optimization in uncertain
 environments: a survey", IEEE Trans. Evolutionary Computation 9(3):303-317, 2005.
 C. D. Rosin, R. K. Belew, "New methods for competitive coevolution", Evolutionary
@@ -19,18 +26,25 @@ Computation 5(1):1-29, 1997.
 from __future__ import annotations
 
 import datetime
+import math
 import random
 import time
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass, field
 from typing import Callable, Optional
 
-from luna.fitness import Stats, collect_stats, rank
+from luna.fitness import Stats, collect_stats, rank, sort_key
 from luna.genome import Genome, crossover, mutate
 from luna.match import GameRecord, MatchConfig, play_game
+from luna.openings import BOOK
 from luna.pgn import games_to_pgn
+from luna.ranking import Strength, bradley_terry, game_results, results_of
 from luna.search import SearchConfig
 from luna.storage import RunStorage
+
+#: Busca padrão do treino: profundidade 2, e 3 do lance 5 ao 12 (decisão do Lucas).
+TRAINING_SEARCH = SearchConfig(depth=2, noise=5.0, deep_depth=3, deep_from_move=5, deep_to_move=12)
+RANKINGS = ("bradley_terry", "regua")
 
 
 @dataclass
@@ -44,7 +58,10 @@ class EvolutionConfig:
     hall_of_fame: int = 2  # campeãs passadas que cada Luna enfrenta (2 partidas cada)
     workers: int = 0  # 0 = número de CPUs
     seed: int = 42
-    match: MatchConfig = field(default_factory=MatchConfig)
+    ranking: str = "bradley_terry"  # ou "regua": soma da régua com os desempates
+    boundary_games: int = 8  # partidas extras na fronteira da elite (par; 0 desliga)
+    prior_games: float = 12.0  # partidas virtuais contra a média (Bradley–Terry)
+    match: MatchConfig = field(default_factory=lambda: MatchConfig(search=TRAINING_SEARCH))
 
     def __post_init__(self) -> None:
         if self.population < 2 or self.population % 2:
@@ -55,6 +72,10 @@ class EvolutionConfig:
             raise ValueError("games_per_luna deve ser par e >= 2")
         if not 0 <= 2 * self.hall_of_fame <= self.games_per_luna:
             raise ValueError("hall_of_fame deve caber em games_per_luna (2 partidas cada)")
+        if self.ranking not in RANKINGS:
+            raise ValueError(f"ranking deve ser um de {RANKINGS}")
+        if self.boundary_games < 0 or self.boundary_games % 2:
+            raise ValueError("boundary_games deve ser par e >= 0")
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -67,13 +88,23 @@ class EvolutionConfig:
             d["games_per_luna"] = 2 * d.pop("rounds")
             d.setdefault("hall_of_fame", 0)
         m = dict(d.pop("match", {}))
-        m["search"] = SearchConfig(**m.get("search", {}))
+        search = dict(m.get("search", {}))
+        # Treinos antigos gravavam a quiescência e o contempt fixos da busca (sempre os
+        # padrões 4 e 50). Hoje são genes; com os padrões fora, eles evoluem também
+        # nesses treinos, partindo dos mesmos valores (luna.genome.LEGACY_DEFAULTS).
+        for key, legacy in (("quiescence_depth", 4), ("contempt", 50.0)):
+            if search.get(key) == legacy:
+                search.pop(key)
+        # Treinos de antes da janela funda passam a usá-la também, como o Lucas pediu.
+        for key in ("deep_depth", "deep_from_move", "deep_to_move"):
+            search.setdefault(key, getattr(TRAINING_SEARCH, key))
+        m["search"] = SearchConfig.from_dict(search)
         return cls(match=MatchConfig(**m), **d)
 
 
 def _play_task(args: tuple) -> GameRecord:
-    white, black, match_config, seed = args
-    return play_game(Genome.from_dict(white), Genome.from_dict(black), match_config, seed)
+    white, black, match_config, seed, *opening = args
+    return play_game(Genome.from_dict(white), Genome.from_dict(black), match_config, seed, *opening)
 
 
 def schedule(
@@ -114,6 +145,72 @@ def play_generation(
     return list(executor.map(_play_task, tasks))
 
 
+def play_boundary(
+    a: Genome,
+    b: Genome,
+    config: EvolutionConfig,
+    generation: int,
+    executor: Optional[ProcessPoolExecutor] = None,
+) -> list[GameRecord]:
+    """Partidas extras entre ``a`` e ``b``: pares com a mesma abertura do livro e os
+    mesmos lances aleatórios, cores trocadas."""
+    rng = random.Random(f"{config.seed}-fronteira-{generation}")
+    tasks = []
+    for _ in range(config.boundary_games // 2):
+        opening, seed = BOOK[rng.randrange(len(BOOK))], rng.randrange(2**32)
+        tasks.append((a.to_dict(), b.to_dict(), config.match, seed, opening))
+        tasks.append((b.to_dict(), a.to_dict(), config.match, seed, opening))
+    if executor is None:
+        return [_play_task(t) for t in tasks]
+    return list(executor.map(_play_task, tasks))
+
+
+@dataclass
+class GenerationRanking:
+    ids: list[str]  # do melhor para o pior
+    stats: dict[str, Stats]
+    strengths: dict[str, Strength]  # vazio na ordenação pela régua
+    results: list[tuple[str, str, float]]  # partidas usadas, com as acumuladas da elite
+    records: list[GameRecord]  # partidas da geração, com as extras da fronteira
+    boundary: Optional[tuple[str, str]] = None  # quem jogou as partidas extras
+
+
+def rank_generation(
+    population: list[Genome],
+    records: list[GameRecord],
+    carry: dict,
+    config: EvolutionConfig,
+    generation: int,
+    executor: Optional[ProcessPoolExecutor] = None,
+) -> GenerationRanking:
+    by_id = {g.id: g for g in population}
+
+    def build(records: list[GameRecord]) -> GenerationRanking:
+        all_stats = collect_stats(records)
+        stats = {i: all_stats.get(i, Stats()) for i in by_id}  # sem as campeãs
+        results = game_results(records)
+        for ident, previous in carry.items():
+            if ident in stats:
+                stats[ident].merge(Stats.from_dict(previous))
+                results += [(ident, opp, s) for opp, s in previous.get("results", [])]
+        if config.ranking == "regua":
+            return GenerationRanking(rank(stats), stats, {}, results, records)
+        strengths = bradley_terry(results, config.prior_games)
+        ids = sorted(by_id, key=lambda i: (-round(strengths[i].elo, 9), sort_key(stats[i]), i))
+        return GenerationRanking(ids, stats, strengths, results, records)
+
+    ranking = build(records)
+    elite = config.elite
+    if ranking.strengths and config.boundary_games and 0 < elite < len(population):
+        a, b = ranking.ids[elite - 1], ranking.ids[elite]
+        sa, sb = ranking.strengths[a], ranking.strengths[b]
+        if sa.elo - sb.elo < math.hypot(sa.error, sb.error):
+            extra = play_boundary(by_id[a], by_id[b], config, generation, executor)
+            ranking = build(records + extra)
+            ranking.boundary = (a, b)
+    return ranking
+
+
 def tournament_select(ranked: list[Genome], size: int, rng: random.Random) -> Genome:
     """Torneio: sorteia ``size`` indivíduos e fica com o de melhor posição."""
     picks = [rng.randrange(len(ranked)) for _ in range(size)]
@@ -147,7 +244,12 @@ def _ident(generation: int, index: int) -> str:
 
 
 def summarize(
-    generation: int, ranked_ids: list[str], stats: dict, records: list[GameRecord], seconds: float
+    generation: int,
+    ranked_ids: list[str],
+    stats: dict,
+    records: list[GameRecord],
+    seconds: float,
+    strengths: Optional[dict] = None,
 ) -> dict:
     mates = [r for r in records if r.termination == "checkmate"]
     terminations: dict[str, int] = {}
@@ -169,6 +271,8 @@ def summarize(
         "best_mean_mate_moves": best.mean_mate_moves,
         "best_checks_per_game": best.checks_per_game,
         "best_games": best.games,
+        "best_elo": strengths[ranked_ids[0]].elo if strengths else None,
+        "best_elo_error": strengths[ranked_ids[0]].error if strengths else None,
         "seconds": round(seconds, 2),
     }
 
@@ -204,21 +308,26 @@ def evolve(
             t0 = time.perf_counter()
             records = play_generation(population, config, generation, executor, hall)
             by_id = {g.id: g for g in population}
-            all_stats = collect_stats(records)
-            stats = {i: all_stats.get(i, Stats()) for i in by_id}  # sem as campeãs
-            for ident, previous in carry.items():
-                if ident in stats:
-                    stats[ident].merge(Stats.from_dict(previous))
-            ranked_ids = rank(stats)
+            ranking = rank_generation(population, records, carry, config, generation, executor)
+            records, stats, ranked_ids = ranking.records, ranking.stats, ranking.ids
+            strengths = ranking.strengths
             ranked = [by_id[i] for i in ranked_ids]
-            summary = summarize(generation, ranked_ids, stats, records, time.perf_counter() - t0)
+            summary = summarize(
+                generation, ranked_ids, stats, records, time.perf_counter() - t0, strengths
+            )
+            summary["boundary"] = list(ranking.boundary) if ranking.boundary else None
             storage.save_generation(
                 generation,
                 {
                     "generation": generation,
                     "summary": summary,
                     "population": [
-                        {**by_id[i].to_dict(), "rank": r + 1, "stats": stats[i].to_dict()}
+                        {
+                            **by_id[i].to_dict(),
+                            "rank": r + 1,
+                            "stats": stats[i].to_dict(),
+                            "strength": asdict(strengths[i]) if strengths else None,
+                        }
                         for r, i in enumerate(ranked_ids)
                     ],
                     "games": [rec.to_dict() for rec in records],
@@ -237,14 +346,22 @@ def evolve(
             if all(champion.genes != h.genes for h in hall):
                 hall.append(Genome(dict(champion.genes), id=champion.id))
             population = next_population(ranked, config, generation + 1)
-            # A elite (primeiras da nova população) leva os resultados acumulados.
-            carry = {g.id: stats[g.parents[0]].to_dict() for g in population[: config.elite]}
+            # A elite (primeiras da nova população) leva os resultados acumulados, com a
+            # lista de partidas para o Bradley–Terry da geração seguinte.
+            carry = {
+                g.id: {
+                    **stats[g.parents[0]].to_dict(),
+                    "results": results_of(g.parents[0], ranking.results),
+                }
+                for g in population[: config.elite]
+            }
             storage.save_state(generation + 1, population, hall, carry)
             summaries.append(summary)
             log(
                 f"Geração {generation}: {summary['games']} partidas, "
                 f"mates {summary['mate_rate']:.0%}, melhor {summary['best_id']} "
-                f"({summary['best_result_points']:g} pontos em {summary['best_games']} partidas, "
+                f"(força {_fmt_elo(summary)}, "
+                f"{summary['best_result_points']:g} pontos em {summary['best_games']} partidas, "
                 f"V/E/D {summary['best_record']}, "
                 f"xeques por vitória {summary['best_mean_win_checks']}, "
                 f"mate médio {summary['best_mean_mate_moves']}), "
@@ -254,3 +371,9 @@ def evolve(
         if executor is not None:
             executor.shutdown()
     return summaries
+
+
+def _fmt_elo(summary: dict) -> str:
+    if summary.get("best_elo") is None:
+        return "pela régua"
+    return f"{summary['best_elo']:+.0f} ± {summary['best_elo_error']:.0f}"

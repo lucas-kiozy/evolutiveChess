@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import asdict, dataclass, field
-from typing import Optional
+from typing import Optional, Sequence
 
 from luna.adapters import DEFAULT_BACKEND, new_game
 from luna.genome import Genome
@@ -45,7 +45,10 @@ def play_game(
     black: Genome,
     config: MatchConfig,
     seed: Optional[int] = None,
+    opening: Sequence[str] = (),
 ) -> GameRecord:
+    """Joga uma partida. ``opening`` são lances UCI de livro jogados antes de tudo; os
+    ``random_opening_plies`` lances aleatórios vêm depois deles."""
     rng = random.Random(seed)
     state = new_game(config.backend)
     searchers = {
@@ -55,6 +58,10 @@ def play_game(
     checks = {True: 0, False: 0}
     captures: dict[bool, dict[str, int]] = {True: {}, False: {}}
     moves: list[str] = []
+    for uci in opening:
+        state.push(state.parse_uci(uci))
+        moves.append(uci)
+    random_until = len(opening) + config.random_opening_plies
 
     outcome = None
     while state.ply < config.max_plies:
@@ -62,7 +69,7 @@ def play_game(
         if outcome is not None:
             break
         mover = state.white_to_move
-        if state.ply < config.random_opening_plies:
+        if state.ply < random_until:
             move = rng.choice(sorted(state.legal_moves(), key=state.uci))
         else:
             move = searchers[mover].choose_move(state)

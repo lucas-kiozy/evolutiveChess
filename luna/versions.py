@@ -17,6 +17,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Optional
 
+from luna.evolution import EvolutionConfig
 from luna.genome import Genome
 from luna.search import SearchConfig
 from luna.storage import RunStorage
@@ -49,22 +50,20 @@ class LunaVersion:
         return cls(
             name=d["name"],
             genome=Genome.from_dict(d["genome"]),
-            search=SearchConfig(**d["search"]),
+            search=SearchConfig.from_dict(d["search"]),
             source=d.get("source", {}),
             created=d.get("created", ""),
             notes=d.get("notes", ""),
         )
 
 
-def export_version(
+def version_from_run(
     run_dir: str | Path,
     name: Optional[str] = None,
     generation: Optional[int] = None,
     notes: str = "",
-    versions_dir: str | Path = VERSIONS_DIR,
-    overwrite: bool = False,
-) -> Path:
-    """Salva a melhor Luna de uma geração (padrão: a última avaliada) como versão."""
+) -> LunaVersion:
+    """A melhor Luna de uma geração (padrão: a última avaliada), ainda sem salvar."""
     storage = RunStorage(run_dir)
     config = storage.load_config()
     history = storage.history()
@@ -74,14 +73,10 @@ def export_version(
         generation = history[-1]["generation"]
     data = storage.load_generation(generation)
     best = data["population"][0]
-    name = name or f"luna-g{generation:04d}"
-    if not _NAME.match(name):
-        raise ValueError("nome deve ter letras, números, ponto, hífen ou sublinhado")
-
-    version = LunaVersion(
-        name=name,
+    return LunaVersion(
+        name=name or f"luna-g{generation:04d}",
         genome=Genome.from_dict(best),
-        search=SearchConfig(**config["match"]["search"]),
+        search=EvolutionConfig.from_dict(config).match.search,
         source={
             "run_dir": str(run_dir),
             "generation": generation,
@@ -94,16 +89,18 @@ def export_version(
         created=datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
         notes=notes,
     )
-    path = Path(versions_dir) / f"{name}.json"
-    if path.exists() and not overwrite:
-        raise FileExistsError(f"A versão {name} já existe: {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".json.tmp")
-    tmp.write_text(
-        json.dumps(version.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
-    os.replace(tmp, path)
-    return path
+
+
+def export_version(
+    run_dir: str | Path,
+    name: Optional[str] = None,
+    generation: Optional[int] = None,
+    notes: str = "",
+    versions_dir: str | Path = VERSIONS_DIR,
+    overwrite: bool = False,
+) -> Path:
+    """Salva a melhor Luna de uma geração (padrão: a última avaliada) como versão."""
+    return save_version(version_from_run(run_dir, name, generation, notes), versions_dir, overwrite)
 
 
 def load_version(name_or_path: str | Path, versions_dir: str | Path = VERSIONS_DIR) -> LunaVersion:
@@ -119,3 +116,42 @@ def list_versions(versions_dir: str | Path = VERSIONS_DIR) -> list[LunaVersion]:
     if not folder.exists():
         return []
     return [load_version(p) for p in sorted(folder.glob("*.json"))]
+
+
+OFFICIAL_FILE = "oficial.txt"
+
+
+def official_name(versions_dir: str | Path = VERSIONS_DIR) -> str:
+    """Nome da Luna oficial, a que joga as partidas que contam (rating e Lichess).
+
+    Só muda pela catraca de promoção (``python -m luna promote``)."""
+    return (Path(versions_dir) / OFFICIAL_FILE).read_text(encoding="utf-8").strip()
+
+
+def set_official(name: str, versions_dir: str | Path = VERSIONS_DIR) -> None:
+    load_version(name, versions_dir)  # falha se a versão não existir
+    path = Path(versions_dir) / OFFICIAL_FILE
+    tmp = path.with_suffix(".txt.tmp")
+    tmp.write_text(name + "\n", encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def version_path(name: str, versions_dir: str | Path = VERSIONS_DIR) -> Path:
+    if not _NAME.match(name):
+        raise ValueError("nome deve ter letras, números, ponto, hífen ou sublinhado")
+    return Path(versions_dir) / f"{name}.json"
+
+
+def save_version(
+    version: LunaVersion, versions_dir: str | Path = VERSIONS_DIR, overwrite: bool = False
+) -> Path:
+    path = version_path(version.name, versions_dir)
+    if path.exists() and not overwrite:
+        raise FileExistsError(f"A versão {version.name} já existe: {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(
+        json.dumps(version.to_dict(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    os.replace(tmp, path)
+    return path
