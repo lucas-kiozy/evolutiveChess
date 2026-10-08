@@ -1,0 +1,161 @@
+{
+  "name": "luna-v3",
+  "created": "2026-10-08T15:08:23+00:00",
+  "notes": "Melhor da geracao 28 do treino-pr11 (PR #11, profundidade 3 nos lances 8 a 12, Bradley-Terry), comecando das Lunas da geracao 32 do treino-regua-nova + referencia nova. Promovida em 2026-10-08 contra a luna-v2: 34V 9E 9D em 52 partidas (74%), Elo +182 ± 51, LLR +3,09.",
+  "source": {
+    "run_dir": "/mnt/project-files/luna-treinos/treino-pr11",
+    "generation": 28,
+    "id": "g0028-i13",
+    "rank": 1,
+    "stats": {
+      "games": 26,
+      "wins": 15,
+      "draws": 4,
+      "losses": 7,
+      "mates": 15,
+      "mate_moves": [
+        51,
+        40,
+        55,
+        32,
+        52,
+        64,
+        71,
+        49,
+        78,
+        72,
+        20,
+        94,
+        58,
+        73,
+        71
+      ],
+      "win_checks": [
+        8,
+        14,
+        6,
+        6,
+        7,
+        10,
+        7,
+        7,
+        12,
+        22,
+        2,
+        10,
+        4,
+        9,
+        22
+      ],
+      "checks_given": 207,
+      "capture_points": 43.699999999999996,
+      "result_points": 76.0,
+      "mean_mate_moves": 58.666666666666664,
+      "mean_win_checks": 9.733333333333333,
+      "checks_per_game": 7.961538461538462
+    },
+    "backend": "chess_engine",
+    "summary": {
+      "generation": 28,
+      "games": 228,
+      "mate_rate": 0.8377192982456141,
+      "mean_mate_moves": 58.287958115183244,
+      "mean_checks_per_game": 15.469298245614034,
+      "terminations": {
+        "insufficient_material": 9,
+        "checkmate": 191,
+        "threefold_repetition": 4,
+        "max_plies": 22,
+        "fifty_moves": 2
+      },
+      "best_id": "g0028-i13",
+      "best_result_points": 76.0,
+      "best_record": [
+        15,
+        4,
+        7
+      ],
+      "best_mean_win_checks": 9.733333333333333,
+      "best_mean_mate_moves": 58.666666666666664,
+      "best_checks_per_game": 7.961538461538462,
+      "best_games": 26,
+      "best_elo": 83.65662318398886,
+      "best_elo_error": 57.812452988330676,
+      "seconds": 458.33,
+      "boundary": [
+        "g0028-i13",
+        "g0028-i05"
+      ]
+    },
+    "promotion": {
+      "candidate_id": "candidata-pr11-g28",
+      "official_id": "luna-v2",
+      "promoted": true,
+      "decision": "H1",
+      "games": 52,
+      "wins": 34,
+      "draws": 9,
+      "losses": 9,
+      "score": 0.7403846153846154,
+      "elo": 182.05078440539782,
+      "elo_error": 50.87958487056811,
+      "llr": 3.0927724695037244,
+      "bounds": [
+        -2.9444389791664403,
+        2.9444389791664403
+      ],
+      "config": {
+        "elo0": 0.0,
+        "elo1": 30.0,
+        "alpha": 0.05,
+        "beta": 0.05,
+        "max_games": 2000,
+        "depth": 3,
+        "random_plies": 2,
+        "max_plies": 200,
+        "backend": "chess_engine",
+        "seed": 2026,
+        "batch_pairs": 16
+      }
+    }
+  },
+  "search": {
+    "depth": 2,
+    "noise": 5.0,
+    "quiescence_depth": null,
+    "contempt": null,
+    "deep_depth": 3,
+    "deep_from_move": 8,
+    "deep_to_move": 12
+  },
+  "genome": {
+    "id": "g0028-i13",
+    "parents": [
+      "g0027-i18",
+      "g0027-i19"
+    ],
+    "genes": {
+      "pawn": 86.81169098130307,
+      "knight": 257.3419648967765,
+      "bishop": 304.89666576219975,
+      "rook": 515.5523608625335,
+      "queen": 849.5220444040011,
+      "pst_weight": 0.9577457962239749,
+      "mobility": 1.3984448758662236,
+      "bishop_pair": 30.001958615602334,
+      "doubled_pawn": 17.208320532869255,
+      "isolated_pawn": 12.675386547779965,
+      "passed_pawn": 17.833777557427688,
+      "rook_open_file": 23.39583802633095,
+      "king_shield": 4.967021790376748,
+      "check_bonus": -7.691333169542061,
+      "passed_pawn_rank": 6.934330403780125,
+      "king_edge": 0.0,
+      "king_proximity": 7.2771329055091165,
+      "king_open_file": 15.545870103893245,
+      "quiescence_depth": 6.0,
+      "contempt": 38.818136438681606,
+      "check_extension": 2.0
+    }
+  }
+}
