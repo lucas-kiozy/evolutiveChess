@@ -13,9 +13,12 @@ Regra (decisão do Lucas em 2026-10-08):
      menor, sem peões, torres nem damas);
    - uma busca E-OU de até ``DRAW_SEARCH_PLIES`` (8) meios-lances acha um
      caminho que ela impõe até o empate: afogamento, material insuficiente,
-     tripla repetição ou regra dos 50 lances. Nos lances dela, os primeiros
-     ``DRAW_FULL_PLIES`` (4) meios-lances olham todos os lances; depois, só os
-     que dão xeque ou empatam (ou dão mate) na hora. Nas respostas do
+     tripla repetição ou regra dos 50 lances. No primeiro lance dela e na
+     resposta do adversário (``DRAW_FULL_PLIES``, 2 meios-lances) entram todos
+     os lances; depois, dos lances dela só os que dão xeque ou empatam (ou dão
+     mate) na hora. Com 4 meios-lances completos, um meio-jogo cheio de peças
+     estourava o limite de nós já depois de 1.e4 e5 2.d4 d5, e a Luna nunca
+     desistia; com 2, a mesma posição pede ~8.400 nós. Nas respostas do
      adversário, todas precisam levar ao empate. Oito meios-lances bastam para
      um xeque perpétuo simples repetir a posição três vezes;
    - se a busca passar de ``DRAW_SEARCH_NODES`` (20.000) nós sem conclusão, na
@@ -41,7 +44,7 @@ from luna.game_interface import GameState
 RESIGN_SCORE = -1000.0  # centipeões
 RESIGN_MOVES = 3
 DRAW_SEARCH_PLIES = 8
-DRAW_FULL_PLIES = 4
+DRAW_FULL_PLIES = 2
 DRAW_SEARCH_NODES = 20_000
 
 

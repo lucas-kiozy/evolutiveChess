@@ -173,3 +173,9 @@ def test_board_adapter_counts_the_real_history():
     assert board_sees_forced_draw(board, 1)  # Cf3 seria a terceira repetição
     assert board_sees_forced_draw(chess.Board(FIFTY))
     assert not board_sees_forced_draw(chess.Board(LOST))
+
+
+def test_middlegame_draw_search_fits_the_node_budget():
+    # Com peças demais a busca não pode estourar o limite e devolver "vejo empate".
+    state = state_from_moves(["e2e4", "e7e5", "d2d4", "d7d5"])
+    assert not can_force_draw(state)
