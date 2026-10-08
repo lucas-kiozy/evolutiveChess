@@ -1,6 +1,6 @@
 # Relatório de status do projeto
 
-**Última atualização:** 2026-10-07
+**Última atualização:** 2026-10-08
 **Atualizado por:** agente de documentação ([.claude/agents/documentador.md](../.claude/agents/documentador.md))
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
@@ -118,7 +118,9 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Reduzir o ruído na seleção: 18 partidas por Luna em cada geração (`--games-per-luna`), a elite carrega os resultados das gerações anteriores (ranking pela média por partida) e cada Luna enfrenta 2 campeãs passadas (`--hall-of-fame`). Custo: cerca de 70 s por geração com 8 Lunas, profundidade 2, 4 CPUs — [PR #10](https://github.com/lucas-kiozy/evolutiveChess/pull/10)
 - [x] Segundo treino, com a régua 5/2/-1: 12 gerações e 2.580 partidas (20 Lunas, 18 partidas cada, 2 campeãs passadas), partindo da população do treino de 600. Mates por geração: 86% a 93%
 - [x] Análise, em confrontos de 40 partidas: a nova melhor Luna (`g0012-i10`) empata com a `luna-v1` (21/40, +17 ± 55 Elo) e com as melhores das gerações 1 e 6 (21/40 cada), e fica um pouco atrás dos pesos iniciais (17/40, -53 ± 56). **Nenhuma diferença é estatisticamente significativa: a evolução ainda não aparece com clareza**
-- [ ] Investigar por que a evolução não aparece no confronto direto e definir os próximos ajustes
+- [x] Mais 20 gerações do mesmo treino (13 a 32, 4.400 partidas; 7.000 no total), com 81% a 91% de mates por geração
+- [x] Análise: a melhor da geração 32 (`g0032-i07`) vence a `luna-v1` (25/40, +89 ± 57 Elo) e a melhor da geração 12 (23/40, +53 ± 56), empata com a da geração 22 (21/40) e segue atrás dos pesos iniciais (17/40, -53 ± 56). **Primeiro sinal de progresso no confronto direto**, mas ainda dentro de cerca de 1,6 erro-padrão
+- [ ] Entender por que os pesos iniciais continuam à frente e definir os próximos ajustes do treino
 - [x] Comparador de velocidade entre os backends (`tools/bench_backends.py`): o motor próprio ficou cerca de 1,8 vez mais rápido que o `python-chess` — [PR #8](https://github.com/lucas-kiozy/evolutiveChess/pull/8)
 - [x] Registro das partidas de cada geração em PGN (`generations/gen_NNNN.pgn`, com ids das Lunas, resultado, término e xeques de cada lado)
 
@@ -135,6 +137,7 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 - [x] Interface comum de jogador: `choose_move(fen, lances_uci) -> uci`
 - [x] Primeira medição, da `luna-v1`: 60 partidas contra Stockfish 16 com Elo limitado (12 vitórias, 18 empates, 30 derrotas, 35% dos pontos). Estimativa de 1216 ± 47 (IC 90%: 1139 a 1293) na escala CCRL/UCI_Elo. Como o intervalo inteiro fica abaixo de 1320, o piso do Stockfish, a conclusão firme é "abaixo de ~1320". Essa escala não é a do Lichess
 - [x] Segunda medição, da melhor Luna do treino com a régua nova (`g0012-i10`): 60 partidas contra Stockfish 16 (20 vitórias, 13 empates, 27 derrotas, 44% dos pontos). Estimativa de 1324 ± 45 (IC 90%: 1250 a 1399), cerca de 108 pontos acima da `luna-v1`. A diferença é de cerca de 1,7 erro-padrão: indício de melhora, não prova, e o rating fica em torno do piso de ~1320
+- [x] Terceira medição, da melhor Luna da geração 32: 60 partidas contra Stockfish 16 (20 vitórias, 16 empates, 24 derrotas, 47% dos pontos). Estimativa de 1300 ± 45 (IC 90%: 1226 a 1373), igual, dentro da margem, aos 1324 ± 45 da geração 12
 - [ ] Medir a melhor Luna de cada novo treino até chegar a ~1600
 
 ### Etapa 5 — Luna jogando no Lichess
@@ -205,3 +208,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | Plano do próximo treino registrado; PR #8 (comparador de velocidade) aberto; decisão sobre capturas encerrada |
 | 2026-10-07 | PRs #8, #9 e #10 mergeados (246 testes passando no `main`) |
 | 2026-10-07 | Resultado do segundo treino (régua 5/2/-1, 2.580 partidas) e segunda medição de rating (1324 ± 45) |
+| 2026-10-08 | Gerações 13 a 32 do treino com a régua nova e terceira medição de rating (1300 ± 45) |
