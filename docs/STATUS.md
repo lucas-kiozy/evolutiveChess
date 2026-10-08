@@ -5,7 +5,7 @@
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-**Último commit do `main` coberto:** `db15cf0`
+**Último commit do `main` coberto:** `41241b7`
 
 Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
@@ -19,7 +19,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 1 | Jogo de xadrez com regras validadas | **Concluída** | Motor mergeado no `main` pelo [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) |
 | 2 | Luna: IA evolutiva com algoritmo genético | **Concluída** | Luna no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); 21 genes e Luna oficial `luna-v2` desde o [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11) |
 | 3 | Self-play paralelo e seleção de descendentes | **Concluída** | Laço no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); 7.000 partidas de treino até a geração 32; catraca de promoção e ordenação por Bradley–Terry desde o [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11) |
-| 4 | Medição de rating (meta ~1600) | Em andamento | Última medição: 1300 ± 45 (geração 32); a melhor foi 1324 ± 45 (geração 12); meta 1600 |
+| 4 | Medição de rating (meta ~1600) | Em andamento | Em profundidade 3, a `luna-v2` mede 1663 ± 48 e a candidata do terceiro treino 1633 ± 49; falta o limite inferior do IC 90% passar de 1600 (hoje 1584) |
 | 5 | Luna jogando no Lichess | Em andamento | Bot no `main` pelo [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4); falta a Luna chegar a ~1600, a conta BOT e o aprendizado online |
 
 ---
@@ -39,6 +39,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 2026-10-07 | Comparador de velocidade entre os backends | 2 | [PR #8](https://github.com/lucas-kiozy/evolutiveChess/pull/8) |
 | 2026-10-07 | `chess_engine` como backend padrão da Luna; avisos do lint limpos em `luna/` | 2 | [PR #9](https://github.com/lucas-kiozy/evolutiveChess/pull/9) |
 | 2026-10-07 | Menos ruído na seleção: 18 partidas por Luna, elite com resultados acumulados, partidas contra campeãs passadas | 3 | [PR #10](https://github.com/lucas-kiozy/evolutiveChess/pull/10) |
+| 2026-10-08 | Janela de profundidade 3 do treino nos lances 8 a 12 (2,3 vezes mais lento que só profundidade 2) | 3 | [PR #12](https://github.com/lucas-kiozy/evolutiveChess/pull/12) |
 | 2026-10-08 | Catraca de promoção com teste sequencial, Luna oficial `luna-v2`, jogadora oficial para rating e Lichess, 7 genes novos de busca e de final (21 no total), ordenação por Bradley–Terry e profundidade 3 do lance 5 ao 12 no treino | 2, 3, 4 e 5 | [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11) |
 
 ---
@@ -121,13 +122,14 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Análise, em confrontos de 40 partidas: a nova melhor Luna (`g0012-i10`) empata com a `luna-v1` (21/40, +17 ± 55 Elo) e com as melhores das gerações 1 e 6 (21/40 cada), e fica um pouco atrás dos pesos iniciais (17/40, -53 ± 56). **Nenhuma diferença é estatisticamente significativa: a evolução ainda não aparece com clareza**
 - [x] Mais 20 gerações do mesmo treino (13 a 32, 4.400 partidas; 7.000 no total), com 81% a 91% de mates por geração
 - [x] Análise: a melhor da geração 32 (`g0032-i07`) vence a `luna-v1` (25/40, +89 ± 57 Elo) e a melhor da geração 12 (23/40, +53 ± 56), empata com a da geração 22 (21/40) e segue atrás dos pesos iniciais (17/40, -53 ± 56). **Primeiro sinal de progresso no confronto direto**, mas ainda dentro de cerca de 1,6 erro-padrão
+- [x] Terceiro treino, com o código dos PRs #11 e #12: 28 gerações e 6.324 partidas (cerca de 7,5 min por geração), partindo das 20 Lunas da geração 32 com uma delas trocada pelo genoma de referência novo. Melhor ao fim: `g0028-i13`, exportada como `candidata-pr11-g28` (pasta compartilhada, `luna-treinos/versoes/`)
 - [ ] Entender por que os pesos iniciais continuam à frente e definir os próximos ajustes do treino
 - [x] Catraca de promoção (`python -m luna promote`): a candidata só vira a Luna oficial se vencer um match pareado de 40 aberturas, decidido por teste sequencial de Wald (H0 0 Elo, H1 +30 Elo) — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 - [x] Luna oficial indicada em `luna/versions/oficial.txt`: a `luna-v2` (`g0032-i07`) — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 - [x] Genes novos de busca e de final: avanço do peão passado, rei na borda, proximidade dos reis, rei em coluna aberta, profundidade da quiescência, contempt e extensão de xeque (21 genes no total); o genoma de referência novo venceu o antigo por +97 ± 31 Elo — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 - [x] Ordenação das Lunas por Bradley–Terry, com encolhimento para a média; quando as duas Lunas na fronteira da elite ficam dentro do erro, jogam 8 partidas extras pareadas — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 - [x] Profundidade no treino: 3 do lance 5 ao 12 e 2 no resto, o que deixa o treino cerca de 2,8 vezes mais lento — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
-- [~] Janela de profundidade 3 do treino reduzida para os lances 8 a 12, escolha do Lucas. Custo medido em 24 partidas com 4 CPUs: 4,8 s por partida só em profundidade 2, 11,2 s com a janela 8 a 12 (2,3 vezes) e 13,5 s com a janela 5 a 12 (2,8 vezes); uma geração de 20 Lunas leva cerca de 9 min — [PR #12](https://github.com/lucas-kiozy/evolutiveChess/pull/12)
+- [x] Janela de profundidade 3 do treino reduzida para os lances 8 a 12, escolha do Lucas. Custo medido em 24 partidas com 4 CPUs: 4,8 s por partida só em profundidade 2, 11,2 s com a janela 8 a 12 (2,3 vezes) e 13,5 s com a janela 5 a 12 (2,8 vezes); uma geração de 20 Lunas leva cerca de 9 min — [PR #12](https://github.com/lucas-kiozy/evolutiveChess/pull/12)
 - [x] Comparador de velocidade entre os backends (`tools/bench_backends.py`): o motor próprio ficou cerca de 1,8 vez mais rápido que o `python-chess` — [PR #8](https://github.com/lucas-kiozy/evolutiveChess/pull/8)
 - [x] Registro das partidas de cada geração em PGN (`generations/gen_NNNN.pgn`, com ids das Lunas, resultado, término e xeques de cada lado)
 
@@ -145,6 +147,10 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 - [x] Primeira medição, da `luna-v1`: 60 partidas contra Stockfish 16 com Elo limitado (12 vitórias, 18 empates, 30 derrotas, 35% dos pontos). Estimativa de 1216 ± 47 (IC 90%: 1139 a 1293) na escala CCRL/UCI_Elo. Como o intervalo inteiro fica abaixo de 1320, o piso do Stockfish, a conclusão firme é "abaixo de ~1320". Essa escala não é a do Lichess
 - [x] Segunda medição, da melhor Luna do treino com a régua nova (`g0012-i10`): 60 partidas contra Stockfish 16 (20 vitórias, 13 empates, 27 derrotas, 44% dos pontos). Estimativa de 1324 ± 45 (IC 90%: 1250 a 1399), cerca de 108 pontos acima da `luna-v1`. A diferença é de cerca de 1,7 erro-padrão: indício de melhora, não prova, e o rating fica em torno do piso de ~1320
 - [x] Terceira medição, da melhor Luna da geração 32: 60 partidas contra Stockfish 16 (20 vitórias, 16 empates, 24 derrotas, 47% dos pontos). Estimativa de 1300 ± 45 (IC 90%: 1226 a 1373), igual, dentro da margem, aos 1324 ± 45 da geração 12. Na última partida da medição, a Luna jogou de pretas e deu mate no Stockfish 1320 em 20 lances (PGN na pasta compartilhada do projeto, `luna-treinos/ultima-partida-stockfish.pgn`). As partidas e o progresso podem ser vistos no [Tabuleiro da Luna](https://claude.ai/artifact/REjZhW7Y2i7Zne4w5rvb6P)
+- [x] Medição da `luna-v2` em profundidade 3 (jogadora oficial): 1663 ± 48 (IC 90%: 1584 a 1742), contra +319 ± 54 Elo da mesma Luna em profundidade 2. O salto vem da busca mais funda, não de mais treino
+- [x] Medição da `candidata-pr11-g28` em profundidade 3: 60 partidas contra Stockfish 16 de 1320 a 1900 (17 vitórias, 12 empates, 31 derrotas, 38% dos pontos). Estimativa de 1633 ± 49 (IC 90%: 1552 a 1713), igual à `luna-v2` dentro da margem
+- [ ] Rodar a catraca de promoção da `candidata-pr11-g28` contra a `luna-v2` (cerca de 600 partidas), que ainda não foi rodada
+- [ ] Chegar ao critério do Lichess: o limite inferior do IC 90% ainda está abaixo de 1600 (1584 na `luna-v2`, 1552 na candidata)
 - [ ] Medir a melhor Luna de cada novo treino até chegar a ~1600
 - [x] Jogadora única para rating e Lichess: `luna.player:official_factory`, com a Luna oficial em profundidade 3 e histórico da partida, para enxergar repetições — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 
@@ -220,3 +226,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-08 | PR #11 aberto: catraca de promoção, Luna oficial (`luna-v2`), jogadora para rating e Lichess, 21 genes, ordenação por Bradley–Terry e profundidade 3 no meio-jogo do treino |
 | 2026-10-08 | PR #11 mergeado (267 testes passando, 7 pulados): itens marcados como concluídos; Luna real ligada ao bot do Lichess |
 | 2026-10-08 | PR #12 aberto: janela de profundidade 3 do treino nos lances 8 a 12 |
+| 2026-10-08 | PR #12 mergeado; terceiro treino (28 gerações, 6.324 partidas) e medições em profundidade 3: `luna-v2` 1663 ± 48, candidata 1633 ± 49 |
