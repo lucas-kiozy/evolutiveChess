@@ -124,6 +124,8 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [~] Catraca de promoção (`python -m luna promote`): a candidata só vira a Luna oficial se vencer um match pareado de 40 aberturas, decidido por teste sequencial de Wald (H0 0 Elo, H1 +30 Elo) — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 - [~] Luna oficial indicada em `luna/versions/oficial.txt`: a `luna-v2` (`g0032-i07`) — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 - [~] Genes novos de busca e de final (21 genes no total); o genoma de referência novo venceu o antigo por +97 ± 31 Elo — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
+- [~] Ordenação das Lunas por Bradley–Terry, com encolhimento para a média; quando as duas Lunas na fronteira da elite ficam dentro do erro, jogam 8 partidas extras pareadas — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
+- [~] Profundidade no treino: 3 do lance 5 ao 12 e 2 no resto, o que deixa o treino cerca de 2,8 vezes mais lento — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 - [x] Comparador de velocidade entre os backends (`tools/bench_backends.py`): o motor próprio ficou cerca de 1,8 vez mais rápido que o `python-chess` — [PR #8](https://github.com/lucas-kiozy/evolutiveChess/pull/8)
 - [x] Registro das partidas de cada geração em PGN (`generations/gen_NNNN.pgn`, com ids das Lunas, resultado, término e xeques de cada lado)
 
@@ -213,4 +215,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-07 | PRs #8, #9 e #10 mergeados (246 testes passando no `main`) |
 | 2026-10-07 | Resultado do segundo treino (régua 5/2/-1, 2.580 partidas) e segunda medição de rating (1324 ± 45) |
 | 2026-10-08 | Gerações 13 a 32 do treino com a régua nova e terceira medição de rating (1300 ± 45) |
-| 2026-10-08 | PR #11 aberto: catraca de promoção, Luna oficial (`luna-v2`), jogadora para rating e Lichess, 21 genes |
+| 2026-10-08 | PR #11 aberto: catraca de promoção, Luna oficial (`luna-v2`), jogadora para rating e Lichess, 21 genes, ordenação por Bradley–Terry e profundidade 3 no meio-jogo do treino |
