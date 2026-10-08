@@ -19,10 +19,33 @@ Base científica e técnica das escolhas do projeto. Artigos revisados por pares
 - **Rosin, C. D., & Belew, R. K. (1997).** New methods for competitive coevolution. *Evolutionary Computation*, 5(1), 1–29.
   Propõe o "hall da fama": cada indivíduo enfrenta também campeões de gerações passadas, o que evita que a população esqueça estratégias já vencidas e ande em círculos. Base das partidas da Luna contra campeãs passadas.
 
+- **Pollack, J. B., & Blair, A. D. (1998).** Co-evolution in the successful learning of backgammon strategy. *Machine Learning*, 32(3), 225–240.
+  Mostra que, em self-play, o campeão só deve ser trocado quando o desafiante o vence de forma consistente. Base da catraca de promoção da Luna.
+
+- **Maron, O., & Moore, A. W. (1997).** The racing algorithm: model selection for lazy learners. *Artificial Intelligence Review*, 11(1–5), 193–225.
+  Gasta avaliações extras só nos candidatos que ainda não se separaram estatisticamente. Base das partidas extras na fronteira da elite.
+
 ## Busca
 
 - **Knuth, D. E., & Moore, R. W. (1975).** An analysis of alpha-beta pruning. *Artificial Intelligence*, 6(4), 293–326.
   Base da busca minimax com poda alfa-beta prevista para a Luna.
+
+## Estatística das comparações
+
+- **Wald, A. (1945).** Sequential tests of statistical hypotheses. *Annals of Mathematical Statistics*, 16(2), 117–186.
+  Teste sequencial da razão de probabilidades (SPRT): para o match assim que há evidência suficiente. Usado na catraca de promoção (H0 0 Elo, H1 +30 Elo).
+
+- **Glasserman, P., & Yao, D. D. (1992).** Some guidelines and guarantees for common random numbers. *Management Science*, 38(6), 884–908.
+  Comparar alternativas sob as mesmas condições aleatórias reduz a variância da diferença. Base das partidas pareadas, com as mesmas aberturas para as duas cores.
+
+- **Bradley, R. A., & Terry, M. E. (1952).** Rank analysis of incomplete block designs: I. The method of paired comparisons. *Biometrika*, 39(3/4), 324–345.
+  Modelo de comparações pareadas que estima a força de cada jogador a partir dos confrontos. Usado para ordenar as Lunas de uma geração.
+
+- **Hunter, D. R. (2004).** MM algorithms for generalized Bradley–Terry models. *Annals of Statistics*, 32(1), 384–406.
+  Algoritmo de ajuste do modelo de Bradley–Terry, incluindo empates.
+
+- **Efron, B., & Morris, C. (1975).** Data analysis using Stein's estimator and its generalizations. *Journal of the American Statistical Association*, 70(350), 311–319.
+  Encolher estimativas ruidosas para a média melhora o erro total. Aplicado à força estimada de Lunas com poucas partidas.
 
 ## Rating
 
