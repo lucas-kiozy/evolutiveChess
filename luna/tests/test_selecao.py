@@ -335,3 +335,15 @@ def test_promote_saves_a_candidate_from_outside_versions(tmp_path, monkeypatch):
     # Um nome já usado por outra versão é recusado antes de jogar o match.
     with pytest.raises(SystemExit):
         cli.main(["promote", "--candidate", str(outside), "--name", "luna-v2"])
+
+
+def test_player_reports_the_score_of_its_move():
+    # Brancas com uma dama a mais: escore bem positivo. Com mate em 1, perto de MATE_SCORE.
+    player = LunaPlayer(Genome.reference(), depth=1)
+    fen = "4k3/8/8/8/8/8/8/3QK3 w - - 0 1"
+    player.choose_move(fen, [m.uci() for m in chess.Board(fen).legal_moves])
+    assert player.last_score > 500
+    mate = "6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1"
+    player = LunaPlayer(Genome.reference(), depth=1)
+    player.choose_move(mate, [m.uci() for m in chess.Board(mate).legal_moves])
+    assert player.last_score > MATE_SCORE - MAX_PLY

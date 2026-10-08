@@ -58,6 +58,12 @@ class LunaPlayer:
         self.backend = backend
         self._state: Optional[GameState] = None  # partida até o último lance da Luna
 
+    @property
+    def last_score(self) -> Optional[float]:
+        """Avaliação do último lance escolhido, em centipeões, do ponto de vista da
+        Luna (positivo = Luna melhor). O rating e o bot do Lichess usam para desistir."""
+        return self.searcher.last_score
+
     def new_game(self, color: object = None) -> None:
         self._state = None
 
