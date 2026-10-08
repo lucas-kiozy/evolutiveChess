@@ -67,7 +67,14 @@ class EvolutionConfig:
             d["games_per_luna"] = 2 * d.pop("rounds")
             d.setdefault("hall_of_fame", 0)
         m = dict(d.pop("match", {}))
-        m["search"] = SearchConfig(**m.get("search", {}))
+        search = dict(m.get("search", {}))
+        # Treinos antigos gravavam a quiescência e o contempt fixos da busca (sempre os
+        # padrões 4 e 50). Hoje são genes; com os padrões fora, eles evoluem também
+        # nesses treinos, partindo dos mesmos valores (luna.genome.LEGACY_DEFAULTS).
+        for key, legacy in (("quiescence_depth", 4), ("contempt", 50.0)):
+            if search.get(key) == legacy:
+                search.pop(key)
+        m["search"] = SearchConfig.from_dict(search)
         return cls(match=MatchConfig(**m), **d)
 
 

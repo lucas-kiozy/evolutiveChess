@@ -162,19 +162,39 @@ def evaluate(state: GameState, genome: Genome) -> float:
                 rank = sq >> 3
                 advance = rank if side == 1 else 7 - rank  # 1..6
                 passed_bonus += g["passed_pawn"] * advance / 6.0
+                passed_bonus += g["passed_pawn_rank"] * advance * advance / 6.0
         rook_bonus = 0
         for sq in rooks[side]:
             f = sq & 7
             if files[f] == 0:
                 rook_bonus += 1 if enemy_files[f] else 2  # semiaberta = meio bônus
-        shield = 0 if endgame else _king_shield(kings[side], side, pawns[side])
+        if endgame:
+            shield = open_near_king = 0
+        else:
+            shield = _king_shield(kings[side], side, pawns[side])
+            kf = kings[side] & 7
+            near = range(max(0, kf - 1), min(7, kf + 1) + 1)
+            open_near_king = sum(1 for f in near if not files[f])
         score += sign * (
             -g["doubled_pawn"] * doubled
             - g["isolated_pawn"] * isolated
             + passed_bonus
             + g["rook_open_file"] * rook_bonus / 2.0
             + g["king_shield"] * shield
+            - g["king_open_file"] * open_near_king
         )
+
+    # Final com vantagem de pelo menos uma peça menor: empurrar o rei inimigo para a
+    # borda e aproximar o próprio rei, que é como se dá mate com torre ou dama
+    # ("mop-up"). Sem isso a Luna empatava finais ganhos pelo limite de lances.
+    if endgame and (g["king_edge"] or g["king_proximity"]) and abs(material) >= g["bishop"]:
+        strong = 1 if material > 0 else 0
+        weak_king = kings[1 - strong]
+        wf, wr = weak_king & 7, weak_king >> 3
+        to_center = max(3 - wf, wf - 4) + max(3 - wr, wr - 4)  # 0 no centro, 6 no canto
+        distance = abs((kings[0] & 7) - (kings[1] & 7)) + abs((kings[0] >> 3) - (kings[1] >> 3))
+        mop_up = g["king_edge"] * to_center + g["king_proximity"] * (14 - distance)
+        score += mop_up if strong else -mop_up
 
     if g["mobility"]:
         score += g["mobility"] * (state.mobility(True) - state.mobility(False))

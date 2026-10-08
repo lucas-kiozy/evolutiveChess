@@ -1,8 +1,12 @@
 """Busca alfa-beta (negamax) com quiescência sobre capturas.
 
-A busca é fixa; só a avaliação evolui. Mates são pontuados como
-``MATE_SCORE - ply``, então entre dois mates a busca prefere o mais curto,
-o que está alinhado com o critério de aptidão (mate em menos lances).
+Mates são pontuados como ``MATE_SCORE - ply``, então entre dois mates a busca
+prefere o mais curto, o que está alinhado com o critério de aptidão (mate em menos
+lances).
+
+A profundidade e o ruído vêm de ``SearchConfig``. A profundidade da quiescência, o
+contempt e as extensões em xeque são genes (``luna.genome``) e evoluem junto com a
+avaliação; ``SearchConfig`` só os sobrepõe quando recebe um valor explícito.
 """
 
 from __future__ import annotations
@@ -23,12 +27,18 @@ MAX_PLY = 1000  # escores acima de MATE_SCORE - MAX_PLY são mates
 @dataclass
 class SearchConfig:
     depth: int = 2
-    quiescence_depth: int = 4  # 0 desliga a quiescência
     noise: float = 0.0  # ruído uniforme (centipeões) na raiz, para variar partidas
+    # None = usa o gene do genoma. Um número sobrepõe o gene (testes, experimentos).
+    quiescence_depth: Optional[int] = None  # 0 desliga a quiescência
     # "Contempt": quanto um empate (repetição ou afogamento) vale de menos para quem
     # está buscando. Em autojogo os dois lados querem dar mate, então os dois evitam
     # repetir posições em vez de ficar indo e voltando até a tripla repetição.
-    contempt: float = 50.0
+    contempt: Optional[float] = None
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "SearchConfig":
+        keys = ("depth", "noise", "quiescence_depth", "contempt")
+        return cls(**{k: d[k] for k in keys if k in d})
 
 
 class Searcher:
@@ -37,6 +47,11 @@ class Searcher:
         self.config = config
         self.rng = rng or random.Random()
         self.nodes = 0
+        g = genome.genes
+        q = config.quiescence_depth
+        self.quiescence_depth = int(g["quiescence_depth"] if q is None else q)
+        self.contempt = g["contempt"] if config.contempt is None else config.contempt
+        self.check_extensions = int(g["check_extension"])
 
     def choose_move(self, state: GameState) -> Optional[Move]:
         # Ordem UCI antes da ordenação por capturas: desempates e ruído ficam iguais
@@ -53,7 +68,9 @@ class Searcher:
             # apenas na comparação, nunca em alpha, e não se aplica a mates.
             alpha = best_score - noise
             state.push(move)
-            score = -self._negamax(state, self.config.depth - 1, -INF, -alpha, 1)
+            score = -self._negamax(
+                state, self.config.depth - 1, -INF, -alpha, 1, self.check_extensions
+            )
             state.pop()
             if score <= alpha:
                 continue
@@ -63,18 +80,26 @@ class Searcher:
                 best_move, best_score = move, score
         return best_move
 
-    def _negamax(self, state: GameState, depth: int, alpha: float, beta: float, ply: int) -> float:
+    def _negamax(
+        self, state: GameState, depth: int, alpha: float, beta: float, ply: int, extensions: int
+    ) -> float:
         self.nodes += 1
         if state.is_repetition():
             return self._draw_score(ply)
         moves = state.legal_moves()
         if not moves:
             return -(MATE_SCORE - ply) if state.is_check() else self._draw_score(ply)
+        # Extensão em xeque: o lado em xeque tem poucas respostas, então olhar um
+        # meio-lance a mais custa pouco e evita julgar a posição no meio de um ataque.
+        # ``extensions`` limita quantas vezes isso acontece numa mesma linha.
+        if extensions and state.is_check():
+            depth += 1
+            extensions -= 1
         if depth <= 0:
-            return self._quiescence(state, alpha, beta, ply, self.config.quiescence_depth)
+            return self._quiescence(state, alpha, beta, ply, self.quiescence_depth)
         for move in self._ordered(state, moves):
             state.push(move)
-            score = -self._negamax(state, depth - 1, -beta, -alpha, ply + 1)
+            score = -self._negamax(state, depth - 1, -beta, -alpha, ply + 1, extensions)
             state.pop()
             if score >= beta:
                 return score
@@ -84,7 +109,7 @@ class Searcher:
 
     def _draw_score(self, ply: int) -> float:
         """Empate visto do lado a jogar no nó: ruim para a raiz, bom para o adversário."""
-        return -self.config.contempt if ply % 2 == 0 else self.config.contempt
+        return -self.contempt if ply % 2 == 0 else self.contempt
 
     def _quiescence(
         self, state: GameState, alpha: float, beta: float, ply: int, qdepth: int

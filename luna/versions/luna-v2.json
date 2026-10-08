@@ -1,0 +1,110 @@
+{
+  "name": "luna-v2",
+  "created": "2026-10-08T11:17:59+00:00",
+  "notes": "Melhor da geração 32 do treino com a régua 5/2/-1 (g0032-i07, 18 partidas por Luna, profundidade 2). Rating contra o Stockfish 16: 1300 ± 45 em profundidade 2 e 1663 ± 48 (IC 90%: 1584 a 1742) em profundidade 3, na análise do critério de seleção de 2026-10-08. Primeira Luna oficial: a partir dela, uma Luna nova só vira oficial pela catraca de promoção (python -m luna promote). Os genes novos (busca e final) estão com os valores que reproduzem como ela jogava.",
+  "source": {
+    "run_dir": "/mnt/project-files/luna-treinos/treino-regua-nova",
+    "generation": 32,
+    "id": "g0032-i07",
+    "rank": 1,
+    "stats": {
+      "games": 18,
+      "wins": 10,
+      "draws": 5,
+      "losses": 3,
+      "mates": 10,
+      "mate_moves": [
+        64,
+        10,
+        32,
+        93,
+        62,
+        60,
+        85,
+        57,
+        28,
+        78
+      ],
+      "win_checks": [
+        6,
+        3,
+        6,
+        13,
+        9,
+        10,
+        12,
+        7,
+        7,
+        19
+      ],
+      "checks_given": 121,
+      "capture_points": 35.099999999999994,
+      "result_points": 57.0,
+      "mean_mate_moves": 56.9,
+      "mean_win_checks": 9.2,
+      "checks_per_game": 6.722222222222222
+    },
+    "backend": "chess_engine",
+    "summary": {
+      "generation": 32,
+      "games": 220,
+      "mate_rate": 0.8136363636363636,
+      "mean_mate_moves": 52.11731843575419,
+      "mean_checks_per_game": 12.454545454545455,
+      "terminations": {
+        "checkmate": 179,
+        "max_plies": 28,
+        "insufficient_material": 11,
+        "threefold_repetition": 2
+      },
+      "best_id": "g0032-i07",
+      "best_result_points": 57.0,
+      "best_record": [
+        10,
+        5,
+        3
+      ],
+      "best_mean_win_checks": 9.2,
+      "best_mean_mate_moves": 56.9,
+      "best_checks_per_game": 6.722222222222222,
+      "best_games": 18,
+      "seconds": 179.83
+    }
+  },
+  "search": {
+    "depth": 2,
+    "noise": 5.0,
+    "quiescence_depth": null,
+    "contempt": null
+  },
+  "genome": {
+    "id": "g0032-i07",
+    "parents": [
+      "g0031-i04",
+      "g0031-i04"
+    ],
+    "genes": {
+      "pawn": 94.05930551654953,
+      "knight": 339.39300754249723,
+      "bishop": 330.77636388024837,
+      "rook": 493.9169426223129,
+      "queen": 984.0585745643333,
+      "pst_weight": 1.1442456844385702,
+      "mobility": 3.5991510001987406,
+      "bishop_pair": 36.13375300598898,
+      "doubled_pawn": 16.10799493597265,
+      "isolated_pawn": 0.0,
+      "passed_pawn": 17.14374378512779,
+      "rook_open_file": 33.01978123452625,
+      "king_shield": 0.03920464229362253,
+      "check_bonus": 0.9216107781618579,
+      "passed_pawn_rank": 0.0,
+      "king_edge": 0.0,
+      "king_proximity": 0.0,
+      "king_open_file": 0.0,
+      "quiescence_depth": 4.0,
+      "contempt": 50.0,
+      "check_extension": 0.0
+    }
+  }
+}
