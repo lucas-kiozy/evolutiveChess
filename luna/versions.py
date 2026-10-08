@@ -96,23 +96,23 @@ def export_version(
     name: Optional[str] = None,
     generation: Optional[int] = None,
     notes: str = "",
-    versions_dir: str | Path = VERSIONS_DIR,
+    versions_dir: str | Path | None = None,
     overwrite: bool = False,
 ) -> Path:
     """Salva a melhor Luna de uma geração (padrão: a última avaliada) como versão."""
     return save_version(version_from_run(run_dir, name, generation, notes), versions_dir, overwrite)
 
 
-def load_version(name_or_path: str | Path, versions_dir: str | Path = VERSIONS_DIR) -> LunaVersion:
+def load_version(name_or_path: str | Path, versions_dir: str | Path | None = None) -> LunaVersion:
     """Carrega uma versão pelo nome (``luna-v1``) ou pelo caminho do arquivo."""
     path = Path(name_or_path)
     if not path.suffix:
-        path = Path(versions_dir) / f"{name_or_path}.json"
+        path = Path(versions_dir or VERSIONS_DIR) / f"{name_or_path}.json"
     return LunaVersion.from_dict(json.loads(path.read_text(encoding="utf-8")))
 
 
-def list_versions(versions_dir: str | Path = VERSIONS_DIR) -> list[LunaVersion]:
-    folder = Path(versions_dir)
+def list_versions(versions_dir: str | Path | None = None) -> list[LunaVersion]:
+    folder = Path(versions_dir or VERSIONS_DIR)
     if not folder.exists():
         return []
     return [load_version(p) for p in sorted(folder.glob("*.json"))]
@@ -121,29 +121,29 @@ def list_versions(versions_dir: str | Path = VERSIONS_DIR) -> list[LunaVersion]:
 OFFICIAL_FILE = "oficial.txt"
 
 
-def official_name(versions_dir: str | Path = VERSIONS_DIR) -> str:
+def official_name(versions_dir: str | Path | None = None) -> str:
     """Nome da Luna oficial, a que joga as partidas que contam (rating e Lichess).
 
     Só muda pela catraca de promoção (``python -m luna promote``)."""
-    return (Path(versions_dir) / OFFICIAL_FILE).read_text(encoding="utf-8").strip()
+    return (Path(versions_dir or VERSIONS_DIR) / OFFICIAL_FILE).read_text(encoding="utf-8").strip()
 
 
-def set_official(name: str, versions_dir: str | Path = VERSIONS_DIR) -> None:
+def set_official(name: str, versions_dir: str | Path | None = None) -> None:
     load_version(name, versions_dir)  # falha se a versão não existir
-    path = Path(versions_dir) / OFFICIAL_FILE
+    path = Path(versions_dir or VERSIONS_DIR) / OFFICIAL_FILE
     tmp = path.with_suffix(".txt.tmp")
     tmp.write_text(name + "\n", encoding="utf-8")
     os.replace(tmp, path)
 
 
-def version_path(name: str, versions_dir: str | Path = VERSIONS_DIR) -> Path:
+def version_path(name: str, versions_dir: str | Path | None = None) -> Path:
     if not _NAME.match(name):
         raise ValueError("nome deve ter letras, números, ponto, hífen ou sublinhado")
-    return Path(versions_dir) / f"{name}.json"
+    return Path(versions_dir or VERSIONS_DIR) / f"{name}.json"
 
 
 def save_version(
-    version: LunaVersion, versions_dir: str | Path = VERSIONS_DIR, overwrite: bool = False
+    version: LunaVersion, versions_dir: str | Path | None = None, overwrite: bool = False
 ) -> Path:
     path = version_path(version.name, versions_dir)
     if path.exists() and not overwrite:

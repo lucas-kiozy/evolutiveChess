@@ -69,7 +69,7 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--candidate", help="versão candidata (nome ou caminho)")
     p.add_argument("--run-dir", help="ou: a melhor Luna de uma geração deste treino")
     p.add_argument("--generation", type=int, help="padrão: a última avaliada")
-    p.add_argument("--name", help="nome da versão nova, quando a candidata vem de um treino")
+    p.add_argument("--name", help="nome da versão salva em luna/versions se for promovida")
     p.add_argument("--notes", default="")
     p.add_argument("--official", help="padrão: a de luna/versions/oficial.txt")
     p.add_argument("--depth", type=int, default=OFFICIAL_DEPTH)
@@ -147,12 +147,19 @@ def _promote(args: argparse.Namespace) -> None:
         raise SystemExit("Use --candidate ou --run-dir (um dos dois).")
     if args.candidate:
         candidate = v.load_version(args.candidate)
+        candidate.name = args.name or candidate.name
     else:
         if not args.name:
             raise SystemExit("Com --run-dir, dê o nome da versão nova em --name.")
-        if v.version_path(args.name).exists():
-            raise SystemExit(f"A versão {args.name} já existe.")
         candidate = v.version_from_run(args.run_dir, args.name, args.generation, args.notes)
+    # A candidata precisa estar em luna/versions para virar oficial. Se ela vem de um
+    # treino ou de um arquivo de fora, é salva lá depois da promoção; o nome é
+    # conferido antes do match para não perder horas de partidas num conflito.
+    stored = v.version_path(candidate.name)
+    genes = candidate.genome.genes
+    already_stored = stored.exists() and v.load_version(stored).genome.genes == genes
+    if stored.exists() and not already_stored:
+        raise SystemExit(f"Já existe outra versão chamada {candidate.name}; use --name.")
     config = PromotionConfig(
         elo1=args.elo1,
         max_games=args.max_games,
@@ -174,7 +181,7 @@ def _promote(args: argparse.Namespace) -> None:
             f"Elo {result.elo:+.0f} ± {result.elo_error:.0f}. A oficial continua {official.name}."
         )
         return
-    if args.run_dir:
+    if not already_stored:
         candidate.source["promotion"] = summary
         v.save_version(candidate)
     v.set_official(candidate.name)

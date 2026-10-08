@@ -302,3 +302,36 @@ def test_training_default_and_old_configs_get_the_deep_window():
     assert EvolutionConfig.from_dict(d).match.search.deep_depth == 3
     explicit = _tiny_config().to_dict()
     assert EvolutionConfig.from_dict(explicit).match.search.deep_depth is None
+
+
+def test_promote_saves_a_candidate_from_outside_versions(tmp_path, monkeypatch):
+    import json
+    import shutil
+
+    from luna import __main__ as cli
+    from luna import promotion, versions
+    from luna.versions import VERSIONS_DIR
+
+    vdir = tmp_path / "versions"
+    vdir.mkdir()
+    shutil.copy(VERSIONS_DIR / "luna-v2.json", vdir)
+    (vdir / "oficial.txt").write_text("luna-v2\n", encoding="utf-8")
+    outside = tmp_path / "candidata.json"
+    data = json.loads((VERSIONS_DIR / "luna-v1.json").read_text(encoding="utf-8"))
+    data["name"] = "candidata"
+    outside.write_text(json.dumps(data), encoding="utf-8")
+    monkeypatch.setattr(versions, "VERSIONS_DIR", vdir)
+
+    def fake_match(candidate, official, config, workers=0):
+        return promotion.PromotionResult(
+            candidate.id, official.id, True, "H1", 16, 12, 2, 2, 0.81, 250.0, 80.0, 3.0, (-2.9, 2.9)
+        )
+
+    monkeypatch.setattr(promotion, "run_promotion_match", fake_match)
+    cli.main(["promote", "--candidate", str(outside), "--name", "luna-v9"])
+    assert official_name(vdir) == "luna-v9"
+    saved = load_version("luna-v9", vdir)
+    assert saved.source["promotion"]["decision"] == "H1"
+    # Um nome já usado por outra versão é recusado antes de jogar o match.
+    with pytest.raises(SystemExit):
+        cli.main(["promote", "--candidate", str(outside), "--name", "luna-v2"])
