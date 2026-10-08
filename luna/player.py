@@ -28,6 +28,7 @@ from luna.adapters import DEFAULT_BACKEND, new_game
 from luna.game_interface import GameState
 from luna.genome import Genome
 from luna.promotion import OFFICIAL_DEPTH
+from luna.resign import sees_forced_draw
 from luna.search import SearchConfig, Searcher
 
 
@@ -63,6 +64,19 @@ class LunaPlayer:
         """Avaliação do último lance escolhido, em centipeões, do ponto de vista da
         Luna (positivo = Luna melhor). O rating e o bot do Lichess usam para desistir."""
         return self.searcher.last_score
+
+    def sees_forced_draw(self) -> bool:
+        """Na posição do último ``choose_move``, a Luna enxerga empate forçado
+        (``luna.resign.sees_forced_draw``)? Se sim, ela não desiste mesmo com a
+        avaliação perdida. Sem partida guardada, responde False."""
+        state = self._state
+        if state is None or not state.ply:
+            return False
+        move = state.pop()
+        try:
+            return sees_forced_draw(state)
+        finally:
+            state.push(move)
 
     def new_game(self, color: object = None) -> None:
         self._state = None

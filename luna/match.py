@@ -8,6 +8,7 @@ from typing import Optional, Sequence
 
 from luna.adapters import DEFAULT_BACKEND, new_game
 from luna.genome import Genome
+from luna.resign import RESIGN_MOVES, RESIGN_SCORE, ResignTracker, should_resign
 from luna.search import SearchConfig, Searcher
 
 _STANDARD_VALUE = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9, "K": 0}
@@ -19,6 +20,10 @@ class MatchConfig:
     max_plies: int = 200  # limite de meios-lances; ao atingir, empate por limite
     random_opening_plies: int = 2  # lances aleatórios no começo para variar as partidas
     backend: str = DEFAULT_BACKEND
+    # Desistência (luna.resign): avaliação <= resign_score por resign_moves lances
+    # seguidos, sem empate forçado à vista. resign_moves = 0 desliga.
+    resign_score: float = RESIGN_SCORE
+    resign_moves: int = RESIGN_MOVES
 
 
 @dataclass
@@ -55,6 +60,12 @@ def play_game(
         True: Searcher(white, config.search, rng),
         False: Searcher(black, config.search, rng),
     }
+    trackers = {}
+    if config.resign_moves > 0:
+        trackers = {
+            side: ResignTracker(config.resign_score, config.resign_moves) for side in (True, False)
+        }
+    resigned: Optional[bool] = None  # cor de quem desistiu
     checks = {True: 0, False: 0}
     captures: dict[bool, dict[str, int]] = {True: {}, False: {}}
     moves: list[str] = []
@@ -75,6 +86,10 @@ def play_game(
             move = searchers[mover].choose_move(state)
             if move is None:  # não deveria acontecer: outcome já cobre sem lances
                 break
+            score = searchers[mover].last_score
+            if trackers and should_resign(trackers[mover], score, state):
+                resigned = mover
+                break
         victim = state.captured_piece(move)
         if victim:
             captures[mover][victim] = captures[mover].get(victim, 0) + 1
@@ -86,7 +101,9 @@ def play_game(
         outcome = state.outcome(claim_draw=True)
 
     plies = state.ply
-    if outcome is None:
+    if resigned is not None:
+        winner, termination = ("black" if resigned else "white"), "resignation"
+    elif outcome is None:
         winner, termination = None, "max_plies"
     else:
         winner = None if outcome.winner is None else ("white" if outcome.winner else "black")
