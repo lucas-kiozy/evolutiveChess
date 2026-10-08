@@ -50,6 +50,13 @@ def main(argv: list[str] | None = None) -> None:
     t.add_argument("--backend", choices=["chess_engine", "python-chess"], default="chess_engine")
     t.add_argument("--workers", type=int, default=0, help="0 = número de CPUs")
     t.add_argument("--seed", type=int, default=42)
+    t.add_argument(
+        "--resign-win-points", type=float, default=6.0, help="régua da vitória por desistência"
+    )
+    t.add_argument(
+        "--resign-moves", type=int, default=3, help="lances perdidos seguidos; 0 desliga"
+    )
+    t.add_argument("--resign-score", type=float, default=-1000.0, help="centipeões")
 
     s = sub.add_parser("show", help="mostra o histórico e o melhor genoma")
     s.add_argument("--run-dir", default="luna/runs/default")
@@ -113,6 +120,7 @@ def main(argv: list[str] | None = None) -> None:
             boundary_games=args.boundary_games,
             workers=args.workers,
             seed=args.seed,
+            resign_win_points=args.resign_win_points,
             match=MatchConfig(
                 search=SearchConfig(
                     depth=args.depth,
@@ -126,6 +134,8 @@ def main(argv: list[str] | None = None) -> None:
                 max_plies=args.max_plies,
                 random_opening_plies=args.opening_plies,
                 backend=args.backend,
+                resign_score=args.resign_score,
+                resign_moves=args.resign_moves,
             ),
         )
         evolve(args.run_dir, args.generations, config, workers=args.workers)

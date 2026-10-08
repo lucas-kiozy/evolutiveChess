@@ -33,7 +33,7 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass, field
 from typing import Callable, Optional
 
-from luna.fitness import Stats, collect_stats, rank, sort_key
+from luna.fitness import RESULT_POINTS, Stats, collect_stats, rank, resign_bonus_games, sort_key
 from luna.genome import Genome, crossover, mutate
 from luna.match import GameRecord, MatchConfig, play_game
 from luna.openings import BOOK
@@ -61,6 +61,7 @@ class EvolutionConfig:
     ranking: str = "bradley_terry"  # ou "regua": soma da régua com os desempates
     boundary_games: int = 8  # partidas extras na fronteira da elite (par; 0 desliga)
     prior_games: float = 12.0  # partidas virtuais contra a média (Bradley–Terry)
+    resign_win_points: float = RESULT_POINTS["resign_win"]  # vitória por desistência
     match: MatchConfig = field(default_factory=lambda: MatchConfig(search=TRAINING_SEARCH))
 
     def __post_init__(self) -> None:
@@ -76,6 +77,11 @@ class EvolutionConfig:
             raise ValueError(f"ranking deve ser um de {RANKINGS}")
         if self.boundary_games < 0 or self.boundary_games % 2:
             raise ValueError("boundary_games deve ser par e >= 0")
+
+    @property
+    def scale(self) -> dict[str, float]:
+        """A régua deste treino: 5/2/-1 e a vitória por desistência."""
+        return {**RESULT_POINTS, "resign_win": self.resign_win_points}
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -193,10 +199,15 @@ def rank_generation(
             if ident in stats:
                 stats[ident].merge(Stats.from_dict(previous))
                 results += [(ident, opp, s) for opp, s in previous.get("results", [])]
+        scale = config.scale
         if config.ranking == "regua":
-            return GenerationRanking(rank(stats), stats, {}, results, records)
-        strengths = bradley_terry(results, config.prior_games)
-        ids = sorted(by_id, key=lambda i: (-round(strengths[i].elo, 9), sort_key(stats[i]), i))
+            return GenerationRanking(rank(stats, scale), stats, {}, results, records)
+        per_resign = resign_bonus_games(scale)
+        bonus = {i: per_resign * s.resign_wins for i, s in stats.items() if s.resign_wins}
+        strengths = bradley_terry(results, config.prior_games, bonus=bonus)
+        ids = sorted(
+            by_id, key=lambda i: (-round(strengths[i].elo, 9), sort_key(stats[i], scale), i)
+        )
         return GenerationRanking(ids, stats, strengths, results, records)
 
     ranking = build(records)
@@ -250,6 +261,7 @@ def summarize(
     records: list[GameRecord],
     seconds: float,
     strengths: Optional[dict] = None,
+    scale: dict[str, float] = RESULT_POINTS,
 ) -> dict:
     mates = [r for r in records if r.termination == "checkmate"]
     terminations: dict[str, int] = {}
@@ -265,7 +277,8 @@ def summarize(
         / max(1, len(records)),
         "terminations": terminations,
         "best_id": ranked_ids[0],
-        "best_result_points": best.result_points,
+        "best_result_points": best.points(scale),
+        "best_resign_wins": best.resign_wins,
         "best_record": [best.wins, best.draws, best.losses],
         "best_mean_win_checks": best.mean_win_checks,
         "best_mean_mate_moves": best.mean_mate_moves,
@@ -313,7 +326,13 @@ def evolve(
             strengths = ranking.strengths
             ranked = [by_id[i] for i in ranked_ids]
             summary = summarize(
-                generation, ranked_ids, stats, records, time.perf_counter() - t0, strengths
+                generation,
+                ranked_ids,
+                stats,
+                records,
+                time.perf_counter() - t0,
+                strengths,
+                config.scale,
             )
             summary["boundary"] = list(ranking.boundary) if ranking.boundary else None
             storage.save_generation(

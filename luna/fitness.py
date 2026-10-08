@@ -6,6 +6,11 @@ empate mais que uma derrota. A comparação usa a média por partida, que dá a 
 ordem que a soma quando todas jogam o mesmo número de partidas e continua justa
 para a elite, que acumula as partidas das gerações anteriores.
 
+Vitória por desistência do adversário: +5 da vitória e +1 de bônus, 6 no total
+(decisão do Lucas em 2026-10-08, "na régua de treino, como bônus"). O valor fica em
+``RESULT_POINTS["resign_win"]`` e no ``EvolutionConfig.resign_win_points``. Quem
+desiste leva a derrota de sempre (-1).
+
 Desempates, nesta ordem, entre Lunas com a mesma média na régua:
 1. Pontos de captura nos empates e derrotas, por partida (maior é melhor): peão 0,1;
    cavalo 0,3; bispo 0,4; torre 0,6; dama 2.
@@ -23,7 +28,7 @@ from typing import Iterable
 
 from luna.match import GameRecord
 
-RESULT_POINTS = {"win": 5.0, "draw": 2.0, "loss": -1.0}
+RESULT_POINTS = {"win": 5.0, "resign_win": 6.0, "draw": 2.0, "loss": -1.0}
 CAPTURE_POINTS = {"P": 0.1, "N": 0.3, "B": 0.4, "R": 0.6, "Q": 2.0}
 
 
@@ -34,7 +39,8 @@ def capture_score(captures: dict[str, int]) -> float:
 @dataclass
 class Stats:
     games: int = 0
-    wins: int = 0
+    wins: int = 0  # inclui as vitórias por desistência
+    resign_wins: int = 0  # vitórias em que o adversário desistiu
     draws: int = 0
     losses: int = 0
     mates: int = 0
@@ -45,10 +51,15 @@ class Stats:
 
     @property
     def result_points(self) -> float:
+        return self.points(RESULT_POINTS)
+
+    def points(self, scale: dict[str, float]) -> float:
+        """Soma da régua ``scale`` (chaves win, resign_win, draw e loss)."""
         return (
-            RESULT_POINTS["win"] * self.wins
-            + RESULT_POINTS["draw"] * self.draws
-            + RESULT_POINTS["loss"] * self.losses
+            scale["win"] * (self.wins - self.resign_wins)
+            + scale["resign_win"] * self.resign_wins
+            + scale["draw"] * self.draws
+            + scale["loss"] * self.losses
         )
 
     @property
@@ -67,6 +78,7 @@ class Stats:
         """Soma os resultados de ``other`` (partidas de gerações anteriores)."""
         self.games += other.games
         self.wins += other.wins
+        self.resign_wins += other.resign_wins
         self.draws += other.draws
         self.losses += other.losses
         self.mates += other.mates
@@ -101,6 +113,8 @@ def collect_stats(records: Iterable[GameRecord]) -> dict[str, Stats]:
             if r.winner == color:
                 s.wins += 1
                 s.win_checks.append(checks)
+                if r.termination == "resignation":
+                    s.resign_wins += 1
                 if r.mate_moves is not None:
                     s.mates += 1
                     s.mate_moves.append(r.mate_moves)
@@ -113,18 +127,27 @@ def collect_stats(records: Iterable[GameRecord]) -> dict[str, Stats]:
     return stats
 
 
-def sort_key(s: Stats) -> tuple:
+def sort_key(s: Stats, scale: dict[str, float] = RESULT_POINTS) -> tuple:
     """Chave de ordenação: menor é melhor."""
     inf = float("inf")
     games = s.games or 1
     return (
-        -round(s.result_points / games, 9),
+        -round(s.points(scale) / games, 9),
         -round(s.capture_points / games, 9),
         s.mean_win_checks if s.win_checks else inf,
         s.mean_mate_moves if s.mate_moves else inf,
     )
 
 
-def rank(stats: dict[str, Stats]) -> list[str]:
+def rank(stats: dict[str, Stats], scale: dict[str, float] = RESULT_POINTS) -> list[str]:
     """IDs do melhor para o pior."""
-    return sorted(stats, key=lambda i: (sort_key(stats[i]), i))
+    return sorted(stats, key=lambda i: (sort_key(stats[i], scale), i))
+
+
+def resign_bonus_games(scale: dict[str, float] = RESULT_POINTS) -> float:
+    """O bônus de uma vitória por desistência em partidas virtuais (Bradley–Terry).
+
+    A régua é afim ao placar 1/½/0: vitória menos derrota (6 pontos) vale uma
+    partida. O ponto a mais da desistência vale então 1/6 de uma vitória virtual
+    contra a adversária média; um valor negativo vira derrota virtual."""
+    return (scale["resign_win"] - scale["win"]) / (scale["win"] - scale["loss"])
