@@ -16,6 +16,7 @@ _RESULT = {"white": "1-0", "black": "0-1", None: "1/2-1/2"}
 
 _TERMINATION = {
     "checkmate": "normal",
+    "resignation": "normal",
     "stalemate": "normal",
     "insufficient_material": "normal",
     "threefold_repetition": "normal",

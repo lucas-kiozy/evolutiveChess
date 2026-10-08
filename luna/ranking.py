@@ -22,6 +22,11 @@ modelo de força:
   entre as Lunas (~15 Elo) e a esperada com os genes novos de busca e de final
   (~100 Elo, seção 4 da análise).
 
+- O bônus da vitória por desistência (régua 6 em vez de 5) entra como uma fração de
+  vitória virtual contra a mesma adversária média: ``bonus[p]`` vitórias virtuais
+  (ou derrotas, se negativo). Partidas com peso fracionário cabem no algoritmo MM,
+  que maximiza a verossimilhança ponderada da mesma forma.
+
 O erro de cada força usa a informação de Fisher de cada Luna, sem as covariâncias.
 É uma aproximação, usada só para decidir quando a fronteira da elite precisa de
 partidas extras.
@@ -32,7 +37,7 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, Optional
 
 from luna.match import GameRecord
 
@@ -68,8 +73,12 @@ def bradley_terry(
     prior_games: float = 12.0,
     iterations: int = 1000,
     tolerance: float = 1e-10,
+    bonus: Optional[dict[str, float]] = None,
 ) -> dict[str, Strength]:
-    """Força de cada jogadora a partir de (a, b, placar de a) com 1/½/0."""
+    """Força de cada jogadora a partir de (a, b, placar de a) com 1/½/0.
+
+    ``bonus``: vitórias virtuais extras de cada jogadora contra a adversária média
+    (negativo = derrotas virtuais)."""
     games: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
     score: dict[str, float] = defaultdict(float)
     played: dict[str, int] = defaultdict(int)
@@ -81,23 +90,26 @@ def bradley_terry(
         played[a] += 1
         played[b] += 1
     players = sorted(games)
-    half = prior_games / 2.0
+    bonus = bonus or {}
+    # Partidas e pontos virtuais de cada jogadora contra a adversária média.
+    virtual = {p: prior_games + abs(bonus.get(p, 0.0)) for p in players}
+    virtual_score = {p: prior_games / 2.0 + max(bonus.get(p, 0.0), 0.0) for p in players}
     r = {p: 1.0 for p in players}
     for _ in range(iterations):
         change = 0.0
         new = {}
         for p in players:
             # A adversária virtual tem força fixa 1 (Elo 0).
-            denom = prior_games / (r[p] + 1.0)
+            denom = virtual[p] / (r[p] + 1.0)
             denom += sum(n / (r[p] + r[q]) for q, n in games[p].items())
-            new[p] = (score[p] + half) / denom
+            new[p] = (score[p] + virtual_score[p]) / denom
             change = max(change, abs(math.log(new[p] / r[p])))
         r = new
         if change < tolerance:
             break
     out = {}
     for p in players:
-        info = prior_games * r[p] / (r[p] + 1.0) ** 2
+        info = virtual[p] * r[p] / (r[p] + 1.0) ** 2
         info += sum(n * r[p] * r[q] / (r[p] + r[q]) ** 2 for q, n in games[p].items())
         out[p] = Strength(ELO_PER_LN * math.log(r[p]), ELO_PER_LN / math.sqrt(info), played[p])
     return out
