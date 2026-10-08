@@ -11,6 +11,7 @@ from luna.player import LunaPlayer
 from luna.ranking import bradley_terry
 from luna.resign import (
     ResignTracker,
+    board_sees_forced_draw,
     can_force_draw,
     opponent_cannot_mate,
     sees_forced_draw,
@@ -162,3 +163,13 @@ def test_evolution_config_scale():
     assert cfg.scale["resign_win"] == 1.0 and cfg.scale["win"] == 5.0
     assert EvolutionConfig().scale["resign_win"] == 6.0
     assert EvolutionConfig().match.resign_moves == 3
+
+
+def test_board_adapter_counts_the_real_history():
+    chess = pytest.importorskip("chess")
+    board = chess.Board()
+    for uci in ("g1f3", "g8f6", "f3g1", "f6g8") * 2:
+        board.push_uci(uci)
+    assert board_sees_forced_draw(board, 1)  # Cf3 seria a terceira repetição
+    assert board_sees_forced_draw(chess.Board(FIFTY))
+    assert not board_sees_forced_draw(chess.Board(LOST))

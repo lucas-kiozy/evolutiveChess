@@ -156,6 +156,14 @@ def state_from_moves(
     return state
 
 
+def board_sees_forced_draw(board: object, plies: int = DRAW_SEARCH_PLIES) -> bool:
+    """``sees_forced_draw`` para um ``chess.Board`` do python-chess (rating e Lichess),
+    refazendo a partida a partir de ``board.root()`` com ``board.move_stack``."""
+    moves = [m.uci() for m in board.move_stack]
+    state = state_from_moves(moves, board.root().fen(), "python-chess")
+    return sees_forced_draw(state, plies)
+
+
 def should_resign(tracker: ResignTracker, score_cp: float, state: GameState) -> bool:
     """Chame depois de escolher o lance e antes de jogá-lo, com ``state`` na posição
     em que a jogadora vai jogar (e com o histórico da partida, para as repetições)."""
