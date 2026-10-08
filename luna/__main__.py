@@ -38,7 +38,7 @@ def main(argv: list[str] | None = None) -> None:
     t.add_argument("--mutation-scale", type=float, default=0.05)
     t.add_argument("--depth", type=int, default=2)
     t.add_argument("--deep-depth", type=int, default=3, help="profundidade na janela; 0 desliga")
-    t.add_argument("--deep-from", type=int, default=5, help="primeiro lance da janela funda")
+    t.add_argument("--deep-from", type=int, default=8, help="primeiro lance da janela funda")
     t.add_argument("--deep-to", type=int, default=12, help="último lance da janela funda")
     t.add_argument("--ranking", choices=["bradley_terry", "regua"], default="bradley_terry")
     t.add_argument("--boundary-games", type=int, default=8, help="extras na fronteira da elite")

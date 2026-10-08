@@ -284,10 +284,14 @@ def test_elite_carries_its_games_for_the_next_ranking(tmp_path):
 # ------------------------------------------------- janela funda do treino
 
 
-def test_deep_window_uses_depth_three_from_move_5_to_12():
+def test_deep_window_uses_depth_three_inside_the_window():
     cfg = SearchConfig(depth=2, deep_depth=3, deep_from_move=5, deep_to_move=12)
     assert [cfg.depth_at(p) for p in (0, 7, 8, 9, 23, 24)] == [2, 2, 3, 3, 3, 2]
     assert SearchConfig(depth=2).depth_at(10) == 2
+    # Padrão do treino, escolhido pelo Lucas: lances 8 a 12.
+    train = EvolutionConfig().match.search
+    assert (train.deep_from_move, train.deep_to_move) == (8, 12)
+    assert [train.depth_at(p) for p in (13, 14, 23, 24)] == [2, 3, 3, 2]
 
 
 def test_training_default_and_old_configs_get_the_deep_window():

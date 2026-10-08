@@ -36,10 +36,10 @@ class SearchConfig:
     contempt: Optional[float] = None
     # Janela mais funda: do lance ``deep_from_move`` ao ``deep_to_move`` (contados como
     # no xadrez, um lance = brancas e pretas) a busca usa ``deep_depth`` em vez de
-    # ``depth``. None desliga. No treino o padrão é 3 nos lances 5 a 12, pedido do
+    # ``depth``. None desliga. No treino o padrão é 3 nos lances 8 a 12, pedido do
     # Lucas para ganhar força no meio-jogo sem pagar a profundidade 3 inteira.
     deep_depth: Optional[int] = None
-    deep_from_move: int = 5
+    deep_from_move: int = 8
     deep_to_move: int = 12
 
     @classmethod
