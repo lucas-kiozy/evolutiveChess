@@ -127,6 +127,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Genes novos de busca e de final: avanço do peão passado, rei na borda, proximidade dos reis, rei em coluna aberta, profundidade da quiescência, contempt e extensão de xeque (21 genes no total); o genoma de referência novo venceu o antigo por +97 ± 31 Elo — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 - [x] Ordenação das Lunas por Bradley–Terry, com encolhimento para a média; quando as duas Lunas na fronteira da elite ficam dentro do erro, jogam 8 partidas extras pareadas — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 - [x] Profundidade no treino: 3 do lance 5 ao 12 e 2 no resto, o que deixa o treino cerca de 2,8 vezes mais lento — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
+- [~] Janela de profundidade 3 do treino reduzida para os lances 8 a 12, escolha do Lucas. Custo medido em 24 partidas com 4 CPUs: 4,8 s por partida só em profundidade 2, 11,2 s com a janela 8 a 12 (2,3 vezes) e 13,5 s com a janela 5 a 12 (2,8 vezes); uma geração de 20 Lunas leva cerca de 9 min — [PR #12](https://github.com/lucas-kiozy/evolutiveChess/pull/12)
 - [x] Comparador de velocidade entre os backends (`tools/bench_backends.py`): o motor próprio ficou cerca de 1,8 vez mais rápido que o `python-chess` — [PR #8](https://github.com/lucas-kiozy/evolutiveChess/pull/8)
 - [x] Registro das partidas de cada geração em PGN (`generations/gen_NNNN.pgn`, com ids das Lunas, resultado, término e xeques de cada lado)
 
@@ -218,3 +219,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-08 | Gerações 13 a 32 do treino com a régua nova e terceira medição de rating (1300 ± 45) |
 | 2026-10-08 | PR #11 aberto: catraca de promoção, Luna oficial (`luna-v2`), jogadora para rating e Lichess, 21 genes, ordenação por Bradley–Terry e profundidade 3 no meio-jogo do treino |
 | 2026-10-08 | PR #11 mergeado (267 testes passando, 7 pulados): itens marcados como concluídos; Luna real ligada ao bot do Lichess |
+| 2026-10-08 | PR #12 aberto: janela de profundidade 3 do treino nos lances 8 a 12 |
