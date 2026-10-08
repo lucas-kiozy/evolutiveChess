@@ -149,8 +149,10 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 - [x] Terceira medição, da melhor Luna da geração 32: 60 partidas contra Stockfish 16 (20 vitórias, 16 empates, 24 derrotas, 47% dos pontos). Estimativa de 1300 ± 45 (IC 90%: 1226 a 1373), igual, dentro da margem, aos 1324 ± 45 da geração 12. Na última partida da medição, a Luna jogou de pretas e deu mate no Stockfish 1320 em 20 lances (PGN na pasta compartilhada do projeto, `luna-treinos/ultima-partida-stockfish.pgn`). As partidas e o progresso podem ser vistos no [Tabuleiro da Luna](https://claude.ai/artifact/REjZhW7Y2i7Zne4w5rvb6P)
 - [x] Medição da `luna-v2` em profundidade 3 (jogadora oficial): 1663 ± 48 (IC 90%: 1584 a 1742), contra +319 ± 54 Elo da mesma Luna em profundidade 2. O salto vem da busca mais funda, não de mais treino
 - [x] Medição da `candidata-pr11-g28` em profundidade 3: 60 partidas contra Stockfish 16 de 1320 a 1900 (17 vitórias, 12 empates, 31 derrotas, 38% dos pontos). Estimativa de 1633 ± 49 (IC 90%: 1552 a 1713), igual à `luna-v2` dentro da margem
-- [ ] Rodar a catraca de promoção da `candidata-pr11-g28` contra a `luna-v2` (cerca de 600 partidas), que ainda não foi rodada
-- [ ] Chegar ao critério do Lichess: o limite inferior do IC 90% ainda está abaixo de 1600 (1584 na `luna-v2`, 1552 na candidata)
+- [x] Catraca de promoção da `candidata-pr11-g28` contra a `luna-v2`, em profundidade 3: 52 partidas (34 vitórias, 9 empates, 9 derrotas, 74%), +182 ± 51 Elo. O teste sequencial parou cedo, com evidência suficiente. A candidata foi promovida a `luna-v3`
+- [~] `luna-v3` como Luna oficial no repositório (`luna/versions/luna-v3.json` e `oficial.txt`): a thread da Luna vai levar ao `main`. Até lá, o `main` aponta para a `luna-v2`
+- [ ] Corrigir `python -m luna promote --candidate` com caminho fora de `luna/versions/`: o match terminou, mas o comando quebrou ao gravar a nova oficial (repassado à thread da Luna)
+- [ ] Chegar ao critério do Lichess: o limite inferior do IC 90% ainda está abaixo de 1600 (1584 na `luna-v2`, 1552 na `luna-v3`). A `luna-v3` vence a `luna-v2` no confronto direto, mas contra o Stockfish as duas medem igual dentro da margem (1633 ± 49 e 1663 ± 48); a medição contra o Stockfish continua sendo a referência para o Lichess
 - [ ] Medir a melhor Luna de cada novo treino até chegar a ~1600
 - [x] Jogadora única para rating e Lichess: `luna.player:official_factory`, com a Luna oficial em profundidade 3 e histórico da partida, para enxergar repetições — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 
@@ -227,3 +229,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-08 | PR #11 mergeado (267 testes passando, 7 pulados): itens marcados como concluídos; Luna real ligada ao bot do Lichess |
 | 2026-10-08 | PR #12 aberto: janela de profundidade 3 do treino nos lances 8 a 12 |
 | 2026-10-08 | PR #12 mergeado; terceiro treino (28 gerações, 6.324 partidas) e medições em profundidade 3: `luna-v2` 1663 ± 48, candidata 1633 ± 49 |
+| 2026-10-08 | Catraca de promoção: a `candidata-pr11-g28` venceu a `luna-v2` (+182 ± 51 Elo) e virou a `luna-v3`, que ainda vai entrar no `main` |
