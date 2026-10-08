@@ -42,8 +42,8 @@ from luna.ranking import Strength, bradley_terry, game_results, results_of
 from luna.search import SearchConfig
 from luna.storage import RunStorage
 
-#: Busca padrão do treino: profundidade 2, e 3 do lance 5 ao 12 (decisão do Lucas).
-TRAINING_SEARCH = SearchConfig(depth=2, noise=5.0, deep_depth=3, deep_from_move=5, deep_to_move=12)
+#: Busca padrão do treino: profundidade 2, e 3 do lance 8 ao 12 (decisão do Lucas).
+TRAINING_SEARCH = SearchConfig(depth=2, noise=5.0, deep_depth=3, deep_from_move=8, deep_to_move=12)
 RANKINGS = ("bradley_terry", "regua")
 
 
