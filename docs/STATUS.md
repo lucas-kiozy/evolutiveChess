@@ -137,7 +137,7 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 - [x] Interface comum de jogador: `choose_move(fen, lances_uci) -> uci`
 - [x] Primeira medição, da `luna-v1`: 60 partidas contra Stockfish 16 com Elo limitado (12 vitórias, 18 empates, 30 derrotas, 35% dos pontos). Estimativa de 1216 ± 47 (IC 90%: 1139 a 1293) na escala CCRL/UCI_Elo. Como o intervalo inteiro fica abaixo de 1320, o piso do Stockfish, a conclusão firme é "abaixo de ~1320". Essa escala não é a do Lichess
 - [x] Segunda medição, da melhor Luna do treino com a régua nova (`g0012-i10`): 60 partidas contra Stockfish 16 (20 vitórias, 13 empates, 27 derrotas, 44% dos pontos). Estimativa de 1324 ± 45 (IC 90%: 1250 a 1399), cerca de 108 pontos acima da `luna-v1`. A diferença é de cerca de 1,7 erro-padrão: indício de melhora, não prova, e o rating fica em torno do piso de ~1320
-- [x] Terceira medição, da melhor Luna da geração 32: 60 partidas contra Stockfish 16 (20 vitórias, 16 empates, 24 derrotas, 47% dos pontos). Estimativa de 1300 ± 45 (IC 90%: 1226 a 1373), igual, dentro da margem, aos 1324 ± 45 da geração 12
+- [x] Terceira medição, da melhor Luna da geração 32: 60 partidas contra Stockfish 16 (20 vitórias, 16 empates, 24 derrotas, 47% dos pontos). Estimativa de 1300 ± 45 (IC 90%: 1226 a 1373), igual, dentro da margem, aos 1324 ± 45 da geração 12. Na última partida da medição, a Luna jogou de pretas e deu mate no Stockfish 1320 em 20 lances (PGN na pasta compartilhada do projeto, `luna-treinos/ultima-partida-stockfish.pgn`). As partidas e o progresso podem ser vistos no [Tabuleiro da Luna](https://claude.ai/artifact/REjZhW7Y2i7Zne4w5rvb6P)
 - [ ] Medir a melhor Luna de cada novo treino até chegar a ~1600
 
 ### Etapa 5 — Luna jogando no Lichess
