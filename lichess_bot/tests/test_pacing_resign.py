@@ -7,11 +7,11 @@ from lichess_bot.game import GameRunner
 from lichess_bot.learning import build_record
 from lichess_bot.pacing import MovePacing, NoPacing
 from lichess_bot.tests.test_lichess_bot import FakeClient, full
+from luna.resign import board_sees_forced_draw as forced_draw_available
 from rating.match import play_game
 from rating.player import FunctionPlayer, RandomPlayer
 from rating.resign import (
     ResignPolicy,
-    forced_draw_available,
     material_balance,
     score_after,
     wants_to_resign,
@@ -167,10 +167,6 @@ def test_forced_draw_detects_capture_to_bare_kings_and_history():
     assert forced_draw_available(board)  # a posição inicial já apareceu 3 vezes
 
 
-def test_forced_draw_gives_up_safely_on_budget():
-    assert forced_draw_available(chess.Board(PERPETUAL), max_nodes=1)
-
-
 def test_no_resign_while_a_forced_draw_exists():
     pol = ResignPolicy(moves=1)
     assert not wants_to_resign(Hopeless(), pol, chess.Board(PERPETUAL), "h5e8")
@@ -178,18 +174,20 @@ def test_no_resign_while_a_forced_draw_exists():
 
 
 def test_runner_resigns_on_third_hopeless_move():
+    start = full("", white="luna", black="opp")
+    start["initialFen"] = LOST_FOR_WHITE
     states = [
-        full("", white="luna", black="opp"),
-        {"type": "gameState", "moves": "e2e4 e7e5", "status": "started"},
-        {"type": "gameState", "moves": "e2e4 e7e5 d2d4 d7d5", "status": "started"},
+        start,
+        {"type": "gameState", "moves": "a1b1 e8f8", "status": "started"},
+        {"type": "gameState", "moves": "a1b1 e8f8 b1a1 f8g8", "status": "started"},
         {
             "type": "gameState",
-            "moves": "e2e4 e7e5 d2d4 d7d5",
+            "moves": "a1b1 e8f8 b1a1 f8g8",
             "status": "resign",
             "winner": "black",
         },
     ]
-    script = iter(["e2e4", "d2d4", "g1f3"])
+    script = iter(["a1b1", "b1a1", "a1b1"])
 
     class P(Hopeless):
         def choose_move(self, fen, legal):
@@ -199,7 +197,7 @@ def test_runner_resigns_on_third_hopeless_move():
     client.resigned = []
     client.resign = lambda gid: client.resigned.append(gid)
     rec = GameRunner(client, P(), "g1", "luna", resign_policy=ResignPolicy()).run()
-    assert client.moves == ["e2e4", "d2d4"]  # o 3º lance vira desistência
+    assert client.moves == ["a1b1", "b1a1"]  # o 3º lance vira desistência
     assert client.resigned == ["g1"]
     assert rec.luna_resigned and rec.luna_score == 0.0
 
@@ -223,12 +221,3 @@ def test_play_game_resignation_loses_for_who_resigns():
 def test_no_resign_when_opponent_cannot_mate():
     # Brancas sem nada; pretas só com rei e cavalo: não há como perder.
     assert forced_draw_available(chess.Board("4k3/8/8/8/8/8/3n4/K7 w - - 0 1"))
-
-
-def test_player_seeing_a_draw_blocks_resignation():
-    class SeesDraw(Hopeless):
-        def sees_forced_draw(self):
-            return True
-
-    board = chess.Board(LOST_FOR_WHITE)
-    assert not wants_to_resign(SeesDraw(), ResignPolicy(moves=1), board, "a1b1")

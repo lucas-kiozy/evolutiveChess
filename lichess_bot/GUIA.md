@@ -71,8 +71,9 @@ rating não esperam nada.
   meios-lances a partir da posição real (com o histórico), um caminho que force
   afogamento, material insuficiente, repetição tripla, regra dos 50 lances ou
   xeque perpétuo. Se achar, ou se a busca não chegar a uma conclusão, continua
-  jogando. A regra está em `rating/resign.py`, e a aba Jogar do tabuleiro usa o
-  mesmo critério. A avaliação vem de `LunaPlayer.last_score`; num jogador sem
+  jogando. A busca de empate é a regra única do projeto
+  (`luna.resign.board_sees_forced_draw`), aplicada pelo bot em
+  `rating/resign.py`; a aba Jogar do tabuleiro usa o mesmo critério. A avaliação vem de `LunaPlayer.last_score`; num jogador sem
   esse atributo, o material serve de aproximação (10 pontos atrás ≈ -1000 cp).
 - **Quando o adversário desiste**, a partida termina com vitória da Luna:
   1 ponto, como qualquer vitória (`GameRecord.luna_won_by_resignation`).

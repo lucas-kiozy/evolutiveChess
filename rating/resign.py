@@ -6,14 +6,11 @@ em -1000 centipeões ou menos (ou é mate contra ela) por 3 lances seguidos dela
 Exigir lances seguidos evita desistir no meio de uma troca.
 
 Decisão do Lucas: a Luna **só desiste se não enxergar nenhuma possibilidade de
-empate forçado**. Antes de desistir, ``forced_draw_available`` procura, a
-partir da posição real (com o histórico, para contar repetições), um caminho
-que ela consiga impor até o empate: afogamento, material insuficiente,
-repetição tripla, regra dos 50 lances ou xeque perpétuo, em até
-``DRAW_SEARCH_PLIES`` meios-lances. Também não desiste se o adversário não
-tiver material para dar mate, nem se o próprio jogador disser que vê empate
-(``player.sees_forced_draw()``). Se a busca estourar o limite de nós sem
-conclusão, ela continua jogando.
+empate forçado**. A busca de empate forçado é a regra única do projeto,
+``luna.resign.board_sees_forced_draw`` (afogamento, material insuficiente,
+repetição tripla com o histórico real, 50 lances, xeque perpétuo em até 8
+meios-lances, adversário sem material de mate; na dúvida, não desiste). Este
+módulo só a aplica a qualquer ``MovePlayer`` e ao ``chess.Board`` do bot.
 
 De onde vem a avaliação:
 
@@ -33,12 +30,8 @@ from typing import Optional
 
 import chess
 
-RESIGN_SCORE = -1000  # centipeões
-RESIGN_MOVES = 3
-#: Profundidade da busca de empate forçado: 8 meios-lances bastam para um xeque
-#: perpétuo simples repetir a posição três vezes.
-DRAW_SEARCH_PLIES = 8
-DRAW_SEARCH_NODES = 20_000
+# Regra única do projeto, mantida pela frente da Luna em luna/resign.py.
+from luna.resign import RESIGN_MOVES, RESIGN_SCORE, board_sees_forced_draw
 
 PIECE_VALUES = {
     chess.PAWN: 1,
@@ -77,81 +70,6 @@ class ResignPolicy:
         return self._streak >= self.moves
 
 
-class _Budget(Exception):
-    pass
-
-
-def _drawn(board: chess.Board) -> bool:
-    """Empate já garantido na posição (inclui os que podem ser reivindicados)."""
-    return (
-        board.is_stalemate()
-        or board.is_insufficient_material()
-        or board.halfmove_clock >= 100
-        or board.is_repetition(3)
-    )
-
-
-def forced_draw_available(
-    board: chess.Board,
-    max_plies: int = DRAW_SEARCH_PLIES,
-    max_nodes: int = DRAW_SEARCH_NODES,
-) -> bool:
-    """O lado que vai jogar consegue forçar empate (ou melhor) em ``max_plies``?
-
-    Busca E-OU: nos lances de quem procura o empate, basta um caminho; nos do
-    adversário, todas as respostas precisam terminar em empate. Do lado de quem
-    procura, entram só lances que dão xeque ou que empatam (ou matam) na hora,
-    que é o que cobre afogamento, material insuficiente, repetição, 50 lances e
-    xeque perpétuo sem explodir o custo. Sem conclusão dentro de ``max_nodes``,
-    devolve True: na dúvida, não desiste.
-    """
-    board = board.copy(stack=True)
-    nodes = [0]
-
-    def tick() -> None:
-        nodes[0] += 1
-        if nodes[0] > max_nodes:
-            raise _Budget
-
-    def ours(depth: int) -> bool:
-        if depth <= 0:
-            return False
-        for move in list(board.legal_moves):
-            tick()
-            check = board.gives_check(move)
-            board.push(move)
-            try:
-                if board.is_checkmate() or _drawn(board):
-                    return True
-                if check and theirs(depth - 1):
-                    return True
-            finally:
-                board.pop()
-        return False
-
-    def theirs(depth: int) -> bool:
-        if depth <= 0:
-            return False
-        for move in list(board.legal_moves):
-            tick()
-            board.push(move)
-            try:
-                if board.is_checkmate():
-                    return False
-                if not _drawn(board) and not ours(depth - 1):
-                    return False
-            finally:
-                board.pop()
-        return True
-
-    if _drawn(board) or board.has_insufficient_material(not board.turn):
-        return True  # o adversário nem tem material para dar mate
-    try:
-        return ours(max_plies)
-    except _Budget:
-        return True
-
-
 def score_after(player: object, fen: str, move_uci: str) -> float:
     """Avaliação (cp) do lance escolhido, do ponto de vista de quem o escolheu."""
     score = getattr(player, "last_score", None)
@@ -177,7 +95,4 @@ def wants_to_resign(
         return False
     if not policy.update(score_after(player, board.fen(), move_uci)):
         return False
-    sees_draw = getattr(player, "sees_forced_draw", None)  # LunaPlayer, PR #16
-    if callable(sees_draw) and sees_draw():
-        return False
-    return not forced_draw_available(board)
+    return not board_sees_forced_draw(board)
