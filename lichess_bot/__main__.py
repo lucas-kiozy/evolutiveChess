@@ -29,15 +29,24 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("check", help="mostra a conta do token e se ela já é BOT")
 
     up = sub.add_parser("upgrade", help="converte a conta em BOT (irreversível)")
-    up.add_argument("--confirm", action="store_true", help="obrigatório: confirma que é irreversível")
+    up.add_argument(
+        "--confirm", action="store_true", help="obrigatório: confirma que é irreversível"
+    )
 
     play = sub.add_parser("play", help="espera desafios e joga uma partida por vez")
     play.add_argument("--player", required=True, help="fábrica do jogador, 'modulo:funcao'")
     play.add_argument("--learner", default=None, help="fábrica do aprendiz, recebe data_dir")
     play.add_argument("--data-dir", type=Path, default=Path("lichess_bot/runs"))
     play.add_argument("--max-games", type=int, default=None)
-    play.add_argument("--casual-only", action="store_true", help="não aceita partidas valendo rating")
-    play.add_argument("--matchmaking", action="store_true", help="desafia outros bots quando ocioso")
+    play.add_argument(
+        "--casual-only", action="store_true", help="não aceita partidas valendo rating"
+    )
+    play.add_argument(
+        "--matchmaking", action="store_true", help="desafia outros bots quando ocioso"
+    )
+    play.add_argument(
+        "--no-pacing", action="store_true", help="joga sem o ritmo de 20 s / 1+X / 16 a 90 s"
+    )
     args = ap.parse_args(argv)
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -45,12 +54,17 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "check":
         acc = client.get_account()
-        print(f"Conta: {acc.get('username')} | BOT: {'sim' if acc.get('title') == 'BOT' else 'não'}")
+        print(
+            f"Conta: {acc.get('username')} | BOT: {'sim' if acc.get('title') == 'BOT' else 'não'}"
+        )
         return 0
 
     if args.cmd == "upgrade":
         if not args.confirm:
-            print("O upgrade é irreversível e exige conta sem nenhuma partida. Rode de novo com --confirm.")
+            print(
+                "O upgrade é irreversível e exige conta sem nenhuma partida. "
+                "Rode de novo com --confirm."
+            )
             return 2
         print(client.upgrade_to_bot(confirm=True))
         return 0
@@ -59,6 +73,7 @@ def main(argv: list[str] | None = None) -> int:
         accept_rated=not args.casual_only,
         data_dir=args.data_dir,
         matchmaking=args.matchmaking,
+        pacing=not args.no_pacing,
     )
     learner = JsonlRecorder(cfg.data_dir)
     if args.learner:

@@ -31,6 +31,10 @@ Alvo 1600: ainda não atingido.
 
 Cada partida fica em `rating/runs/history.jsonl` (com PGN).
 
+`--resign` faz a Luna desistir pela mesma regra do Lichess (`rating/resign.py`:
+-1000 cp por 3 lances seguidos). Fica desligado por padrão para as medições
+continuarem comparáveis com as anteriores. A medição nunca espera entre lances.
+
 ## Ligando a Luna
 
 O estimador aceita qualquer objeto com
@@ -45,6 +49,7 @@ from luna.storage import RunStorage
 from luna.search import Searcher, SearchConfig
 from luna.adapters.python_chess import PythonChessGame
 
+
 class LunaPlayer:
     def __init__(self, run_dir="luna/runs/padrao"):
         genome = RunStorage(run_dir).load_best()
@@ -53,6 +58,7 @@ class LunaPlayer:
     def choose_move(self, fen, legal_moves):
         state = PythonChessGame(fen)
         return state.uci(self.searcher.choose_move(state))
+
 
 def luna_factory():
     return LunaPlayer()

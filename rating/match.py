@@ -14,6 +14,7 @@ import chess
 import chess.pgn
 
 from rating.player import MovePlayer
+from rating.resign import ResignPolicy, wants_to_resign
 
 #: Limite de lances (meios-lances) antes de declarar empate por adjudicação.
 DEFAULT_MAX_PLIES = 500
@@ -50,12 +51,19 @@ def play_game(
     max_plies: int = DEFAULT_MAX_PLIES,
     start_fen: Optional[str] = None,
     headers: Optional[dict[str, str]] = None,
+    resign: Optional[dict[chess.Color, ResignPolicy]] = None,
 ) -> MatchResult:
     """Joga uma partida completa e devolve o resultado.
 
     Lance ilegal (ou exceção do jogador) conta como derrota de quem errou, para
     que um bug no jogador nunca infle o rating.
+
+    ``resign`` diz quais cores podem desistir e com qual regra (ver
+    ``rating.resign``); desistência é derrota de quem desistiu.
     """
+    resign = resign or {}
+    for policy in resign.values():
+        policy.new_game()
     board = chess.Board(start_fen) if start_fen else chess.Board()
     _notify_new_game(white, chess.WHITE)
     _notify_new_game(black, chess.BLACK)
@@ -84,6 +92,10 @@ def play_game(
         except Exception:  # noqa: BLE001 - qualquer falha do jogador = derrota
             result = "0-1" if mover == chess.WHITE else "1-0"
             termination = "illegal_move"
+            break
+        if mover in resign and wants_to_resign(player, resign[mover], board.fen(), uci):
+            result = "0-1" if mover == chess.WHITE else "1-0"
+            termination = "resignation"
             break
         board.push(move)
         if board.is_check():

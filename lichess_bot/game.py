@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
+import time
+from typing import Callable, Optional
 
 import chess
 
 from lichess_bot.client import LichessClient, LichessError
 from lichess_bot.learning import GameRecord, build_record
+from lichess_bot.pacing import MovePacing, NoPacing
 from rating.player import MovePlayer
+from rating.resign import ResignPolicy, wants_to_resign
 
 log = logging.getLogger(__name__)
 
@@ -18,9 +21,24 @@ RUNNING = {"created", "started"}
 
 
 class GameRunner:
-    def __init__(self, client: LichessClient, player: MovePlayer, game_id: str, my_id: str):
+    def __init__(
+        self,
+        client: LichessClient,
+        player: MovePlayer,
+        game_id: str,
+        my_id: str,
+        pacing: MovePacing | NoPacing | None = None,
+        resign_policy: Optional[ResignPolicy] = None,
+        sleep: Callable[[float], None] = time.sleep,
+        clock: Callable[[], float] = time.monotonic,
+    ):
         self.client = client
         self.player = player
+        self.pacing = pacing or NoPacing()
+        self.resign_policy = resign_policy
+        self.resigned = False
+        self._sleep = sleep
+        self._clock = clock
         self.game_id = game_id
         self.my_id = my_id.lower()
         self.color: Optional[str] = None
@@ -45,6 +63,8 @@ class GameRunner:
             "opponent_rating": opp.get("rating"),
             "luna_rating": me.get("rating"),
         }
+        if self.resign_policy is not None:
+            self.resign_policy.new_game()
         hook = getattr(self.player, "new_game", None)
         if callable(hook):
             hook(chess.WHITE if self.color == "white" else chess.BLACK)
@@ -69,11 +89,15 @@ class GameRunner:
         self._play(board, st)
 
     def _play(self, board: chess.Board, st: dict) -> None:
+        if self.resigned:
+            return
         legal = [m.uci() for m in board.legal_moves]
+        mine = "w" if self.color == "white" else "b"
+        remaining, increment = st.get(f"{mine}time"), st.get(f"{mine}inc")
         set_clock = getattr(self.player, "set_clock", None)
         if callable(set_clock):
-            mine = "w" if self.color == "white" else "b"
-            set_clock(st.get(f"{mine}time"), st.get(f"{mine}inc"))
+            set_clock(remaining, increment)
+        started = self._clock()
         try:
             move = self.player.choose_move(board.fen(), legal)
         except Exception:  # noqa: BLE001
@@ -82,11 +106,31 @@ class GameRunner:
         if move not in legal:
             log.error("Lance ilegal %r do jogador; usando %s.", move, legal[0])
             move = legal[0]
+        if wants_to_resign(self.player, self.resign_policy, board.fen(), move):
+            log.info("Luna desiste da partida %s (avaliação perdida).", self.game_id)
+            self.resigned = True
+            self._safe(self.client.resign)
+            return
+        # Ritmo pedido pelo Lucas: o tempo total do lance inclui o tempo pensando.
+        target = self.pacing.seconds_for(self._luna_move_number(board), remaining, increment)
+        wait = target - (self._clock() - started)
+        if wait > 0:
+            self._sleep(wait)
         try:
             self.client.make_move(self.game_id, move)
         except LichessError as exc:
             # Pode acontecer se a partida acabou entre o estado e o lance.
             log.warning("Lance %s recusado em %s: %s", move, self.game_id, exc)
+
+    def _luna_move_number(self, board: chess.Board) -> int:
+        """Número do lance da Luna que está para ser jogado (1, 2, 3...)."""
+        start = chess.Board(self.initial_fen)
+        luna = chess.WHITE if self.color == "white" else chess.BLACK
+        luna_first = start.turn == luna
+        plies = len(board.move_stack)
+        # Lances já feitos pela Luna: os meios-lances de índice par se ela começou.
+        own_before = (plies + 1) // 2 if luna_first else plies // 2
+        return own_before + 1
 
     def _safe(self, fn) -> None:
         try:
