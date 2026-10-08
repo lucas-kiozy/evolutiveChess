@@ -5,7 +5,7 @@
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-**Último commit do `main` coberto:** `807516f`
+**Último commit do `main` coberto:** `6b48a63`
 
 Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
@@ -39,6 +39,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 2026-10-07 | Comparador de velocidade entre os backends | 2 | [PR #8](https://github.com/lucas-kiozy/evolutiveChess/pull/8) |
 | 2026-10-07 | `chess_engine` como backend padrão da Luna; avisos do lint limpos em `luna/` | 2 | [PR #9](https://github.com/lucas-kiozy/evolutiveChess/pull/9) |
 | 2026-10-07 | Menos ruído na seleção: 18 partidas por Luna, elite com resultados acumulados, partidas contra campeãs passadas | 3 | [PR #10](https://github.com/lucas-kiozy/evolutiveChess/pull/10) |
+| 2026-10-08 | Desistência nas partidas de treino e vitória por desistência na régua (6, provisório) | 3 | [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16) |
 | 2026-10-08 | A jogadora da Luna expõe `last_score`, usado pela regra de desistência | 5 | [PR #15](https://github.com/lucas-kiozy/evolutiveChess/pull/15) |
 | 2026-10-08 | `luna-v3` vira a Luna oficial (venceu a `luna-v2` na catraca por +182 ± 51 Elo); `promote --candidate` aceita arquivos de fora de `luna/versions/` | 3 e 4 | [PR #13](https://github.com/lucas-kiozy/evolutiveChess/pull/13) |
 | 2026-10-08 | Janela de profundidade 3 do treino nos lances 8 a 12 (2,3 vezes mais lento que só profundidade 2) | 3 | [PR #12](https://github.com/lucas-kiozy/evolutiveChess/pull/12) |
@@ -125,6 +126,9 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Mais 20 gerações do mesmo treino (13 a 32, 4.400 partidas; 7.000 no total), com 81% a 91% de mates por geração
 - [x] Análise: a melhor da geração 32 (`g0032-i07`) vence a `luna-v1` (25/40, +89 ± 57 Elo) e a melhor da geração 12 (23/40, +53 ± 56), empata com a da geração 22 (21/40) e segue atrás dos pesos iniciais (17/40, -53 ± 56). **Primeiro sinal de progresso no confronto direto**, mas ainda dentro de cerca de 1,6 erro-padrão
 - [x] Terceiro treino, com o código dos PRs #11 e #12: 28 gerações e 6.324 partidas (cerca de 7,5 min por geração), partindo das 20 Lunas da geração 32 com uma delas trocada pelo genoma de referência novo. Melhor ao fim: `g0028-i13`, exportada como `candidata-pr11-g28` (pasta compartilhada, `luna-treinos/versoes/`)
+- [x] Desistência nas partidas de treino (`luna/resign.py`): a Luna abandona com -1000 centipeões ou pior por 3 lances seguidos, desde que não haja empate forçado à vista — [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16)
+- [x] Vitória por desistência na régua: vale 6 por enquanto, valor provisório até o Lucas escolher entre 6 e 1 (`train --resign-win-points`). Na ordenação por Bradley–Terry, o bônus conta como 1/6 de vitória a mais — [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16)
+- [~] Regra de empate forçado igual no treino e no bot do Lichess — [PR #17](https://github.com/lucas-kiozy/evolutiveChess/pull/17)
 - [ ] Entender por que os pesos iniciais continuam à frente e definir os próximos ajustes do treino
 - [x] Catraca de promoção (`python -m luna promote`): a candidata só vira a Luna oficial se vencer um match pareado de 40 aberturas, decidido por teste sequencial de Wald (H0 0 Elo, H1 +30 Elo) — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 - [x] Luna oficial indicada em `luna/versions/oficial.txt`: a `luna-v2` (`g0032-i07`) — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
@@ -200,7 +204,7 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 Pontos que precisam de decisão do Lucas ou da frente responsável antes ou durante a implementação:
 
 1. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
-2. **Quanto vale, na aptidão do treino, a vitória por desistência do adversário.** A régua 5/2/-1 só prevê vitória por mate; com a desistência ([PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14)), falta o Lucas decidir se ela conta como vitória (+5) ou vale outro valor.
+2. **Quanto vale, na aptidão do treino, a vitória por desistência do adversário: 6 ou 1.** O [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16) usa 6 provisoriamente; o valor é configurável (`train --resign-win-points`) e falta a escolha do Lucas.
 
 ---
 
@@ -241,3 +245,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-08 | PR #13 mergeado (268 testes passando, 7 pulados): `luna-v3` oficial no `main` |
 | 2026-10-08 | PR #14 aberto: desistência, ritmo de lances e ritmos aceitos no Lichess; nova decisão em aberto sobre o valor da vitória por desistência |
 | 2026-10-08 | PR #15 mergeado: `last_score` na jogadora da Luna |
+| 2026-10-08 | PR #16 mergeado: desistência no treino e vitória por desistência valendo 6 (provisório); PR #17 aberto |
