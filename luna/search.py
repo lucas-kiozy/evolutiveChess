@@ -34,11 +34,33 @@ class SearchConfig:
     # está buscando. Em autojogo os dois lados querem dar mate, então os dois evitam
     # repetir posições em vez de ficar indo e voltando até a tripla repetição.
     contempt: Optional[float] = None
+    # Janela mais funda: do lance ``deep_from_move`` ao ``deep_to_move`` (contados como
+    # no xadrez, um lance = brancas e pretas) a busca usa ``deep_depth`` em vez de
+    # ``depth``. None desliga. No treino o padrão é 3 nos lances 5 a 12, pedido do
+    # Lucas para ganhar força no meio-jogo sem pagar a profundidade 3 inteira.
+    deep_depth: Optional[int] = None
+    deep_from_move: int = 5
+    deep_to_move: int = 12
 
     @classmethod
     def from_dict(cls, d: dict) -> "SearchConfig":
-        keys = ("depth", "noise", "quiescence_depth", "contempt")
+        keys = (
+            "depth",
+            "noise",
+            "quiescence_depth",
+            "contempt",
+            "deep_depth",
+            "deep_from_move",
+            "deep_to_move",
+        )
         return cls(**{k: d[k] for k in keys if k in d})
+
+    def depth_at(self, ply: int) -> int:
+        """Profundidade para o meio-lance ``ply`` (0 = primeiro lance das brancas)."""
+        move = ply // 2 + 1
+        if self.deep_depth and self.deep_from_move <= move <= self.deep_to_move:
+            return self.deep_depth
+        return self.depth
 
 
 class Searcher:
@@ -60,6 +82,7 @@ class Searcher:
         if not moves:
             return None
         noise = self.config.noise
+        depth = self.config.depth_at(state.ply)
         best_move, best_score = moves[0], -INF
         for move in moves:
             # Um lance só pode superar o melhor (já com ruído) se o valor real passar de
@@ -68,9 +91,7 @@ class Searcher:
             # apenas na comparação, nunca em alpha, e não se aplica a mates.
             alpha = best_score - noise
             state.push(move)
-            score = -self._negamax(
-                state, self.config.depth - 1, -INF, -alpha, 1, self.check_extensions
-            )
+            score = -self._negamax(state, depth - 1, -INF, -alpha, 1, self.check_extensions)
             state.pop()
             if score <= alpha:
                 continue

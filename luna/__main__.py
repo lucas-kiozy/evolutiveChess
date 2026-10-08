@@ -37,6 +37,11 @@ def main(argv: list[str] | None = None) -> None:
     t.add_argument("--mutation-rate", type=float, default=0.2)
     t.add_argument("--mutation-scale", type=float, default=0.05)
     t.add_argument("--depth", type=int, default=2)
+    t.add_argument("--deep-depth", type=int, default=3, help="profundidade na janela; 0 desliga")
+    t.add_argument("--deep-from", type=int, default=5, help="primeiro lance da janela funda")
+    t.add_argument("--deep-to", type=int, default=12, help="último lance da janela funda")
+    t.add_argument("--ranking", choices=["bradley_terry", "regua"], default="bradley_terry")
+    t.add_argument("--boundary-games", type=int, default=8, help="extras na fronteira da elite")
     t.add_argument("--quiescence-depth", type=int, help="fixa a quiescência (padrão: gene)")
     t.add_argument("--noise", type=float, default=5.0)
     t.add_argument("--contempt", type=float, help="fixa o contempt (padrão: gene)")
@@ -104,6 +109,8 @@ def main(argv: list[str] | None = None) -> None:
             hall_of_fame=args.hall_of_fame,
             mutation_rate=args.mutation_rate,
             mutation_scale=args.mutation_scale,
+            ranking=args.ranking,
+            boundary_games=args.boundary_games,
             workers=args.workers,
             seed=args.seed,
             match=MatchConfig(
@@ -112,6 +119,9 @@ def main(argv: list[str] | None = None) -> None:
                     quiescence_depth=args.quiescence_depth,
                     noise=args.noise,
                     contempt=args.contempt,
+                    deep_depth=args.deep_depth or None,
+                    deep_from_move=args.deep_from,
+                    deep_to_move=args.deep_to,
                 ),
                 max_plies=args.max_plies,
                 random_opening_plies=args.opening_plies,

@@ -207,3 +207,94 @@ def test_official_player_uses_depth_three():
     assert player.searcher.config.depth == 3 and player.searcher.config.noise == 0.0
     with pytest.raises(FileNotFoundError):
         set_official("nao-existe")
+
+
+# ---------------------------------------------------- ordenação por força
+
+
+def test_bradley_terry_accounts_for_opponents():
+    from luna.ranking import bradley_terry
+
+    # A e B fazem 2 de 4, mas A contra a forte F e B contra a fraca W.
+    results = [("F", "W", 1.0)] * 6
+    results += [("A", "F", 1.0), ("A", "F", 0.0)] * 2 + [("B", "W", 1.0), ("B", "W", 0.0)] * 2
+    s = bradley_terry(results)
+    assert s["F"].elo > s["W"].elo
+    assert s["A"].elo > s["B"].elo
+    draws = bradley_terry([("x", "y", 0.5)] * 10)
+    assert draws["x"].elo == pytest.approx(0, abs=1e-6) and draws["x"].games == 10
+
+
+def test_bradley_terry_shrinks_lunas_with_few_games():
+    from luna.ranking import bradley_terry
+
+    # Contra a mesma adversária, 3 de 4 (sorte de poucas partidas) fica abaixo de 26
+    # de 36, como a elite com partidas acumuladas.
+    results = [("sortuda", "m", 1.0)] * 3 + [("sortuda", "m", 0.0)]
+    results += [("firme", "m", 1.0)] * 26 + [("firme", "m", 0.0)] * 10
+    s = bradley_terry(results)
+    assert s["firme"].elo > s["sortuda"].elo
+    assert s["sortuda"].error > s["firme"].error
+
+
+def _tiny_config(**kw):
+    return EvolutionConfig(
+        population=4,
+        elite=1,
+        games_per_luna=2,
+        hall_of_fame=0,
+        seed=11,
+        match=MatchConfig(search=SearchConfig(depth=1, quiescence_depth=0), max_plies=16),
+        **kw,
+    )
+
+
+def test_boundary_games_settle_the_last_elite_place():
+    from luna.evolution import play_generation, rank_generation
+
+    cfg = _tiny_config(boundary_games=4)
+    pop = [Genome.reference(id=f"l{i}") for i in range(4)]
+    records = play_generation(pop, cfg, 1)
+    ranking = rank_generation(pop, records, {}, cfg, 1)
+    # Lunas iguais ficam sempre dentro do erro: as duas da fronteira jogam 4 partidas.
+    assert ranking.boundary is not None
+    assert len(ranking.records) == len(records) + 4
+    a, b = ranking.boundary
+    extra = ranking.records[len(records) :]
+    assert all({r.white_id, r.black_id} == {a, b} for r in extra)
+    assert extra[0].moves[:6] == extra[1].moves[:6]  # mesma abertura nas duas do par
+    regua = rank_generation(pop, records, {}, _tiny_config(ranking="regua"), 1)
+    assert regua.boundary is None and not regua.strengths
+
+
+def test_elite_carries_its_games_for_the_next_ranking(tmp_path):
+    from luna.evolution import evolve
+    from luna.storage import RunStorage
+
+    run = tmp_path / "run"
+    evolve(str(run), 2, _tiny_config(boundary_games=0), workers=1, log=lambda _: None)
+    _, carry = RunStorage(run).load_hall_of_fame()
+    (entry,) = carry.values()
+    assert len(entry["results"]) == entry["games"] == 4
+    gen2 = RunStorage(run).load_generation(2)
+    assert all(p["strength"]["games"] >= 2 for p in gen2["population"])
+    assert gen2["summary"]["best_elo"] is not None
+
+
+# ------------------------------------------------- janela funda do treino
+
+
+def test_deep_window_uses_depth_three_from_move_5_to_12():
+    cfg = SearchConfig(depth=2, deep_depth=3, deep_from_move=5, deep_to_move=12)
+    assert [cfg.depth_at(p) for p in (0, 7, 8, 9, 23, 24)] == [2, 2, 3, 3, 3, 2]
+    assert SearchConfig(depth=2).depth_at(10) == 2
+
+
+def test_training_default_and_old_configs_get_the_deep_window():
+    assert EvolutionConfig().match.search.deep_depth == 3
+    d = EvolutionConfig().to_dict()
+    for key in ("deep_depth", "deep_from_move", "deep_to_move"):
+        del d["match"]["search"][key]
+    assert EvolutionConfig.from_dict(d).match.search.deep_depth == 3
+    explicit = _tiny_config().to_dict()
+    assert EvolutionConfig.from_dict(explicit).match.search.deep_depth is None
