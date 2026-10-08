@@ -106,7 +106,7 @@ class GameRunner:
         if move not in legal:
             log.error("Lance ilegal %r do jogador; usando %s.", move, legal[0])
             move = legal[0]
-        if wants_to_resign(self.player, self.resign_policy, board.fen(), move):
+        if wants_to_resign(self.player, self.resign_policy, board, move):
             log.info("Luna desiste da partida %s (avaliação perdida).", self.game_id)
             self.resigned = True
             self._safe(self.client.resign)

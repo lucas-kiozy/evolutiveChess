@@ -66,10 +66,14 @@ rating não esperam nada.
 
 - **A Luna desiste** quando a avaliação dela fica em -1000 centipeões ou menos
   (ou mate contra ela) por 3 lances seguidos dela, o mesmo padrão do
-  lichess-bot (`resign_score: -1000`, `resign_moves: 3`). A regra está em
-  `rating/resign.py` e é a mesma da aba Jogar do tabuleiro. Enquanto a Luna
-  não expõe o escore da busca (`last_score`), o bot usa o material como
-  aproximação (10 pontos atrás ≈ -1000 cp).
+  lichess-bot (`resign_score: -1000`, `resign_moves: 3`), **e** ela não
+  enxerga nenhum empate forçado. Antes de desistir, ela procura, em até 8
+  meios-lances a partir da posição real (com o histórico), um caminho que force
+  afogamento, material insuficiente, repetição tripla, regra dos 50 lances ou
+  xeque perpétuo. Se achar, ou se a busca não chegar a uma conclusão, continua
+  jogando. A regra está em `rating/resign.py`, e a aba Jogar do tabuleiro usa o
+  mesmo critério. A avaliação vem de `LunaPlayer.last_score`; num jogador sem
+  esse atributo, o material serve de aproximação (10 pontos atrás ≈ -1000 cp).
 - **Quando o adversário desiste**, a partida termina com vitória da Luna:
   1 ponto, como qualquer vitória (`GameRecord.luna_won_by_resignation`).
 

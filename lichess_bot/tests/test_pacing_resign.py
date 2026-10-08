@@ -9,7 +9,13 @@ from lichess_bot.pacing import MovePacing, NoPacing
 from lichess_bot.tests.test_lichess_bot import FakeClient, full
 from rating.match import play_game
 from rating.player import FunctionPlayer, RandomPlayer
-from rating.resign import ResignPolicy, material_balance, score_after, wants_to_resign
+from rating.resign import (
+    ResignPolicy,
+    forced_draw_available,
+    material_balance,
+    score_after,
+    wants_to_resign,
+)
 
 # Brancas só com o rei contra rei e dama pretos: brancas 9 pontos atrás.
 LOST_FOR_WHITE = "4k3/8/8/8/8/8/3q4/K7 w - - 0 1"
@@ -127,20 +133,48 @@ def test_score_comes_from_player_or_material():
     assert score_after(object(), LOST_FOR_WHITE, "a1b1") == -900
 
 
-def test_player_own_rule_wins():
-    class P:
-        def should_resign(self, fen):
-            return True
-
-    assert wants_to_resign(P(), None, chess.STARTING_FEN, "e2e4")
-    assert not wants_to_resign(object(), None, LOST_FOR_WHITE, "a1b1")
-
-
 class Hopeless:
     last_score = -5000
 
     def choose_move(self, fen, legal):
         return legal[0]
+
+
+def test_player_own_rule_wins():
+    class P:
+        def should_resign(self, fen):
+            return True
+
+    assert wants_to_resign(P(), None, chess.Board(), "e2e4")
+    assert not wants_to_resign(object(), None, chess.Board(LOST_FOR_WHITE), "a1b1")
+
+
+# Brancas com muito menos material, mas com xeque perpétuo: Qe8+ Kh7 Qh5+ Kg8...
+PERPETUAL = "6k1/6p1/8/7Q/8/7K/r7/q7 w - - 0 1"
+
+
+def test_forced_draw_detects_perpetual_check():
+    assert forced_draw_available(chess.Board(PERPETUAL))
+    assert not forced_draw_available(chess.Board(LOST_FOR_WHITE))
+    assert not forced_draw_available(chess.Board())
+
+
+def test_forced_draw_detects_capture_to_bare_kings_and_history():
+    assert forced_draw_available(chess.Board("8/8/8/8/8/8/1n6/K6k w - - 0 1"))
+    board = chess.Board()
+    for uci in ["g1f3", "g8f6", "f3g1", "f6g8"] * 2:
+        board.push_uci(uci)
+    assert forced_draw_available(board)  # a posição inicial já apareceu 3 vezes
+
+
+def test_forced_draw_gives_up_safely_on_budget():
+    assert forced_draw_available(chess.Board(PERPETUAL), max_nodes=1)
+
+
+def test_no_resign_while_a_forced_draw_exists():
+    pol = ResignPolicy(moves=1)
+    assert not wants_to_resign(Hopeless(), pol, chess.Board(PERPETUAL), "h5e8")
+    assert wants_to_resign(Hopeless(), ResignPolicy(moves=1), chess.Board(LOST_FOR_WHITE), "a1b1")
 
 
 def test_runner_resigns_on_third_hopeless_move():

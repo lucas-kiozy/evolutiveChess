@@ -93,7 +93,7 @@ def play_game(
             result = "0-1" if mover == chess.WHITE else "1-0"
             termination = "illegal_move"
             break
-        if mover in resign and wants_to_resign(player, resign[mover], board.fen(), uci):
+        if mover in resign and wants_to_resign(player, resign[mover], board, uci):
             result = "0-1" if mover == chess.WHITE else "1-0"
             termination = "resignation"
             break
