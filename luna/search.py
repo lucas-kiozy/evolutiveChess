@@ -69,6 +69,9 @@ class Searcher:
         self.config = config
         self.rng = rng or random.Random()
         self.nodes = 0
+        # Escore real (sem o ruído) do lance escolhido na última busca, em centipeões e
+        # do ponto de vista de quem jogou; mates valem perto de ±MATE_SCORE.
+        self.last_score: Optional[float] = None
         g = genome.genes
         q = config.quiescence_depth
         self.quiescence_depth = int(g["quiescence_depth"] if q is None else q)
@@ -83,7 +86,7 @@ class Searcher:
             return None
         noise = self.config.noise
         depth = self.config.depth_at(state.ply)
-        best_move, best_score = moves[0], -INF
+        best_move, best_score, best_real = moves[0], -INF, -INF
         for move in moves:
             # Um lance só pode superar o melhor (já com ruído) se o valor real passar de
             # best_score - noise. Abaixo desse piso o alfa-beta devolve só um limite
@@ -95,10 +98,12 @@ class Searcher:
             state.pop()
             if score <= alpha:
                 continue
+            real = score
             if noise and abs(score) < MATE_SCORE - MAX_PLY:
                 score += self.rng.uniform(-noise, noise)
             if score > best_score:
-                best_move, best_score = move, score
+                best_move, best_score, best_real = move, score, real
+        self.last_score = best_real
         return best_move
 
     def _negamax(
