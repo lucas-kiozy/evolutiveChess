@@ -24,7 +24,7 @@ Definido pelo Lucas para escolher os melhores descendentes. Cada partida dá pon
 | Resultado | Pontos |
 |-----------|--------|
 | Vitória (xeque-mate) | +5 |
-| Vitória por desistência do adversário | +6 (provisório; o Lucas vai escolher entre 6 e 1) |
+| Vitória por desistência do adversário | +6 (os 5 da vitória mais 1 de bônus) |
 | Empate | +2 |
 | Derrota | -1 |
 

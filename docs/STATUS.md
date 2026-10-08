@@ -5,7 +5,7 @@
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-**Último commit do `main` coberto:** `65b299b`
+**Último commit do `main` coberto:** `c688646`
 
 Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
@@ -41,7 +41,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 2026-10-07 | Menos ruído na seleção: 18 partidas por Luna, elite com resultados acumulados, partidas contra campeãs passadas | 3 | [PR #10](https://github.com/lucas-kiozy/evolutiveChess/pull/10) |
 | 2026-10-08 | Busca de empate forçado mais leve, para a desistência funcionar no meio-jogo | 3 | [PR #18](https://github.com/lucas-kiozy/evolutiveChess/pull/18) |
 | 2026-10-08 | Regra única de empate forçado antes de desistir, para treino, rating, Lichess e tabuleiro | 3, 4 e 5 | [PR #17](https://github.com/lucas-kiozy/evolutiveChess/pull/17) |
-| 2026-10-08 | Desistência nas partidas de treino e vitória por desistência na régua (6, provisório) | 3 | [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16) |
+| 2026-10-08 | Desistência nas partidas de treino e vitória por desistência na régua (6) | 3 | [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16) |
 | 2026-10-08 | A jogadora da Luna expõe `last_score`, usado pela regra de desistência | 5 | [PR #15](https://github.com/lucas-kiozy/evolutiveChess/pull/15) |
 | 2026-10-08 | `luna-v3` vira a Luna oficial (venceu a `luna-v2` na catraca por +182 ± 51 Elo); `promote --candidate` aceita arquivos de fora de `luna/versions/` | 3 e 4 | [PR #13](https://github.com/lucas-kiozy/evolutiveChess/pull/13) |
 | 2026-10-08 | Janela de profundidade 3 do treino nos lances 8 a 12 (2,3 vezes mais lento que só profundidade 2) | 3 | [PR #12](https://github.com/lucas-kiozy/evolutiveChess/pull/12) |
@@ -129,7 +129,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Análise: a melhor da geração 32 (`g0032-i07`) vence a `luna-v1` (25/40, +89 ± 57 Elo) e a melhor da geração 12 (23/40, +53 ± 56), empata com a da geração 22 (21/40) e segue atrás dos pesos iniciais (17/40, -53 ± 56). **Primeiro sinal de progresso no confronto direto**, mas ainda dentro de cerca de 1,6 erro-padrão
 - [x] Terceiro treino, com o código dos PRs #11 e #12: 28 gerações e 6.324 partidas (cerca de 7,5 min por geração), partindo das 20 Lunas da geração 32 com uma delas trocada pelo genoma de referência novo. Melhor ao fim: `g0028-i13`, exportada como `candidata-pr11-g28` (pasta compartilhada, `luna-treinos/versoes/`)
 - [x] Desistência nas partidas de treino (`luna/resign.py`): a Luna abandona com -1000 centipeões ou pior por 3 lances seguidos, desde que não haja empate forçado à vista — [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16)
-- [x] Vitória por desistência na régua: vale 6 por enquanto, valor provisório até o Lucas escolher entre 6 e 1 (`train --resign-win-points`). Na ordenação por Bradley–Terry, o bônus conta como 1/6 de vitória a mais — [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16)
+- [x] Vitória por desistência na régua: vale 6, ou seja, os 5 da vitória mais 1 de bônus (decisão do Lucas; configurável em `train --resign-win-points`; registrada no código pelo [PR #19](https://github.com/lucas-kiozy/evolutiveChess/pull/19)). Na ordenação por Bradley–Terry, o bônus conta como 1/6 de vitória a mais — [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16)
 - [x] Regra única de empate forçado antes de desistir (`luna/resign.py`), usada no treino, no rating, no Lichess e no tabuleiro. A Luna não desiste se o adversário não tiver material para dar mate, se uma busca de até 8 meios-lances achar empate forçado ou se essa busca passar de 20.000 nós sem conclusão. O bot do Lichess pode importar `board_sees_forced_draw` — [PR #17](https://github.com/lucas-kiozy/evolutiveChess/pull/17)
 - [x] Busca de empate forçado mais leve: só o primeiro lance da Luna e a resposta do adversário são examinados por completo. Antes, no meio-jogo a busca sempre estourava o limite de 20.000 nós e a Luna nunca desistia — [PR #18](https://github.com/lucas-kiozy/evolutiveChess/pull/18)
 - [ ] Entender por que os pesos iniciais continuam à frente e definir os próximos ajustes do treino
@@ -199,6 +199,7 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 | 2026-10-07 | Atualizações da documentação vão direto no `main`, sem PR | Lucas |
 | 2026-10-07 | Próximo treino: 18 partidas por Luna por geração, pontuação acumulada da elite, partidas contra campeãs passadas, mais 12 gerações e novo teste de rating | Lucas |
 | 2026-10-07 | "Rating 1600" = partidas contra Stockfish com Elo limitado; a Luna está pronta para o Lichess quando o limite inferior do intervalo de confiança de 90% chegar a 1600 | Lucas, ao mergear o PR #4 |
+| 2026-10-08 | Vitória por desistência do adversário vale 6 na régua: os 5 da vitória mais 1 de bônus, que só se ganha em vitórias. Quem desiste leva a derrota normal (-1) | Lucas |
 
 ---
 
@@ -207,7 +208,6 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 Pontos que precisam de decisão do Lucas ou da frente responsável antes ou durante a implementação:
 
 1. **Como a Luna aprende com as partidas do Lichess.** No self-play há uma população inteira; no Lichess joga uma Luna por vez. Falta definir como os resultados online alimentam a evolução.
-2. **Quanto vale, na aptidão do treino, a vitória por desistência do adversário: 6 ou 1.** O [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16) usa 6 provisoriamente; o valor é configurável (`train --resign-win-points`) e falta a escolha do Lucas.
 
 ---
 
@@ -251,3 +251,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-08 | PR #16 mergeado: desistência no treino e vitória por desistência valendo 6 (provisório); PR #17 aberto |
 | 2026-10-08 | PR #17 mergeado: regra única de empate forçado antes de desistir |
 | 2026-10-08 | PR #18 mergeado: busca de empate forçado mais leve |
+| 2026-10-08 | Lucas confirmou que a vitória por desistência vale 6 (PR #19); decisão saiu de "Decisões em aberto" |
