@@ -47,6 +47,15 @@ class GameRecord:
     def luna_won_by_mate(self) -> bool:
         return self.status == "mate" and self.winner == self.luna_color
 
+    @property
+    def luna_won_by_resignation(self) -> bool:
+        """O adversário desistiu: vale 1 ponto, como qualquer vitória."""
+        return self.status == "resign" and self.winner == self.luna_color
+
+    @property
+    def luna_resigned(self) -> bool:
+        return self.status == "resign" and self.winner not in (None, self.luna_color)
+
 
 def build_record(
     game_id: str,

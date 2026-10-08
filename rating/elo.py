@@ -83,7 +83,7 @@ def estimate_rating(
     if not games:
         return RatingEstimate(prior_mean, prior_sd, 0, 0.0, from_prior_only=True)
 
-    inv_var = 1.0 / (prior_sd ** 2)
+    inv_var = 1.0 / (prior_sd**2)
     # Ponto de partida: rating de desempenho clássico (média ± 400·(V−D)/N).
     mean_opp = sum(g.opponent_rating for g in games) / len(games)
     wins_minus_losses = sum(2 * g.score - 1 for g in games)
@@ -114,4 +114,4 @@ def games_needed(stderr_target: float, p: float = 0.5) -> int:
     if not 0 < p < 1:
         raise ValueError("p precisa estar entre 0 e 1")
     info_per_game = _K * _K * p * (1 - p)
-    return math.ceil(1.0 / (info_per_game * stderr_target ** 2))
+    return math.ceil(1.0 / (info_per_game * stderr_target**2))

@@ -37,16 +37,52 @@ Se o token vazar, revogue em https://lichess.org/account/oauth/token.
 - Bots não entram no pareamento automático do Lichess. A Luna joga quando
   alguém a desafia ou, com `--matchmaking`, desafia outro bot online de rating
   próximo depois de 2 minutos ociosa.
-- Desafios aceitos por padrão: xadrez padrão, com relógio, de 3 a 30 minutos de
-  base e até 30 s de incremento, valendo ou não rating. Correspondência e
-  variantes são recusadas. Ajuste em `lichess_bot/config.py`.
+- Desafios aceitos por padrão: xadrez padrão, ritmo rápido ou clássico, com
+  relógio de pelo menos 1500 s contando base + 60 × incremento (ex.: 25+0,
+  15+10, 30+20; 10+5 é recusado), até 3 h de base e 60 s de incremento,
+  valendo ou não rating. Bullet, blitz, correspondência e variantes são
+  recusados. O matchmaking desafia em 30+20. Ajuste em `lichess_bot/config.py`.
 - Se o adversário abandona a partida, o bot reivindica a vitória quando o
   Lichess permite.
+
+## Ritmo dos lances (pedido do Lucas)
+
+Contra pessoas e outros bots no Lichess, cada lance da Luna leva, no total
+(pensando + esperando):
+
+| Lance da Luna | Tempo |
+|---|---|
+| 1 a 6 | 20 s |
+| 7 a 40 | 1 + X s, X inteiro aleatório de 0 a 15 |
+| 41 em diante | Y s, Y inteiro aleatório de 16 a 90 |
+
+Por que 1500 s de relógio: numa partida média de 60 lances da Luna o ritmo
+gasta ~1470 s (6×20 + 34×8,5 + 20×53). Se o relógio apertar, a espera nunca
+passa de 8% do tempo restante mais 90% do incremento, então a Luna acelera em
+vez de perder por tempo. `--no-pacing` desliga o ritmo. Treino e medição de
+rating não esperam nada.
+
+## Desistência
+
+- **A Luna desiste** quando a avaliação dela fica em -1000 centipeões ou menos
+  (ou mate contra ela) por 3 lances seguidos dela, o mesmo padrão do
+  lichess-bot (`resign_score: -1000`, `resign_moves: 3`), **e** ela não
+  enxerga nenhum empate forçado. Antes de desistir, ela procura, em até 8
+  meios-lances a partir da posição real (com o histórico), um caminho que force
+  afogamento, material insuficiente, repetição tripla, regra dos 50 lances ou
+  xeque perpétuo. Se achar, ou se a busca não chegar a uma conclusão, continua
+  jogando. A busca de empate é a regra única do projeto
+  (`luna.resign.board_sees_forced_draw`), aplicada pelo bot em
+  `rating/resign.py`; a aba Jogar do tabuleiro usa o mesmo critério. A avaliação vem de `LunaPlayer.last_score`; num jogador sem
+  esse atributo, o material serve de aproximação (10 pontos atrás ≈ -1000 cp).
+- **Quando o adversário desiste**, a partida termina com vitória da Luna:
+  1 ponto, como qualquer vitória (`GameRecord.luna_won_by_resignation`).
 
 ## Aprendizado contínuo
 
 Cada partida terminada vira um `GameRecord` (lances em UCI, PGN, resultado,
-ratings, quantos lances a Luna fez, xeques dados e recebidos) e é:
+ratings, quantos lances a Luna fez, xeques dados e recebidos, se alguém
+desistiu) e é:
 
 1. gravada em `lichess_bot/runs/games.jsonl` e `games.pgn`;
 2. entregue ao aprendiz passado em `--learner modulo:fabrica`, se houver.
