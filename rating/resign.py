@@ -10,8 +10,10 @@ empate forçado**. Antes de desistir, ``forced_draw_available`` procura, a
 partir da posição real (com o histórico, para contar repetições), um caminho
 que ela consiga impor até o empate: afogamento, material insuficiente,
 repetição tripla, regra dos 50 lances ou xeque perpétuo, em até
-``DRAW_SEARCH_PLIES`` meios-lances. Se achar, ou se a busca estourar o limite
-de nós sem conclusão, ela continua jogando.
+``DRAW_SEARCH_PLIES`` meios-lances. Também não desiste se o adversário não
+tiver material para dar mate, nem se o próprio jogador disser que vê empate
+(``player.sees_forced_draw()``). Se a busca estourar o limite de nós sem
+conclusão, ela continua jogando.
 
 De onde vem a avaliação:
 
@@ -142,8 +144,8 @@ def forced_draw_available(
                 board.pop()
         return True
 
-    if _drawn(board):
-        return True
+    if _drawn(board) or board.has_insufficient_material(not board.turn):
+        return True  # o adversário nem tem material para dar mate
     try:
         return ours(max_plies)
     except _Budget:
@@ -174,5 +176,8 @@ def wants_to_resign(
     if policy is None:
         return False
     if not policy.update(score_after(player, board.fen(), move_uci)):
+        return False
+    sees_draw = getattr(player, "sees_forced_draw", None)  # LunaPlayer, PR #16
+    if callable(sees_draw) and sees_draw():
         return False
     return not forced_draw_available(board)

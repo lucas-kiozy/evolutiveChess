@@ -218,3 +218,17 @@ def test_play_game_resignation_loses_for_who_resigns():
     )
     assert res.result == "0-1" and res.termination == "resignation"
     assert res.score_for(chess.BLACK) == 1.0
+
+
+def test_no_resign_when_opponent_cannot_mate():
+    # Brancas sem nada; pretas só com rei e cavalo: não há como perder.
+    assert forced_draw_available(chess.Board("4k3/8/8/8/8/8/3n4/K7 w - - 0 1"))
+
+
+def test_player_seeing_a_draw_blocks_resignation():
+    class SeesDraw(Hopeless):
+        def sees_forced_draw(self):
+            return True
+
+    board = chess.Board(LOST_FOR_WHITE)
+    assert not wants_to_resign(SeesDraw(), ResignPolicy(moves=1), board, "a1b1")
