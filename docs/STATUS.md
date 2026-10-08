@@ -5,7 +5,7 @@
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-**Último commit do `main` coberto:** `f632a05`
+**Último commit do `main` coberto:** `807516f`
 
 Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
@@ -39,6 +39,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 2026-10-07 | Comparador de velocidade entre os backends | 2 | [PR #8](https://github.com/lucas-kiozy/evolutiveChess/pull/8) |
 | 2026-10-07 | `chess_engine` como backend padrão da Luna; avisos do lint limpos em `luna/` | 2 | [PR #9](https://github.com/lucas-kiozy/evolutiveChess/pull/9) |
 | 2026-10-07 | Menos ruído na seleção: 18 partidas por Luna, elite com resultados acumulados, partidas contra campeãs passadas | 3 | [PR #10](https://github.com/lucas-kiozy/evolutiveChess/pull/10) |
+| 2026-10-08 | A jogadora da Luna expõe `last_score`, usado pela regra de desistência | 5 | [PR #15](https://github.com/lucas-kiozy/evolutiveChess/pull/15) |
 | 2026-10-08 | `luna-v3` vira a Luna oficial (venceu a `luna-v2` na catraca por +182 ± 51 Elo); `promote --candidate` aceita arquivos de fora de `luna/versions/` | 3 e 4 | [PR #13](https://github.com/lucas-kiozy/evolutiveChess/pull/13) |
 | 2026-10-08 | Janela de profundidade 3 do treino nos lances 8 a 12 (2,3 vezes mais lento que só profundidade 2) | 3 | [PR #12](https://github.com/lucas-kiozy/evolutiveChess/pull/12) |
 | 2026-10-08 | Catraca de promoção com teste sequencial, Luna oficial `luna-v2`, jogadora oficial para rating e Lichess, 7 genes novos de busca e de final (21 no total), ordenação por Bradley–Terry e profundidade 3 do lance 5 ao 12 no treino | 2, 3, 4 e 5 | [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11) |
@@ -174,7 +175,7 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 - [~] Ritmo de lances no Lichess (`lichess_bot/pacing.py`): lances 1 a 6 em 20 s, 7 a 40 em 1 a 16 s, do 41 em diante em 16 a 90 s, sempre limitado pelo relógio. Treino e rating continuam sem espera — [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14)
 - [~] O bot só aceita partidas rápidas ou clássicas, com base + 60 × incremento de pelo menos 1.500 s, e o desafio automático passa a ser 30+20 — [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14)
 - [~] Vitória por desistência do adversário registrada na partida, valendo 1 ponto no rating — [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14)
-- [ ] Frente da Luna: expor a última avaliação (`last_score`) da jogadora, para a desistência funcionar com a Luna real
+- [x] A jogadora da Luna expõe `last_score`, a avaliação do último lance escolhido, sem o ruído de treino; é o que a desistência do PR #14 usa — [PR #15](https://github.com/lucas-kiozy/evolutiveChess/pull/15)
 
 ---
 
@@ -239,3 +240,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-08 | Catraca de promoção: a `candidata-pr11-g28` venceu a `luna-v2` (+182 ± 51 Elo) e virou a `luna-v3`, que ainda vai entrar no `main` |
 | 2026-10-08 | PR #13 mergeado (268 testes passando, 7 pulados): `luna-v3` oficial no `main` |
 | 2026-10-08 | PR #14 aberto: desistência, ritmo de lances e ritmos aceitos no Lichess; nova decisão em aberto sobre o valor da vitória por desistência |
+| 2026-10-08 | PR #15 mergeado: `last_score` na jogadora da Luna |
