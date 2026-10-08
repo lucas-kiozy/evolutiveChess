@@ -11,10 +11,12 @@ from luna.player import LunaPlayer
 from luna.ranking import bradley_terry
 from luna.resign import (
     ResignTracker,
+    board_sees_forced_draw,
     can_force_draw,
     opponent_cannot_mate,
     sees_forced_draw,
     should_resign,
+    state_from_moves,
 )
 from luna.search import SearchConfig
 
@@ -23,6 +25,7 @@ BACKENDS = ["chess_engine", "python-chess"]
 # nem lance de peão, qualquer lance do rei permite pedir empate pelos 50 lances.
 FIFTY = "k7/8/8/8/3q4/8/7r/K7 w - - 99 120"
 LOST = "k7/8/8/8/3q4/8/7r/K7 w - - 0 120"
+PERPETUAL = "K7/2q2rk1/3Q4/8/2r5/8/8/8 w - - 0 1"
 
 
 def record(winner, termination, white="a", black="b"):
@@ -60,12 +63,27 @@ def test_fifty_move_rule_is_a_forced_draw(backend):
 
 
 @pytest.mark.parametrize("backend", BACKENDS)
-def test_repetition_is_a_forced_draw(backend):
+def test_threefold_repetition_is_a_forced_draw(backend):
     state = new_game(backend)
-    assert not can_force_draw(state)
-    for uci in ("g1f3", "g8f6", "f3g1", "f6g8"):
+    for uci in ("g1f3", "g8f6", "f3g1", "f6g8") * 2:
         state.push(state.parse_uci(uci))
-    assert can_force_draw(state, 1)  # Cf3 repete a posição
+    assert can_force_draw(state, 1)  # Cf3 repete a posição pela terceira vez
+    state = state_from_moves(["g1f3", "g8f6", "f3g1", "f6g8"], backend=backend)
+    assert not can_force_draw(state, 1)  # só duas vezes ainda não é empate
+
+
+@pytest.mark.parametrize("backend", BACKENDS)
+def test_perpetual_check_is_a_forced_draw(backend):
+    # Brancas só com a dama contra dama e duas torres, sem mate à vista: empate forçado.
+    assert can_force_draw(new_game(backend, PERPETUAL), max_nodes=10**6)
+    assert not can_force_draw(new_game(backend, LOST), max_nodes=10**6)
+
+
+def test_draw_search_gives_up_without_resigning():
+    state = new_game("python-chess")
+    fen = state.fen()
+    assert can_force_draw(state, max_nodes=10)  # na dúvida, não desiste
+    assert state.fen() == fen and state.ply == 0  # e devolve o estado intacto
 
 
 @pytest.mark.parametrize("backend", BACKENDS)
@@ -145,3 +163,13 @@ def test_evolution_config_scale():
     assert cfg.scale["resign_win"] == 1.0 and cfg.scale["win"] == 5.0
     assert EvolutionConfig().scale["resign_win"] == 6.0
     assert EvolutionConfig().match.resign_moves == 3
+
+
+def test_board_adapter_counts_the_real_history():
+    chess = pytest.importorskip("chess")
+    board = chess.Board()
+    for uci in ("g1f3", "g8f6", "f3g1", "f6g8") * 2:
+        board.push_uci(uci)
+    assert board_sees_forced_draw(board, 1)  # Cf3 seria a terceira repetição
+    assert board_sees_forced_draw(chess.Board(FIFTY))
+    assert not board_sees_forced_draw(chess.Board(LOST))

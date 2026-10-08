@@ -7,7 +7,8 @@ ordem que a soma quando todas jogam o mesmo número de partidas e continua justa
 para a elite, que acumula as partidas das gerações anteriores.
 
 Vitória por desistência do adversário: +5 da vitória e +1 de bônus, 6 no total
-(decisão do Lucas em 2026-10-08, "na régua de treino, como bônus"). O valor fica em
+(o Lucas pediu o bônus "na régua de treino" em 2026-10-08; 6 é a leitura provisória,
+ainda a confirmar entre 6 e 1). O valor fica em
 ``RESULT_POINTS["resign_win"]`` e no ``EvolutionConfig.resign_win_points``. Quem
 desiste leva a derrota de sempre (-1).
 
