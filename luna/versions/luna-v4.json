@@ -1,0 +1,149 @@
+{
+  "name": "luna-v4",
+  "created": "2026-10-30T14:25:59+00:00",
+  "notes": "Melhor da geracao 5 do treino-v3 (config do main em 2026-10-30, a partir da populacao final do treino-pr11 com a luna-v3).",
+  "source": {
+    "run_dir": "/mnt/project-files/luna-treinos/treino-v3",
+    "generation": 5,
+    "id": "g0005-i19",
+    "rank": 1,
+    "stats": {
+      "games": 18,
+      "wins": 12,
+      "resign_wins": 8,
+      "draws": 1,
+      "losses": 5,
+      "mates": 4,
+      "mate_moves": [
+        57,
+        66,
+        31,
+        48
+      ],
+      "win_checks": [
+        5,
+        3,
+        9,
+        5,
+        9,
+        12,
+        17,
+        5,
+        3,
+        3,
+        5,
+        15
+      ],
+      "checks_given": 116,
+      "capture_points": 30.300000000000004,
+      "result_points": 65.0,
+      "mean_mate_moves": 50.5,
+      "mean_win_checks": 7.583333333333333,
+      "checks_per_game": 6.444444444444445
+    },
+    "backend": "chess_engine",
+    "summary": {
+      "generation": 5,
+      "games": 228,
+      "mate_rate": 0.20175438596491227,
+      "mean_mate_moves": 42.608695652173914,
+      "mean_checks_per_game": 11.802631578947368,
+      "terminations": {
+        "resignation": 159,
+        "max_plies": 12,
+        "checkmate": 46,
+        "insufficient_material": 6,
+        "threefold_repetition": 5
+      },
+      "best_id": "g0005-i19",
+      "best_result_points": 65.0,
+      "best_resign_wins": 8,
+      "best_record": [
+        12,
+        1,
+        5
+      ],
+      "best_mean_win_checks": 7.583333333333333,
+      "best_mean_mate_moves": 50.5,
+      "best_checks_per_game": 6.444444444444445,
+      "best_games": 18,
+      "best_elo": 113.51056503324602,
+      "best_elo_error": 64.69541948987262,
+      "seconds": 550.14,
+      "boundary": [
+        "g0005-i01",
+        "g0005-i00"
+      ]
+    },
+    "promotion": {
+      "candidate_id": "luna-v4",
+      "official_id": "luna-v3",
+      "promoted": true,
+      "decision": "H1",
+      "games": 168,
+      "wins": 93,
+      "draws": 15,
+      "losses": 60,
+      "score": 0.5982142857142857,
+      "elo": 69.1449155701931,
+      "elo_error": 24.294119558867465,
+      "llr": 2.9580970497476056,
+      "bounds": [
+        -2.9444389791664403,
+        2.9444389791664403
+      ],
+      "config": {
+        "elo0": 0.0,
+        "elo1": 30.0,
+        "alpha": 0.05,
+        "beta": 0.05,
+        "max_games": 2000,
+        "depth": 3,
+        "random_plies": 2,
+        "max_plies": 200,
+        "backend": "chess_engine",
+        "seed": 2026,
+        "batch_pairs": 16
+      }
+    }
+  },
+  "search": {
+    "depth": 2,
+    "noise": 5.0,
+    "quiescence_depth": null,
+    "contempt": null,
+    "deep_depth": 3,
+    "deep_from_move": 8,
+    "deep_to_move": 12
+  },
+  "genome": {
+    "id": "g0005-i19",
+    "parents": [
+      "g0004-i09",
+      "g0004-i05"
+    ],
+    "genes": {
+      "pawn": 98.65549545562479,
+      "knight": 248.1644707286035,
+      "bishop": 295.42749328655674,
+      "rook": 498.1945614942887,
+      "queen": 875.7628115830399,
+      "pst_weight": 0.9642328326959154,
+      "mobility": 5.030732646658734,
+      "bishop_pair": 18.552930316098912,
+      "doubled_pawn": 15.868699103105598,
+      "isolated_pawn": 10.65862806835782,
+      "passed_pawn": 20.33698463435981,
+      "rook_open_file": 24.59961326772638,
+      "king_shield": 6.53447636043151,
+      "check_bonus": -1.2808015745862802,
+      "passed_pawn_rank": 8.651441578313364,
+      "king_edge": 0.0,
+      "king_proximity": 7.2771329055091165,
+      "king_open_file": 14.926460904037471,
+      "quiescence_depth": 7.0,
+      "contempt": 44.37841050369193,
+      "check_extension": 2.0
+    }
+  }
+}
