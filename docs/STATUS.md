@@ -1,6 +1,6 @@
 # Relatório de status do projeto
 
-**Última atualização:** 2026-10-08
+**Última atualização:** 2026-10-30
 **Atualizado por:** agente de documentação ([.claude/agents/documentador.md](../.claude/agents/documentador.md))
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
@@ -19,8 +19,8 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 1 | Jogo de xadrez com regras validadas | **Concluída** | Motor mergeado no `main` pelo [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) |
 | 2 | Luna: IA evolutiva com algoritmo genético | **Concluída** | Luna no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); 21 genes desde o [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11); Luna oficial `luna-v3` desde o [PR #13](https://github.com/lucas-kiozy/evolutiveChess/pull/13) |
 | 3 | Self-play paralelo e seleção de descendentes | **Concluída** | Laço no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); 7.000 partidas de treino até a geração 32; catraca de promoção e ordenação por Bradley–Terry desde o [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11) |
-| 4 | Medição de rating (meta ~1600) | Em andamento | Em profundidade 3, a oficial `luna-v3` mede 1633 ± 49 (IC 90%: 1552 a 1713), igual à `luna-v2` (1663 ± 48) dentro da margem; falta o limite inferior do IC 90% chegar a 1600 |
-| 5 | Luna jogando no Lichess | Em andamento | Bot no `main` pelo [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4); falta a Luna chegar a ~1600, a conta BOT e o aprendizado online |
+| 4 | Medição de rating (meta ~1600) | **Meta atingida** | A `luna-v4` mede 1936 ± 47 (IC 90%: 1859 a 2013) em profundidade 3: o limite inferior passa de 1600. Falta a `luna-v4` entrar no `main` como oficial |
+| 5 | Luna jogando no Lichess | Em andamento | Bot no `main` pelo [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4); a Luna já cumpre o critério. Falta o Lucas criar a conta BOT e o token, o [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14) (desistência e ritmo no Lichess) e o aprendizado online |
 
 ---
 
@@ -132,6 +132,9 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Vitória por desistência na régua: vale 6, ou seja, os 5 da vitória mais 1 de bônus (decisão do Lucas; configurável em `train --resign-win-points`; registrada no código pelo [PR #19](https://github.com/lucas-kiozy/evolutiveChess/pull/19)). Na ordenação por Bradley–Terry, o bônus conta como 1/6 de vitória a mais — [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16)
 - [x] Regra única de empate forçado antes de desistir (`luna/resign.py`), usada no treino, no rating, no Lichess e no tabuleiro. A Luna não desiste se o adversário não tiver material para dar mate, se uma busca de até 8 meios-lances achar empate forçado ou se essa busca passar de 20.000 nós sem conclusão. O bot do Lichess pode importar `board_sees_forced_draw` — [PR #17](https://github.com/lucas-kiozy/evolutiveChess/pull/17)
 - [x] Busca de empate forçado mais leve: só o primeiro lance da Luna e a resposta do adversário são examinados por completo. Antes, no meio-jogo a busca sempre estourava o limite de 20.000 nós e a Luna nunca desistia — [PR #18](https://github.com/lucas-kiozy/evolutiveChess/pull/18)
+- [x] Quarto treino (`treino-v3`), com o código dos PRs #14 a #19: 10 gerações de 20 Lunas a partir da população final do terceiro treino (cerca de 9 a 10 min por geração). Só cerca de 23% das partidas terminam em mate, porque a desistência encerra antes as partidas perdidas
+- [x] Catraca de promoção da `g0005-i19` (geração 5 do quarto treino) contra a `luna-v3`, em profundidade 3: 168 partidas (93 vitórias, 15 empates, 60 derrotas, 59,8%), +69 ± 24 Elo. Promovida a `luna-v4`, que passa a ser também a versão do Tabuleiro da Luna
+- [ ] `luna-v4` como Luna oficial no repositório (`luna/versions/luna-v4.json` e `oficial.txt`): o arquivo está na pasta compartilhada (`luna-treinos/versoes/luna-v4.json`), e o `main` ainda aponta para a `luna-v3`
 - [ ] Entender por que os pesos iniciais continuam à frente e definir os próximos ajustes do treino
 - [x] Catraca de promoção (`python -m luna promote`): a candidata só vira a Luna oficial se vencer um match pareado de 40 aberturas, decidido por teste sequencial de Wald (H0 0 Elo, H1 +30 Elo) — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 - [x] Luna oficial indicada em `luna/versions/oficial.txt`: a `luna-v2` (`g0032-i07`) — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
@@ -161,8 +164,11 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 - [x] Catraca de promoção da `candidata-pr11-g28` contra a `luna-v2`, em profundidade 3: 52 partidas (34 vitórias, 9 empates, 9 derrotas, 74%), +182 ± 51 Elo. O teste sequencial parou cedo, com evidência suficiente. A candidata foi promovida a `luna-v3`
 - [x] `luna-v3` é a Luna oficial no repositório (`luna/versions/luna-v3.json` e `oficial.txt`) — [PR #13](https://github.com/lucas-kiozy/evolutiveChess/pull/13)
 - [x] `python -m luna promote --candidate` com arquivo fora de `luna/versions/` agora salva a versão promovida (antes quebrava ao gravar a nova oficial) — [PR #13](https://github.com/lucas-kiozy/evolutiveChess/pull/13)
-- [ ] Chegar ao critério do Lichess: o limite inferior do IC 90% ainda está abaixo de 1600 (1584 na `luna-v2`, 1552 na `luna-v3`). A `luna-v3` vence a `luna-v2` no confronto direto, mas contra o Stockfish as duas medem igual dentro da margem (1633 ± 49 e 1663 ± 48); a medição contra o Stockfish continua sendo a referência para o Lichess
-- [ ] Medir a melhor Luna de cada novo treino até chegar a ~1600
+- [x] Medições do quarto treino em profundidade 3, 60 partidas cada contra o Stockfish 16: a melhor da geração 5 (`g0005-i19`, hoje `luna-v4`) mede 1936 ± 47 (IC 90%: 1859 a 2013; 22 vitórias, 15 empates, 23 derrotas) e a da geração 10 mede 1759 ± 47 (IC 90%: 1682 a 1837). A geração 10 ficou cerca de 180 pontos abaixo da 5: a melhor da última geração nem sempre é a mais forte
+- [x] **Critério do Lichess cumprido:** o limite inferior do IC 90% da `luna-v4` (1859) passa de 1600. Ressalva: o código da jogadora mudou entre a medição da `luna-v3` (1633) e esta (PRs #14 a #19), então parte da subida pode vir do código e não do treino; a `luna-v3` não foi medida de novo com o código atual
+- [x] Teste contra o Stockfish 16 no máximo do `UCI_Elo` (3190), 20 partidas: 0 vitórias, 3 empates por repetição tripla e 17 derrotas. Os empates vêm de o Stockfish limitado não evitar repetições; o resultado não indica força perto de 3190 nem vira rating confiável
+- [ ] Medir a `luna-v3` com o código atual, para separar o efeito do código do efeito do treino
+- [ ] Medir a melhor Luna de cada novo treino
 - [x] Jogadora única para rating e Lichess: `luna.player:official_factory`, com a Luna oficial em profundidade 3 e histórico da partida, para enxergar repetições — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 
 ### Etapa 5 — Luna jogando no Lichess
@@ -174,7 +180,7 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 - [x] Integração com a Bot API oficial do Lichess
 - [x] Uma partida por vez, em sequência
 - [x] Cada partida gravada em `lichess_bot/runs/`, com gancho `on_game_finished` para o aprendizado
-- [ ] **Lucas:** criar a conta BOT e o token de API quando a Luna chegar a ~1600 (o token fica fora do repositório)
+- [ ] **Lucas:** criar a conta BOT e o token de API, agora que a Luna chegou ao critério (o token fica fora do repositório)
 - [x] Ligar a Luna real ao bot: `python -m lichess_bot play --player luna.player:official_factory` usa a Luna oficial — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
 - [ ] Definir como a Luna aprende com as partidas do Lichess (ver "Decisões em aberto", item 5)
 - [ ] Acompanhar o rating da Luna no Lichess ao longo do tempo
@@ -252,3 +258,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-08 | PR #17 mergeado: regra única de empate forçado antes de desistir |
 | 2026-10-08 | PR #18 mergeado: busca de empate forçado mais leve |
 | 2026-10-08 | Lucas confirmou que a vitória por desistência vale 6 (PR #19); decisão saiu de "Decisões em aberto" |
+| 2026-10-30 | Quarto treino, `luna-v4` promovida (+69 ± 24 Elo sobre a `luna-v3`) e medida em 1936 ± 47: critério do Lichess cumprido; etapa 4 com a meta atingida |
