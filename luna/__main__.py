@@ -18,9 +18,16 @@ import json
 from luna.evolution import EvolutionConfig, evolve
 from luna.genome import Genome
 from luna.match import MatchConfig
-from luna.promotion import OFFICIAL_DEPTH
 from luna.search import SearchConfig
 from luna.storage import RunStorage
+
+
+def _parse_schedule(text: str) -> tuple[tuple[int, int], ...] | None:
+    """'1:2,11:3,21:4' -> ((1, 2), (11, 3), (21, 4)); vazio -> None."""
+    if not text.strip():
+        return None
+    pairs = [part.split(":") for part in text.split(",")]
+    return tuple(sorted((int(m), int(d)) for m, d in pairs))
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -37,7 +44,12 @@ def main(argv: list[str] | None = None) -> None:
     t.add_argument("--mutation-rate", type=float, default=0.2)
     t.add_argument("--mutation-scale", type=float, default=0.05)
     t.add_argument("--depth", type=int, default=2)
-    t.add_argument("--deep-depth", type=int, default=3, help="profundidade na janela; 0 desliga")
+    t.add_argument(
+        "--schedule",
+        default="1:2,11:3,21:4",
+        help="profundidade por lance, 'lance:profundidade,...'; vazio usa --depth e a janela",
+    )
+    t.add_argument("--deep-depth", type=int, default=0, help="profundidade na janela; 0 desliga")
     t.add_argument("--deep-from", type=int, default=8, help="primeiro lance da janela funda")
     t.add_argument("--deep-to", type=int, default=12, help="último lance da janela funda")
     t.add_argument("--ranking", choices=["bradley_terry", "regua"], default="bradley_terry")
@@ -79,7 +91,9 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--name", help="nome da versão salva em luna/versions se for promovida")
     p.add_argument("--notes", default="")
     p.add_argument("--official", help="padrão: a de luna/versions/oficial.txt")
-    p.add_argument("--depth", type=int, default=OFFICIAL_DEPTH)
+    p.add_argument(
+        "--depth", type=int, help="profundidade fixa (padrão: 2/4/5 por lance, OFFICIAL_SCHEDULE)"
+    )
     p.add_argument("--elo1", type=float, default=30.0, help="H1 do teste sequencial, em Elo")
     p.add_argument("--max-games", type=int, default=2000)
     p.add_argument("--random-plies", type=int, default=2, help="lances aleatórios após o livro")
@@ -128,6 +142,7 @@ def main(argv: list[str] | None = None) -> None:
                     noise=args.noise,
                     contempt=args.contempt,
                     deep_depth=args.deep_depth or None,
+                    schedule=_parse_schedule(args.schedule),
                     deep_from_move=args.deep_from,
                     deep_to_move=args.deep_to,
                 ),
@@ -177,7 +192,8 @@ def _promote(args: argparse.Namespace) -> None:
         random_plies=args.random_plies,
         seed=args.seed,
     )
-    print(f"Candidata {candidate.name} contra a oficial {official.name}, profundidade {args.depth}")
+    depth = args.depth if args.depth is not None else "2/4/5 por lance"
+    print(f"Candidata {candidate.name} contra a oficial {official.name}, profundidade {depth}")
     cand_genome = Genome(dict(candidate.genome.genes), id=candidate.name)
     off_genome = Genome(dict(official.genome.genes), id=official.name)
     result = run_promotion_match(cand_genome, off_genome, config, workers=args.workers)

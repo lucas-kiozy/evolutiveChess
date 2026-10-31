@@ -10,7 +10,7 @@ O match segue o protocolo da seção 8 da análise:
 
 - partidas em pares com a mesma abertura do livro (``luna.openings``) e as cores
   trocadas, para a sorte da abertura se cancelar no par (Glasserman e Yao, 1992);
-- profundidade das partidas oficiais (padrão 3) e sem ruído na raiz;
+- profundidade das partidas oficiais (``OFFICIAL_SCHEDULE``) e sem ruído na raiz;
 - teste sequencial da razão de verossimilhança de Wald (1945, Annals of
   Mathematical Statistics 16(2):117-186), com H0 = 0 Elo, H1 = +30 Elo e
   alfa = beta = 5%. Ele decide com o menor número médio de partidas; a análise
@@ -42,7 +42,22 @@ from luna.match import MatchConfig, play_game
 from luna.openings import BOOK
 from luna.search import SearchConfig
 
-OFFICIAL_DEPTH = 3  # profundidade das partidas oficiais (rating e Lichess)
+#: Profundidade das partidas oficiais (rating, promoção, Lichess), em meios-lances,
+#: por lance da partida: 2 do lance 1 ao 9, 4 do 10 ao 16 e 5 do 17 em diante
+#: (decisão do Lucas em 2026-10-31). A quiescência (gene ``quiescence_depth``)
+#: continua as capturas além desse limite.
+OFFICIAL_SCHEDULE: tuple[tuple[int, int], ...] = ((1, 2), (10, 4), (17, 5))
+#: Profundidade fixa usada até 2026-10-31 (luna-v2 a luna-v4 foram medidas assim).
+OFFICIAL_DEPTH = 3
+
+
+def official_search(depth: Optional[int] = None) -> SearchConfig:
+    """Busca das partidas oficiais: a escala por lance, ou ``depth`` fixo se dado."""
+    if depth is not None:
+        return SearchConfig(depth=depth, noise=0.0)
+    return SearchConfig(depth=OFFICIAL_SCHEDULE[0][1], noise=0.0, schedule=OFFICIAL_SCHEDULE)
+
+
 MIN_PAIRS = 8  # pares antes de o teste poder parar (a variância precisa de amostra)
 
 
@@ -58,7 +73,7 @@ class PromotionConfig:
     alpha: float = 0.05  # chance de promover uma candidata que não é melhor
     beta: float = 0.05  # chance de recusar uma candidata 30 Elo melhor
     max_games: int = 2000
-    depth: int = OFFICIAL_DEPTH
+    depth: Optional[int] = None  # None = OFFICIAL_SCHEDULE; um número fixa a profundidade
     random_plies: int = 2  # lances aleatórios depois do livro, iguais no par
     max_plies: int = 200
     backend: str = "chess_engine"
@@ -78,7 +93,7 @@ class PromotionConfig:
 
     def match_config(self) -> MatchConfig:
         return MatchConfig(
-            search=SearchConfig(depth=self.depth, noise=0.0),
+            search=official_search(self.depth),
             max_plies=self.max_plies,
             random_opening_plies=self.random_plies,
             backend=self.backend,

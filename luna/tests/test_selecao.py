@@ -13,6 +13,7 @@ from luna.match import MatchConfig, play_game
 from luna.openings import BOOK
 from luna.player import LunaPlayer, official_factory
 from luna.promotion import (
+    OFFICIAL_SCHEDULE,
     PromotionConfig,
     elo_estimate,
     expected_score,
@@ -200,11 +201,16 @@ def test_player_sees_repetitions_from_the_history():
     assert not new_game(fen=board.fen()).is_repetition()
 
 
-def test_official_player_uses_depth_three():
+def test_official_player_uses_the_official_schedule(monkeypatch):
     name = official_name()
     assert load_version(name).name == name
-    player = official_factory()
-    assert player.searcher.config.depth == 3 and player.searcher.config.noise == 0.0
+    monkeypatch.delenv("LUNA_DEPTH", raising=False)
+    config = official_factory().searcher.config
+    assert config.schedule == OFFICIAL_SCHEDULE and config.noise == 0.0
+    assert [config.depth_for_move(m) for m in (1, 9, 10, 16, 17, 60)] == [2, 2, 4, 4, 5, 5]
+    monkeypatch.setenv("LUNA_DEPTH", "3")
+    config = official_factory().searcher.config
+    assert config.schedule is None and config.depth_for_move(30) == 3
     with pytest.raises(FileNotFoundError):
         set_official("nao-existe")
 
@@ -288,20 +294,26 @@ def test_deep_window_uses_depth_three_inside_the_window():
     cfg = SearchConfig(depth=2, deep_depth=3, deep_from_move=5, deep_to_move=12)
     assert [cfg.depth_at(p) for p in (0, 7, 8, 9, 23, 24)] == [2, 2, 3, 3, 3, 2]
     assert SearchConfig(depth=2).depth_at(10) == 2
-    # Padrão do treino, escolhido pelo Lucas: lances 8 a 12.
+
+
+def test_training_schedule_and_old_configs_get_it():
+    # Escala do treino pedida pelo Lucas em 2026-10-31: 2 até o lance 10, 3 até o 20, 4.
     train = EvolutionConfig().match.search
-    assert (train.deep_from_move, train.deep_to_move) == (8, 12)
-    assert [train.depth_at(p) for p in (13, 14, 23, 24)] == [2, 3, 3, 2]
-
-
-def test_training_default_and_old_configs_get_the_deep_window():
-    assert EvolutionConfig().match.search.deep_depth == 3
+    assert train.schedule == ((1, 2), (11, 3), (21, 4))
+    assert [train.depth_for_move(m) for m in (1, 10, 11, 20, 21, 80)] == [2, 2, 3, 3, 4, 4]
     d = EvolutionConfig().to_dict()
-    for key in ("deep_depth", "deep_from_move", "deep_to_move"):
-        del d["match"]["search"][key]
-    assert EvolutionConfig.from_dict(d).match.search.deep_depth == 3
-    explicit = _tiny_config().to_dict()
-    assert EvolutionConfig.from_dict(explicit).match.search.deep_depth is None
+    del d["match"]["search"]["schedule"]  # treino salvo antes da escala
+    assert EvolutionConfig.from_dict(d).match.search.schedule == train.schedule
+    explicit = EvolutionConfig().to_dict()
+    explicit["match"]["search"]["schedule"] = None  # desligada de propósito
+    assert EvolutionConfig.from_dict(explicit).match.search.schedule is None
+
+
+def test_train_cli_parses_the_schedule():
+    from luna.__main__ import _parse_schedule
+
+    assert _parse_schedule("11:3,1:2,21:4") == ((1, 2), (11, 3), (21, 4))
+    assert _parse_schedule("") is None
 
 
 def test_promote_saves_a_candidate_from_outside_versions(tmp_path, monkeypatch):
@@ -347,3 +359,17 @@ def test_player_reports_the_score_of_its_move():
     player = LunaPlayer(Genome.reference(), depth=1)
     player.choose_move(mate, [m.uci() for m in chess.Board(mate).legal_moves])
     assert player.last_score > MATE_SCORE - MAX_PLY
+
+
+def test_schedule_uses_the_move_number_of_the_fen():
+    # Partidas que começam de uma FEN: o chess_engine conta ply a partir de 0, então a
+    # profundidade sai do número do lance da FEN.
+    from luna.search import _move_number
+
+    state = new_game("chess_engine", "8/5pk1/6p1/3R4/5P2/6PK/r7/8 w - - 0 40")
+    assert _move_number(state) == 40
+    assert _move_number(new_game("chess_engine")) == 1
+    cfg = SearchConfig.from_dict({"depth": 2, "schedule": [[1, 2], [10, 4], [17, 5]]})
+    assert cfg.schedule == OFFICIAL_SCHEDULE
+    assert PromotionConfig().match_config().search.schedule == OFFICIAL_SCHEDULE
+    assert PromotionConfig(depth=3).match_config().search.depth_for_move(40) == 3
