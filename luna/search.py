@@ -41,6 +41,10 @@ class SearchConfig:
     deep_depth: Optional[int] = None
     deep_from_move: int = 8
     deep_to_move: int = 12
+    # Escala por lance: ((a partir do lance, profundidade), ...) em ordem crescente.
+    # Se existir, manda sobre ``depth`` e a janela funda. Nas partidas oficiais é
+    # ``luna.promotion.OFFICIAL_SCHEDULE``.
+    schedule: Optional[tuple[tuple[int, int], ...]] = None
 
     @classmethod
     def from_dict(cls, d: dict) -> "SearchConfig":
@@ -52,15 +56,37 @@ class SearchConfig:
             "deep_depth",
             "deep_from_move",
             "deep_to_move",
+            "schedule",
         )
-        return cls(**{k: d[k] for k in keys if k in d})
+        kwargs = {k: d[k] for k in keys if k in d}
+        if kwargs.get("schedule") is not None:
+            kwargs["schedule"] = tuple((int(m), int(dp)) for m, dp in kwargs["schedule"])
+        return cls(**kwargs)
 
     def depth_at(self, ply: int) -> int:
         """Profundidade para o meio-lance ``ply`` (0 = primeiro lance das brancas)."""
-        move = ply // 2 + 1
+        return self.depth_for_move(ply // 2 + 1)
+
+    def depth_for_move(self, move: int) -> int:
+        """Profundidade para o lance ``move`` (contado como no xadrez, a partir de 1)."""
+        if self.schedule:
+            depth = self.schedule[0][1]
+            for start, d in self.schedule:
+                if move >= start:
+                    depth = d
+            return depth
         if self.deep_depth and self.deep_from_move <= move <= self.deep_to_move:
             return self.deep_depth
         return self.depth
+
+
+def _move_number(state: GameState) -> int:
+    """Número do lance da posição, do campo da FEN: vale também para partidas que
+    começam de uma FEN, em que alguns backends contam ``ply`` a partir de 0."""
+    try:
+        return max(1, int(state.fen().split()[5]))
+    except (IndexError, ValueError):
+        return state.ply // 2 + 1
 
 
 class Searcher:
@@ -85,7 +111,7 @@ class Searcher:
         if not moves:
             return None
         noise = self.config.noise
-        depth = self.config.depth_at(state.ply)
+        depth = self.config.depth_for_move(_move_number(state))
         best_move, best_score, best_real = moves[0], -INF, -INF
         for move in moves:
             # Um lance só pode superar o melhor (já com ruído) se o valor real passar de

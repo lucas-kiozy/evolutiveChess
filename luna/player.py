@@ -6,9 +6,10 @@ Uso: ``python -m rating ... --player luna.player:official_factory`` ou
 Duas diferenças em relação ao treino, decididas pelo Lucas com base na análise de
 2026-10-08:
 
-- **Profundidade 3** (``OFFICIAL_DEPTH``) e sem ruído. A mesma Luna em
-  profundidade 3 venceu a de profundidade 2 por +319 ± 54 Elo e mediu 1663 ± 48
-  contra o Stockfish, contra 1300 ± 45 em profundidade 2. O treino segue em 2.
+- **Profundidade maior** e sem ruído. Até 2026-10-31 era 3 fixo (a mesma Luna
+  em profundidade 3 venceu a de profundidade 2 por +319 ± 54 Elo). Desde então é
+  a escala ``OFFICIAL_SCHEDULE`` pedida pelo Lucas: 2 meios-lances do lance 1 ao
+  9, 4 do 10 ao 16 e 5 do 17 em diante. ``LUNA_DEPTH`` fixa uma profundidade.
 - **Histórico da partida.** ``rating`` e ``lichess_bot`` passam só a FEN, e sem o
   histórico a busca não sabe quais posições já ocorreram: nas medições, ~4 empates
   por repetição em cada 60 partidas tinham a Luna 3 ou mais peões à frente. A
@@ -27,7 +28,7 @@ from typing import Optional, Sequence
 from luna.adapters import DEFAULT_BACKEND, new_game
 from luna.game_interface import GameState
 from luna.genome import Genome
-from luna.promotion import OFFICIAL_DEPTH
+from luna.promotion import official_search
 from luna.resign import sees_forced_draw
 from luna.search import SearchConfig, Searcher
 
@@ -43,18 +44,15 @@ class LunaPlayer:
     def __init__(
         self,
         genome: Genome,
-        depth: int = OFFICIAL_DEPTH,
+        depth: Optional[int] = None,
         backend: str = DEFAULT_BACKEND,
         search: Optional[SearchConfig] = None,
         seed: Optional[int] = None,
     ):
         base = search or SearchConfig()
-        config = SearchConfig(
-            depth=depth,
-            noise=0.0,
-            quiescence_depth=base.quiescence_depth,
-            contempt=base.contempt,
-        )
+        config = official_search(depth)  # sem ruído; None = escala por lance
+        config.quiescence_depth = base.quiescence_depth
+        config.contempt = base.contempt
         self.searcher = Searcher(genome, config, random.Random(seed))
         self.backend = backend
         self._state: Optional[GameState] = None  # partida até o último lance da Luna
@@ -109,7 +107,7 @@ class LunaPlayer:
         return new_game(self.backend, fen)
 
 
-def player_from_version(name_or_path: str, depth: int = OFFICIAL_DEPTH) -> LunaPlayer:
+def player_from_version(name_or_path: str, depth: Optional[int] = None) -> LunaPlayer:
     from luna.versions import load_version
 
     version = load_version(name_or_path)
@@ -117,10 +115,11 @@ def player_from_version(name_or_path: str, depth: int = OFFICIAL_DEPTH) -> LunaP
 
 
 def official_factory() -> LunaPlayer:
-    """Luna oficial (``luna/versions/oficial.txt``) em profundidade 3, sem ruído.
+    """Luna oficial (``luna/versions/oficial.txt``) na escala oficial de profundidade, sem ruído.
 
     ``LUNA_VERSION`` (nome ou caminho de uma versão) e ``LUNA_DEPTH`` sobrepõem."""
     from luna.versions import official_name
 
     name = os.environ.get("LUNA_VERSION") or official_name()
-    return player_from_version(name, int(os.environ.get("LUNA_DEPTH", OFFICIAL_DEPTH)))
+    depth = os.environ.get("LUNA_DEPTH")
+    return player_from_version(name, int(depth) if depth else None)

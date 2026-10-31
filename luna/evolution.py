@@ -42,8 +42,12 @@ from luna.ranking import Strength, bradley_terry, game_results, results_of
 from luna.search import SearchConfig
 from luna.storage import RunStorage
 
-#: Busca padrão do treino: profundidade 2, e 3 do lance 8 ao 12 (decisão do Lucas).
-TRAINING_SEARCH = SearchConfig(depth=2, noise=5.0, deep_depth=3, deep_from_move=8, deep_to_move=12)
+#: Escala de profundidade do treino, em meios-lances por lance da Luna: 2 do lance
+#: 1 ao 10, 3 do 11 ao 29, 4 do 30 ao 45 e 5 do 46 em diante (decisão do Lucas em
+#: 2026-10-31; antes era 2 com 3 só nos lances 8 a 12).
+TRAINING_SCHEDULE: tuple[tuple[int, int], ...] = ((1, 2), (11, 3), (30, 4), (46, 5))
+#: Busca padrão do treino.
+TRAINING_SEARCH = SearchConfig(depth=2, noise=5.0, schedule=TRAINING_SCHEDULE)
 RANKINGS = ("bradley_terry", "regua")
 
 
@@ -101,9 +105,9 @@ class EvolutionConfig:
         for key, legacy in (("quiescence_depth", 4), ("contempt", 50.0)):
             if search.get(key) == legacy:
                 search.pop(key)
-        # Treinos de antes da janela funda passam a usá-la também, como o Lucas pediu.
-        for key in ("deep_depth", "deep_from_move", "deep_to_move"):
-            search.setdefault(key, getattr(TRAINING_SEARCH, key))
+        # Treinos de antes da escala por lance passam a usá-la também, como nas mudanças
+        # de busca anteriores pedidas pelo Lucas.
+        search.setdefault("schedule", TRAINING_SCHEDULE)
         m["search"] = SearchConfig.from_dict(search)
         return cls(match=MatchConfig(**m), **d)
 
