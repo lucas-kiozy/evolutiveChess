@@ -46,7 +46,7 @@ def main(argv: list[str] | None = None) -> None:
     t.add_argument("--depth", type=int, default=2)
     t.add_argument(
         "--schedule",
-        default="1:2,11:3,21:4",
+        default="1:2,11:3,30:4,46:5",
         help="profundidade por lance, 'lance:profundidade,...'; vazio usa --depth e a janela",
     )
     t.add_argument("--deep-depth", type=int, default=0, help="profundidade na janela; 0 desliga")

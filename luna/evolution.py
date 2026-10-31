@@ -43,9 +43,9 @@ from luna.search import SearchConfig
 from luna.storage import RunStorage
 
 #: Escala de profundidade do treino, em meios-lances por lance da Luna: 2 do lance
-#: 1 ao 10, 3 do 11 ao 20 e 4 do 21 em diante (decisão do Lucas em 2026-10-31; antes
-#: era 2 com 3 só nos lances 8 a 12).
-TRAINING_SCHEDULE: tuple[tuple[int, int], ...] = ((1, 2), (11, 3), (21, 4))
+#: 1 ao 10, 3 do 11 ao 29, 4 do 30 ao 45 e 5 do 46 em diante (decisão do Lucas em
+#: 2026-10-31; antes era 2 com 3 só nos lances 8 a 12).
+TRAINING_SCHEDULE: tuple[tuple[int, int], ...] = ((1, 2), (11, 3), (30, 4), (46, 5))
 #: Busca padrão do treino.
 TRAINING_SEARCH = SearchConfig(depth=2, noise=5.0, schedule=TRAINING_SCHEDULE)
 RANKINGS = ("bradley_terry", "regua")

@@ -297,10 +297,12 @@ def test_deep_window_uses_depth_three_inside_the_window():
 
 
 def test_training_schedule_and_old_configs_get_it():
-    # Escala do treino pedida pelo Lucas em 2026-10-31: 2 até o lance 10, 3 até o 20, 4.
+    # Escala do treino pedida pelo Lucas em 2026-10-31: 2 até o lance 10, 3 até o 29,
+    # 4 até o 45 e 5 depois.
     train = EvolutionConfig().match.search
-    assert train.schedule == ((1, 2), (11, 3), (21, 4))
-    assert [train.depth_for_move(m) for m in (1, 10, 11, 20, 21, 80)] == [2, 2, 3, 3, 4, 4]
+    assert train.schedule == ((1, 2), (11, 3), (30, 4), (46, 5))
+    moves = (1, 10, 11, 29, 30, 45, 46, 80)
+    assert [train.depth_for_move(m) for m in moves] == [2, 2, 3, 3, 4, 4, 5, 5]
     d = EvolutionConfig().to_dict()
     del d["match"]["search"]["schedule"]  # treino salvo antes da escala
     assert EvolutionConfig.from_dict(d).match.search.schedule == train.schedule
