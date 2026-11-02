@@ -7,11 +7,21 @@ lances).
 A profundidade e o ruído vêm de ``SearchConfig``. A profundidade da quiescência, o
 contempt e as extensões em xeque são genes (``luna.genome``) e evoluem junto com a
 avaliação; ``SearchConfig`` só os sobrepõe quando recebe um valor explícito.
+
+Limite de tempo (``SearchConfig.time_limit``, pedido do Lucas em 2026-11-02): a
+busca passa a ser por aprofundamento iterativo, profundidade 1, 2, ... até a pedida,
+com o melhor lance da camada anterior buscado primeiro. Quando o tempo acaba, ela
+joga o melhor lance da última camada completa, ou o da camada interrompida se ele
+já superou aquele (o primeiro lance buscado nela é justamente o anterior). As
+camadas rasas custam pouco perto da última (Korf 1985, *Artificial Intelligence*
+27:97-109) e melhoram a ordem dos lances da seguinte (Slate & Atkin 1977, Chess 4.5).
+Sem ``time_limit`` a busca vai direto à profundidade pedida, como antes.
 """
 
 from __future__ import annotations
 
 import random
+import time
 from dataclasses import dataclass
 from typing import Optional
 
@@ -22,6 +32,14 @@ from luna.genome import Genome
 _ORDER_VALUE = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9, "K": 0}
 INF = float("inf")
 MAX_PLY = 1000  # escores acima de MATE_SCORE - MAX_PLY são mates
+#: Segundos por lance em todas as partidas da Luna, treino e oficiais (decisão do
+#: Lucas em 2026-11-02).
+MOVE_TIME_LIMIT = 14.0
+_CLOCK_EVERY = 256  # nós entre consultas ao relógio
+
+
+class _Timeout(Exception):
+    pass
 
 
 @dataclass
@@ -45,6 +63,8 @@ class SearchConfig:
     # Se existir, manda sobre ``depth`` e a janela funda. Nas partidas oficiais é
     # ``luna.promotion.OFFICIAL_SCHEDULE``.
     schedule: Optional[tuple[tuple[int, int], ...]] = None
+    # Segundos por lance. None = sem limite (a busca vai direto à profundidade).
+    time_limit: Optional[float] = None
 
     @classmethod
     def from_dict(cls, d: dict) -> "SearchConfig":
@@ -57,6 +77,7 @@ class SearchConfig:
             "deep_from_move",
             "deep_to_move",
             "schedule",
+            "time_limit",
         )
         kwargs = {k: d[k] for k in keys if k in d}
         if kwargs.get("schedule") is not None:
@@ -103,6 +124,7 @@ class Searcher:
         self.quiescence_depth = int(g["quiescence_depth"] if q is None else q)
         self.contempt = g["contempt"] if config.contempt is None else config.contempt
         self.check_extensions = int(g["check_extension"])
+        self._deadline: Optional[float] = None
 
     def choose_move(self, state: GameState) -> Optional[Move]:
         # Ordem UCI antes da ordenação por capturas: desempates e ruído ficam iguais
@@ -110,8 +132,40 @@ class Searcher:
         moves = self._ordered(state, sorted(state.legal_moves(), key=state.uci))
         if not moves:
             return None
-        noise = self.config.noise
         depth = self.config.depth_for_move(_move_number(state))
+        limit = self.config.time_limit
+        if not limit:
+            best_move, self.last_score, _ = self._root(state, moves, depth)
+            return best_move
+        deadline = time.monotonic() + limit
+        best_move, best_real = moves[0], 0.0
+        start = state.ply
+        try:
+            for d in range(1, depth + 1):
+                # A camada 1 sempre termina (custa milissegundos): garante um lance e
+                # um escore para a regra de desistência.
+                self._deadline = deadline if d > 1 else None
+                best_move, best_real, _ = self._root(state, moves, d)
+                moves = [best_move] + [m for m in moves if m != best_move]
+                if abs(best_real) >= MATE_SCORE - MAX_PLY:
+                    break  # mate achado: mais fundo não muda o lance
+        except _Timeout as stop:
+            while state.ply > start:  # desfaz os lances que a busca deixou no meio
+                state.pop()
+            partial = stop.args[0] if stop.args else None
+            if partial is not None:  # a camada interrompida já achou algo
+                best_move, best_real = partial
+        finally:
+            self._deadline = None
+        self.last_score = best_real
+        return best_move
+
+    def _root(self, state: GameState, moves: list[Move], depth: int) -> tuple[Move, float, float]:
+        """Busca na raiz até ``depth``; devolve (lance, escore real, escore com ruído).
+
+        Com tempo esgotado levanta ``_Timeout`` com o melhor (lance, escore real)
+        entre os lances já buscados por completo nesta camada, ou None."""
+        noise = self.config.noise
         best_move, best_score, best_real = moves[0], -INF, -INF
         for move in moves:
             # Um lance só pode superar o melhor (já com ruído) se o valor real passar de
@@ -120,7 +174,11 @@ class Searcher:
             # apenas na comparação, nunca em alpha, e não se aplica a mates.
             alpha = best_score - noise
             state.push(move)
-            score = -self._negamax(state, depth - 1, -INF, -alpha, 1, self.check_extensions)
+            try:
+                score = -self._negamax(state, depth - 1, -INF, -alpha, 1, self.check_extensions)
+            except _Timeout:
+                found = (best_move, best_real) if best_score > -INF else None
+                raise _Timeout(found) from None
             state.pop()
             if score <= alpha:
                 continue
@@ -129,13 +187,21 @@ class Searcher:
                 score += self.rng.uniform(-noise, noise)
             if score > best_score:
                 best_move, best_score, best_real = move, score, real
-        self.last_score = best_real
-        return best_move
+        return best_move, best_real, best_score
+
+    def _tick(self) -> None:
+        self.nodes += 1
+        if (
+            self._deadline is not None
+            and self.nodes % _CLOCK_EVERY == 0
+            and time.monotonic() > self._deadline
+        ):
+            raise _Timeout
 
     def _negamax(
         self, state: GameState, depth: int, alpha: float, beta: float, ply: int, extensions: int
     ) -> float:
-        self.nodes += 1
+        self._tick()
         if state.is_repetition():
             return self._draw_score(ply)
         moves = state.legal_moves()
@@ -173,7 +239,7 @@ class Searcher:
             alpha = stand_pat
         captures = [m for m in state.legal_moves() if state.is_capture(m) or state.is_promotion(m)]
         for move in self._ordered(state, captures):
-            self.nodes += 1
+            self._tick()
             state.push(move)
             score = -self._quiescence(state, -beta, -alpha, ply + 1, qdepth - 1)
             state.pop()

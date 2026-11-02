@@ -18,7 +18,7 @@ import json
 from luna.evolution import EvolutionConfig, evolve
 from luna.genome import Genome
 from luna.match import MatchConfig
-from luna.search import SearchConfig
+from luna.search import MOVE_TIME_LIMIT, SearchConfig
 from luna.storage import RunStorage
 
 
@@ -48,6 +48,9 @@ def main(argv: list[str] | None = None) -> None:
         "--schedule",
         default="1:2,11:3,30:4,46:5",
         help="profundidade por lance, 'lance:profundidade,...'; vazio usa --depth e a janela",
+    )
+    t.add_argument(
+        "--time-limit", type=float, default=MOVE_TIME_LIMIT, help="segundos por lance; 0 desliga"
     )
     t.add_argument("--deep-depth", type=int, default=0, help="profundidade na janela; 0 desliga")
     t.add_argument("--deep-from", type=int, default=8, help="primeiro lance da janela funda")
@@ -93,6 +96,9 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--official", help="padrão: a de luna/versions/oficial.txt")
     p.add_argument(
         "--depth", type=int, help="profundidade fixa (padrão: 2/4/5 por lance, OFFICIAL_SCHEDULE)"
+    )
+    p.add_argument(
+        "--time-limit", type=float, default=MOVE_TIME_LIMIT, help="segundos por lance; 0 desliga"
     )
     p.add_argument("--elo1", type=float, default=30.0, help="H1 do teste sequencial, em Elo")
     p.add_argument("--max-games", type=int, default=2000)
@@ -143,6 +149,7 @@ def main(argv: list[str] | None = None) -> None:
                     contempt=args.contempt,
                     deep_depth=args.deep_depth or None,
                     schedule=_parse_schedule(args.schedule),
+                    time_limit=args.time_limit or None,
                     deep_from_move=args.deep_from,
                     deep_to_move=args.deep_to,
                 ),
@@ -189,11 +196,15 @@ def _promote(args: argparse.Namespace) -> None:
         elo1=args.elo1,
         max_games=args.max_games,
         depth=args.depth,
+        time_limit=args.time_limit or None,
         random_plies=args.random_plies,
         seed=args.seed,
     )
     depth = args.depth if args.depth is not None else "2/4/5 por lance"
-    print(f"Candidata {candidate.name} contra a oficial {official.name}, profundidade {depth}")
+    limit = f", até {args.time_limit:g} s por lance" if args.time_limit else ""
+    print(
+        f"Candidata {candidate.name} contra a oficial {official.name}, profundidade {depth}{limit}"
+    )
     cand_genome = Genome(dict(candidate.genome.genes), id=candidate.name)
     off_genome = Genome(dict(official.genome.genes), id=official.name)
     result = run_promotion_match(cand_genome, off_genome, config, workers=args.workers)
