@@ -1,6 +1,6 @@
 # Relatório de status do projeto
 
-**Última atualização:** 2026-11-01
+**Última atualização:** 2026-11-02
 **Atualizado por:** agente de documentação ([.claude/agents/documentador.md](../.claude/agents/documentador.md))
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
@@ -139,7 +139,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] `luna-v4` é a Luna oficial no repositório (`luna/versions/luna-v4.json` e `oficial.txt`), com autorização do Lucas — [PR #20](https://github.com/lucas-kiozy/evolutiveChess/pull/20)
 - [x] Profundidade de busca por lance da Luna, contando os lances dela (número do lance na FEN), a pedido do Lucas. Partidas oficiais (rating, promoção, Lichess): 2 meios-lances nos lances 1 a 9, 4 nos lances 10 a 16 e 5 do 17 em diante, no lugar da profundidade fixa 3. Treino: 2 nos lances 1 a 10, 3 nos 11 a 29, 4 nos 30 a 45 e 5 do 46 em diante (`train --schedule`); a janela funda antiga vem desligada. `LUNA_DEPTH` e `promote --depth` ainda fixam uma profundidade única — [PR #21](https://github.com/lucas-kiozy/evolutiveChess/pull/21)
 - [x] Quinto treino (`treino-v4`), o primeiro com a profundidade por lance 2/3/4/5: 3 gerações (11 a 13) a partir da população final do quarto treino, com a `luna-v4` entre as campeãs passadas. Cada geração de 228 partidas levou de 4 h 19 min a 5 h 26 min em 4 núcleos, contra 8 a 10 min antes da escala nova. Cerca de 80% das partidas terminam por desistência. Melhor ao fim: `g0013-i09`, exportada como `candidata-v4-g13` (pasta compartilhada, `luna-treinos/versoes/`)
-- [ ] Medir a `candidata-v4-g13` contra o Stockfish e, se fizer sentido, rodar a catraca contra a `luna-v4`: ainda não dá para dizer se ela é mais forte
+- [x] Catraca da `candidata-v4-g13` contra a `luna-v4`, na profundidade oficial 2/4/5: interrompida às 4 h de 02/11 pelo prazo do Lucas, sem decisão do teste sequencial, com 60,5 pontos em 128 partidas (47,3%, -19 ± 27 Elo). Pela regra combinada (promover só com o intervalo todo acima de zero), **não foi promovida**; a `luna-v4` continua oficial. Ritmo: cerca de 6,5 partidas por hora em 4 núcleos
 - [ ] Avaliar o custo do treino com a escala 2/3/4/5 (cerca de 30 vezes mais lento por geração) e decidir se mantém, encurta a escala ou usa mais núcleos
 - [ ] Entender por que os pesos iniciais continuam à frente e definir os próximos ajustes do treino
 - [x] Catraca de promoção (`python -m luna promote`): a candidata só vira a Luna oficial se vencer um match pareado de 40 aberturas, decidido por teste sequencial de Wald (H0 0 Elo, H1 +30 Elo) — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
@@ -270,3 +270,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-30 | PR #20 mergeado: `luna-v4` oficial no `main` |
 | 2026-10-31 | PR #21 mergeado: profundidade por lance; nova pendência de medir a `luna-v4` com a nova profundidade |
 | 2026-11-01 | Quinto treino com a profundidade 2/3/4/5: 3 gerações, cerca de 5 h cada; candidata `g0013-i09` ainda sem medição |
+| 2026-11-02 | Catraca da candidata do quinto treino contra a `luna-v4` interrompida sem promoção (-19 ± 27 Elo); a `luna-v4` continua oficial |
