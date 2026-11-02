@@ -10,6 +10,9 @@ Duas diferenças em relação ao treino, decididas pelo Lucas com base na análi
   em profundidade 3 venceu a de profundidade 2 por +319 ± 54 Elo). Desde então é
   a escala ``OFFICIAL_SCHEDULE`` pedida pelo Lucas: 2 meios-lances do lance 1 ao
   9, 4 do 10 ao 16 e 5 do 17 em diante. ``LUNA_DEPTH`` fixa uma profundidade.
+- **No máximo 14 s por lance** (``luna.search.MOVE_TIME_LIMIT``, decisão do Lucas
+  em 2026-11-02): se o tempo acabar, ela joga o melhor lance calculado até ali.
+  ``LUNA_TIME_LIMIT`` muda o limite (0 desliga).
 - **Histórico da partida.** ``rating`` e ``lichess_bot`` passam só a FEN, e sem o
   histórico a busca não sabe quais posições já ocorreram: nas medições, ~4 empates
   por repetição em cada 60 partidas tinham a Luna 3 ou mais peões à frente. A
@@ -30,7 +33,7 @@ from luna.game_interface import GameState
 from luna.genome import Genome
 from luna.promotion import official_search
 from luna.resign import sees_forced_draw
-from luna.search import SearchConfig, Searcher
+from luna.search import MOVE_TIME_LIMIT, SearchConfig, Searcher
 
 
 def _position_key(fen: str) -> str:
@@ -48,9 +51,10 @@ class LunaPlayer:
         backend: str = DEFAULT_BACKEND,
         search: Optional[SearchConfig] = None,
         seed: Optional[int] = None,
+        time_limit: Optional[float] = MOVE_TIME_LIMIT,
     ):
         base = search or SearchConfig()
-        config = official_search(depth)  # sem ruído; None = escala por lance
+        config = official_search(depth, time_limit)  # sem ruído; None = escala por lance
         config.quiescence_depth = base.quiescence_depth
         config.contempt = base.contempt
         self.searcher = Searcher(genome, config, random.Random(seed))
@@ -107,19 +111,24 @@ class LunaPlayer:
         return new_game(self.backend, fen)
 
 
-def player_from_version(name_or_path: str, depth: Optional[int] = None) -> LunaPlayer:
+def player_from_version(
+    name_or_path: str, depth: Optional[int] = None, time_limit: Optional[float] = MOVE_TIME_LIMIT
+) -> LunaPlayer:
     from luna.versions import load_version
 
     version = load_version(name_or_path)
-    return LunaPlayer(version.genome, depth=depth, search=version.search)
+    return LunaPlayer(version.genome, depth=depth, search=version.search, time_limit=time_limit)
 
 
 def official_factory() -> LunaPlayer:
     """Luna oficial (``luna/versions/oficial.txt``) na escala oficial de profundidade, sem ruído.
 
-    ``LUNA_VERSION`` (nome ou caminho de uma versão) e ``LUNA_DEPTH`` sobrepõem."""
+    ``LUNA_VERSION`` (nome ou caminho de uma versão), ``LUNA_DEPTH`` e
+    ``LUNA_TIME_LIMIT`` (segundos por lance; 0 desliga) sobrepõem."""
     from luna.versions import official_name
 
     name = os.environ.get("LUNA_VERSION") or official_name()
     depth = os.environ.get("LUNA_DEPTH")
-    return player_from_version(name, int(depth) if depth else None)
+    limit = os.environ.get("LUNA_TIME_LIMIT")
+    time_limit = float(limit) if limit else MOVE_TIME_LIMIT
+    return player_from_version(name, int(depth) if depth else None, time_limit)

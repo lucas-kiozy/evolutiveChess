@@ -40,7 +40,7 @@ from typing import Callable, Optional
 from luna.genome import Genome
 from luna.match import MatchConfig, play_game
 from luna.openings import BOOK
-from luna.search import SearchConfig
+from luna.search import MOVE_TIME_LIMIT, SearchConfig
 
 #: Profundidade das partidas oficiais (rating, promoção, Lichess), em meios-lances,
 #: por lance da partida: 2 do lance 1 ao 9, 4 do 10 ao 16 e 5 do 17 em diante
@@ -51,11 +51,20 @@ OFFICIAL_SCHEDULE: tuple[tuple[int, int], ...] = ((1, 2), (10, 4), (17, 5))
 OFFICIAL_DEPTH = 3
 
 
-def official_search(depth: Optional[int] = None) -> SearchConfig:
-    """Busca das partidas oficiais: a escala por lance, ou ``depth`` fixo se dado."""
+def official_search(
+    depth: Optional[int] = None, time_limit: Optional[float] = MOVE_TIME_LIMIT
+) -> SearchConfig:
+    """Busca das partidas oficiais: a escala por lance, ou ``depth`` fixo se dado, com
+    ``time_limit`` segundos por lance (None ou 0 = sem limite)."""
+    time_limit = time_limit or None
     if depth is not None:
-        return SearchConfig(depth=depth, noise=0.0)
-    return SearchConfig(depth=OFFICIAL_SCHEDULE[0][1], noise=0.0, schedule=OFFICIAL_SCHEDULE)
+        return SearchConfig(depth=depth, noise=0.0, time_limit=time_limit)
+    return SearchConfig(
+        depth=OFFICIAL_SCHEDULE[0][1],
+        noise=0.0,
+        schedule=OFFICIAL_SCHEDULE,
+        time_limit=time_limit,
+    )
 
 
 MIN_PAIRS = 8  # pares antes de o teste poder parar (a variância precisa de amostra)
@@ -74,6 +83,7 @@ class PromotionConfig:
     beta: float = 0.05  # chance de recusar uma candidata 30 Elo melhor
     max_games: int = 2000
     depth: Optional[int] = None  # None = OFFICIAL_SCHEDULE; um número fixa a profundidade
+    time_limit: Optional[float] = MOVE_TIME_LIMIT  # segundos por lance; None = sem limite
     random_plies: int = 2  # lances aleatórios depois do livro, iguais no par
     max_plies: int = 200
     backend: str = "chess_engine"
@@ -93,7 +103,7 @@ class PromotionConfig:
 
     def match_config(self) -> MatchConfig:
         return MatchConfig(
-            search=official_search(self.depth),
+            search=official_search(self.depth, self.time_limit),
             max_plies=self.max_plies,
             random_opening_plies=self.random_plies,
             backend=self.backend,
