@@ -5,7 +5,7 @@
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-**Último commit do `main` coberto:** `eef49cd`
+**Último commit do `main` coberto:** `ff3c61e`
 
 Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
@@ -42,6 +42,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 2026-10-08 | Busca de empate forçado mais leve, para a desistência funcionar no meio-jogo | 3 | [PR #18](https://github.com/lucas-kiozy/evolutiveChess/pull/18) |
 | 2026-10-08 | Regra única de empate forçado antes de desistir, para treino, rating, Lichess e tabuleiro | 3, 4 e 5 | [PR #17](https://github.com/lucas-kiozy/evolutiveChess/pull/17) |
 | 2026-10-08 | Desistência nas partidas de treino e vitória por desistência na régua (6) | 3 | [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16) |
+| 2026-11-02 | Limite de 14 s por lance, com aprofundamento iterativo, em treino, rating, promoção e Lichess | 3, 4 e 5 | [PR #22](https://github.com/lucas-kiozy/evolutiveChess/pull/22) |
 | 2026-10-31 | Profundidade de busca por lance: 2/4/5 nas partidas oficiais e 2/3/4/5 no treino | 3, 4 e 5 | [PR #21](https://github.com/lucas-kiozy/evolutiveChess/pull/21) |
 | 2026-10-30 | `luna-v4` vira a Luna oficial (venceu a `luna-v3` por +69 ± 24 Elo; 1936 ± 47 contra o Stockfish) | 3 e 4 | [PR #20](https://github.com/lucas-kiozy/evolutiveChess/pull/20) |
 | 2026-10-08 | A jogadora da Luna expõe `last_score`, usado pela regra de desistência | 5 | [PR #15](https://github.com/lucas-kiozy/evolutiveChess/pull/15) |
@@ -140,6 +141,8 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Profundidade de busca por lance da Luna, contando os lances dela (número do lance na FEN), a pedido do Lucas. Partidas oficiais (rating, promoção, Lichess): 2 meios-lances nos lances 1 a 9, 4 nos lances 10 a 16 e 5 do 17 em diante, no lugar da profundidade fixa 3. Treino: 2 nos lances 1 a 10, 3 nos 11 a 29, 4 nos 30 a 45 e 5 do 46 em diante (`train --schedule`); a janela funda antiga vem desligada. `LUNA_DEPTH` e `promote --depth` ainda fixam uma profundidade única — [PR #21](https://github.com/lucas-kiozy/evolutiveChess/pull/21)
 - [x] Quinto treino (`treino-v4`), o primeiro com a profundidade por lance 2/3/4/5: 3 gerações (11 a 13) a partir da população final do quarto treino, com a `luna-v4` entre as campeãs passadas. Cada geração de 228 partidas levou de 4 h 19 min a 5 h 26 min em 4 núcleos, contra 8 a 10 min antes da escala nova. Cerca de 80% das partidas terminam por desistência. Melhor ao fim: `g0013-i09`, exportada como `candidata-v4-g13` (pasta compartilhada, `luna-treinos/versoes/`)
 - [x] Catraca da `candidata-v4-g13` contra a `luna-v4`, na profundidade oficial 2/4/5: interrompida às 4 h de 02/11 pelo prazo do Lucas, sem decisão do teste sequencial, com 60,5 pontos em 128 partidas (47,3%, -19 ± 27 Elo). Pela regra combinada (promover só com o intervalo todo acima de zero), **não foi promovida**; a `luna-v4` continua oficial. Ritmo: cerca de 6,5 partidas por hora em 4 núcleos
+- [x] Limite de 14 s por lance em todos os usos (treino, rating, promoção e Lichess), por decisão do Lucas. A busca aprofunda passo a passo até a profundidade da escala e, quando o tempo acaba, joga o melhor lance calculado até ali. Configurável com `--time-limit` em `train` e `promote` (0 desliga) e com `LUNA_TIME_LIMIT` na jogadora oficial. Efeito colateral: o resultado das partidas passa a depender da velocidade da máquina, e o treino deixa de ser exatamente reproduzível — [PR #22](https://github.com/lucas-kiozy/evolutiveChess/pull/22)
+- [~] Gerações 14 a 19 do quinto treino, já com o limite de 14 s por lance
 - [ ] Avaliar o custo do treino com a escala 2/3/4/5 (cerca de 30 vezes mais lento por geração) e decidir se mantém, encurta a escala ou usa mais núcleos
 - [ ] Entender por que os pesos iniciais continuam à frente e definir os próximos ajustes do treino
 - [x] Catraca de promoção (`python -m luna promote`): a candidata só vira a Luna oficial se vencer um match pareado de 40 aberturas, decidido por teste sequencial de Wald (H0 0 Elo, H1 +30 Elo) — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
@@ -214,6 +217,7 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 | 2026-10-07 | "Rating 1600" = partidas contra Stockfish com Elo limitado; a Luna está pronta para o Lichess quando o limite inferior do intervalo de confiança de 90% chegar a 1600 | Lucas, ao mergear o PR #4 |
 | 2026-10-08 | Vitória por desistência do adversário vale 6 na régua: os 5 da vitória mais 1 de bônus, que só se ganha em vitórias. Quem desiste leva a derrota normal (-1) | Lucas |
 | 2026-10-31 | Profundidade de busca varia com o lance da Luna: nas partidas oficiais, 2 meios-lances nos lances 1 a 9, 4 nos 10 a 16 e 5 do 17 em diante; no treino, 2/3/4/5 nos lances 1 a 10, 11 a 29, 30 a 45 e 46 em diante | Lucas (aplicado no PR #21) |
+| 2026-11-02 | Limite de 14 s por lance em todos os usos (treino, rating, promoção e Lichess) | Lucas (aplicado no PR #22) |
 
 ---
 
@@ -271,3 +275,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-10-31 | PR #21 mergeado: profundidade por lance; nova pendência de medir a `luna-v4` com a nova profundidade |
 | 2026-11-01 | Quinto treino com a profundidade 2/3/4/5: 3 gerações, cerca de 5 h cada; candidata `g0013-i09` ainda sem medição |
 | 2026-11-02 | Catraca da candidata do quinto treino contra a `luna-v4` interrompida sem promoção (-19 ± 27 Elo); a `luna-v4` continua oficial |
+| 2026-11-02 | PR #22 mergeado: limite de 14 s por lance; gerações 14 a 19 do quinto treino em andamento |
