@@ -1,6 +1,6 @@
 # Relatório de status do projeto
 
-**Última atualização:** 2026-11-02
+**Última atualização:** 2026-11-09
 **Atualizado por:** agente de documentação ([.claude/agents/documentador.md](../.claude/agents/documentador.md))
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
@@ -142,7 +142,10 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Quinto treino (`treino-v4`), o primeiro com a profundidade por lance 2/3/4/5: 3 gerações (11 a 13) a partir da população final do quarto treino, com a `luna-v4` entre as campeãs passadas. Cada geração de 228 partidas levou de 4 h 19 min a 5 h 26 min em 4 núcleos, contra 8 a 10 min antes da escala nova. Cerca de 80% das partidas terminam por desistência. Melhor ao fim: `g0013-i09`, exportada como `candidata-v4-g13` (pasta compartilhada, `luna-treinos/versoes/`)
 - [x] Catraca da `candidata-v4-g13` contra a `luna-v4`, na profundidade oficial 2/4/5: interrompida às 4 h de 02/11 pelo prazo do Lucas, sem decisão do teste sequencial, com 60,5 pontos em 128 partidas (47,3%, -19 ± 27 Elo). Pela regra combinada (promover só com o intervalo todo acima de zero), **não foi promovida**; a `luna-v4` continua oficial. Ritmo: cerca de 6,5 partidas por hora em 4 núcleos
 - [x] Limite de 14 s por lance em todos os usos (treino, rating, promoção e Lichess), por decisão do Lucas. A busca aprofunda passo a passo até a profundidade da escala e, quando o tempo acaba, joga o melhor lance calculado até ali. Configurável com `--time-limit` em `train` e `promote` (0 desliga) e com `LUNA_TIME_LIMIT` na jogadora oficial. Efeito colateral: o resultado das partidas passa a depender da velocidade da máquina, e o treino deixa de ser exatamente reproduzível — [PR #22](https://github.com/lucas-kiozy/evolutiveChess/pull/22)
-- [~] Gerações 14 a 19 do quinto treino, já com o limite de 14 s por lance
+- [x] Quinto treino estendido até a geração 32, já com o limite de 14 s por lance
+- [x] Catraca da `g0019-i00` contra a `luna-v4`: interrompida por um reinício do contêiner com 132,5 pontos em 256 partidas (+12 ± 19 Elo); o Lucas mandou encerrar como empate técnico, sem promoção
+- [x] Catraca da `g0032-i01` contra a `luna-v4`: o teste sequencial decidiu por H0 (sem ganho) com 119 pontos em 256 partidas (97 vitórias, 44 empates, 115 derrotas), -24 ± 18 Elo. Não promovida; arquivos na pasta compartilhada, `luna-treinos/promocao-g32/`
+- [ ] Entender por que as gerações do quinto treino não superam a `luna-v4`: três candidatas seguidas (gerações 13, 19 e 32) empataram ou perderam para ela
 - [ ] Avaliar o custo do treino com a escala 2/3/4/5 (cerca de 30 vezes mais lento por geração) e decidir se mantém, encurta a escala ou usa mais núcleos
 - [ ] Entender por que os pesos iniciais continuam à frente e definir os próximos ajustes do treino
 - [x] Catraca de promoção (`python -m luna promote`): a candidata só vira a Luna oficial se vencer um match pareado de 40 aberturas, decidido por teste sequencial de Wald (H0 0 Elo, H1 +30 Elo) — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
@@ -276,3 +279,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-11-01 | Quinto treino com a profundidade 2/3/4/5: 3 gerações, cerca de 5 h cada; candidata `g0013-i09` ainda sem medição |
 | 2026-11-02 | Catraca da candidata do quinto treino contra a `luna-v4` interrompida sem promoção (-19 ± 27 Elo); a `luna-v4` continua oficial |
 | 2026-11-02 | PR #22 mergeado: limite de 14 s por lance; gerações 14 a 19 do quinto treino em andamento |
+| 2026-11-09 | Quinto treino até a geração 32; candidatas das gerações 19 (empate técnico) e 32 (-24 ± 18 Elo) não superaram a `luna-v4`, que continua oficial |
