@@ -20,7 +20,9 @@ from lichess_bot.client import LichessClient, LichessError
 from lichess_bot.config import BotConfig
 from lichess_bot.game import GameRunner
 from lichess_bot.learning import GameRecord, Learner
+from lichess_bot.pacing import MovePacing, NoPacing
 from rating.player import MovePlayer
+from rating.resign import ResignPolicy
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +62,7 @@ def decline_reason(challenge: dict, cfg: BotConfig, busy: bool) -> Optional[str]
     if challenge.get("speed") not in cfg.speeds:
         return "timeControl"
     limit, inc = int(tc.get("limit", 0)), int(tc.get("increment", 0))
-    if limit < cfg.min_initial:
+    if limit + 60 * inc < cfg.min_clock_budget:
         return "tooFast"
     if limit > cfg.max_initial or inc > cfg.max_increment:
         return "tooSlow"
@@ -149,7 +151,14 @@ class LichessBot:
 
     # ------------------------------------------------------------ partidas
     def play_one(self, game_id: str) -> GameRecord:
-        runner = GameRunner(self.client, self.player_factory(), game_id, self.my_id)
+        runner = GameRunner(
+            self.client,
+            self.player_factory(),
+            game_id,
+            self.my_id,
+            pacing=MovePacing() if self.cfg.pacing else NoPacing(),
+            resign_policy=ResignPolicy(self.cfg.resign_score, self.cfg.resign_moves),
+        )
         record = runner.run()
         if record.luna_rating is not None:
             self.my_rating = record.luna_rating
@@ -161,18 +170,18 @@ class LichessBot:
         return record
 
     def _matchmake(self) -> None:
-        bots = [
-            b
-            for b in self.client.online_bots()
-            if b.get("id", "").lower() != self.my_id
-        ]
+        bots = [b for b in self.client.online_bots() if b.get("id", "").lower() != self.my_id]
         if self.my_rating is not None:
             w = self.cfg.matchmaking_rating_window
             speed = speed_of(*self.cfg.matchmaking_clock)
             bots = [
                 b
                 for b in bots
-                if abs(((b.get("perfs") or {}).get(speed) or {}).get("rating", self.my_rating) - self.my_rating) <= w
+                if abs(
+                    ((b.get("perfs") or {}).get(speed) or {}).get("rating", self.my_rating)
+                    - self.my_rating
+                )
+                <= w
             ]
         if not bots:
             return
@@ -202,7 +211,11 @@ class LichessBot:
             except queue.Empty:
                 self._expire_pending()
                 waited = time.monotonic() - idle_since
-                if self.cfg.matchmaking and not self.busy.is_set() and waited >= self.cfg.matchmaking_idle_seconds:
+                if (
+                    self.cfg.matchmaking
+                    and not self.busy.is_set()
+                    and waited >= self.cfg.matchmaking_idle_seconds
+                ):
                     self._matchmake()
                     idle_since = time.monotonic()
                 continue

@@ -59,7 +59,9 @@ class LichessClient:
             with self._lock:
                 resp = self.session.request(method, url, timeout=self.timeout, **kw)
             if resp.status_code == 429 and attempt < retries:
-                log.warning("Lichess pediu para ir mais devagar (429); aguardando %ss", RATE_LIMIT_WAIT)
+                log.warning(
+                    "Lichess pediu para ir mais devagar (429); aguardando %ss", RATE_LIMIT_WAIT
+                )
                 self._sleep(RATE_LIMIT_WAIT)
                 continue
             if resp.status_code >= 400:
@@ -122,7 +124,9 @@ class LichessClient:
         return self._request("POST", f"/api/challenge/{challenge_id}/accept")
 
     def decline_challenge(self, challenge_id: str, reason: str = "generic") -> Any:
-        return self._request("POST", f"/api/challenge/{challenge_id}/decline", data={"reason": reason})
+        return self._request(
+            "POST", f"/api/challenge/{challenge_id}/decline", data={"reason": reason}
+        )
 
     def create_challenge(
         self,

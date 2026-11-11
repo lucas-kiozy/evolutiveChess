@@ -35,6 +35,7 @@ import chess
 from rating.elo import GameResult, RatingEstimate, estimate_rating
 from rating.match import DEFAULT_MAX_PLIES, play_game
 from rating.player import PlayerFactory
+from rating.resign import ResignPolicy
 from rating.stockfish_opponent import (
     DEFAULT_MAX_ELO,
     DEFAULT_MIN_ELO,
@@ -59,6 +60,9 @@ class EstimatorConfig:
     max_plies: int = DEFAULT_MAX_PLIES
     stockfish_path: Optional[str] = None
     history_file: Optional[Path] = None  # JSONL com cada partida
+    #: A Luna desiste pela regra de rating.resign (desligado para manter as
+    #: medições comparáveis com as anteriores; o Stockfish nunca desiste).
+    luna_resigns: bool = False
 
 
 @dataclass
@@ -121,7 +125,11 @@ class RatingReport:
             )
         lines.append(
             f"Alvo {self.target:.0f}: "
-            + ("atingido, pronta para o Lichess." if self.ready_for_lichess else "ainda não atingido.")
+            + (
+                "atingido, pronta para o Lichess."
+                if self.ready_for_lichess
+                else "ainda não atingido."
+            )
         )
         return "\n".join(lines)
 
@@ -156,7 +164,9 @@ def _play_one(args: tuple) -> GameLog:
             "White": "Luna" if luna_white else f"Stockfish UCI_Elo {sf.elo}",
             "Black": f"Stockfish UCI_Elo {sf.elo}" if luna_white else "Luna",
         }
-        res = play_game(white, black, max_plies=cfg.max_plies, headers=headers)
+        luna_side = chess.WHITE if luna_white else chess.BLACK
+        resign = {luna_side: ResignPolicy()} if cfg.luna_resigns else None
+        res = play_game(white, black, max_plies=cfg.max_plies, headers=headers, resign=resign)
         actual_elo = sf.elo
     color = chess.WHITE if luna_white else chess.BLACK
     return GameLog(
@@ -197,9 +207,7 @@ class RatingEstimator:
             return list(pool.map(_play_one, jobs))
 
     def _report(self, logs: list[GameLog]) -> RatingReport:
-        est = estimate_rating(
-            GameResult(float(g.opponent_elo), g.score) for g in logs
-        )
+        est = estimate_rating(GameResult(float(g.opponent_elo), g.score) for g in logs)
         return RatingReport(est, self.cfg.target, self.cfg.z, logs)
 
     def run(self) -> RatingReport:
@@ -209,10 +217,7 @@ class RatingEstimator:
         report = self._report(logs)
         while len(logs) < cfg.max_games:
             n = min(cfg.batch_size, cfg.max_games - len(logs))
-            jobs = [
-                (self.factory, next_elo, (len(logs) + i) % 2 == 0, cfg)
-                for i in range(n)
-            ]
+            jobs = [(self.factory, next_elo, (len(logs) + i) % 2 == 0, cfg) for i in range(n)]
             batch = self._runner(jobs)
             logs.extend(batch)
             self._append_history(batch)

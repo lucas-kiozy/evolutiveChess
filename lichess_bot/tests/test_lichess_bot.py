@@ -74,7 +74,15 @@ class FakeClient:
 
 
 def full(moves="", status="started", white="luna", black="opp", winner=None):
-    st = {"type": "gameState", "moves": moves, "status": status, "wtime": 60000, "btime": 60000, "winc": 0, "binc": 0}
+    st = {
+        "type": "gameState",
+        "moves": moves,
+        "status": status,
+        "wtime": 60000,
+        "btime": 60000,
+        "winc": 0,
+        "binc": 0,
+    }
     if winner:
         st["winner"] = winner
     return {
@@ -96,8 +104,8 @@ def challenge(**over):
         "challenger": {"id": "someone"},
         "variant": {"key": "standard"},
         "rated": True,
-        "speed": "blitz",
-        "timeControl": {"type": "clock", "limit": 300, "increment": 3},
+        "speed": "classical",
+        "timeControl": {"type": "clock", "limit": 1800, "increment": 20},
     }
     ch.update(over)
     return ch
@@ -144,8 +152,23 @@ def test_empty_token_rejected():
         ({}, True, "later"),
         ({"variant": {"key": "chess960"}}, False, "standard"),
         ({"timeControl": {"type": "unlimited"}}, False, "timeControl"),
-        ({"timeControl": {"type": "clock", "limit": 60, "increment": 0}}, False, "tooFast"),
-        ({"timeControl": {"type": "clock", "limit": 3600, "increment": 0}}, False, "tooSlow"),
+        ({"timeControl": {"type": "clock", "limit": 600, "increment": 5}}, False, "tooFast"),
+        (
+            {"speed": "rapid", "timeControl": {"type": "clock", "limit": 900, "increment": 10}},
+            False,
+            None,
+        ),
+        (
+            {"speed": "rapid", "timeControl": {"type": "clock", "limit": 1500, "increment": 0}},
+            False,
+            None,
+        ),
+        (
+            {"speed": "blitz", "timeControl": {"type": "clock", "limit": 300, "increment": 3}},
+            False,
+            "timeControl",
+        ),
+        ({"timeControl": {"type": "clock", "limit": 20000, "increment": 0}}, False, "tooSlow"),
         ({"speed": "correspondence"}, False, "timeControl"),
     ],
 )
@@ -230,7 +253,7 @@ def test_runner_claims_victory_when_opponent_gone():
         {"type": "gameState", "moves": "e2e4 e7e5", "status": "timeout", "winner": "black"},
     ]
     client = FakeClient(events)
-    GameRunner(client, FunctionPlayer(lambda f, l: "e7e5"), "g1", "luna").run()
+    GameRunner(client, FunctionPlayer(lambda fen, legal: "e7e5"), "g1", "luna").run()
     assert client.claimed == ["g1"]
 
 

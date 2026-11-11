@@ -23,12 +23,22 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--target", type=float, default=1600)
     ap.add_argument("--games", type=int, default=60, help="máximo de partidas")
     ap.add_argument("--parallel", type=int, default=4, help="partidas simultâneas")
-    ap.add_argument("--stderr", type=float, default=40, help="para quando o erro-padrão chegar aqui")
+    ap.add_argument(
+        "--stderr", type=float, default=40, help="para quando o erro-padrão chegar aqui"
+    )
     ap.add_argument("--start-elo", type=int, default=1320)
     ap.add_argument("--tc", default="60+0.6", help="relógio do Stockfish, base+incremento (s)")
-    ap.add_argument("--movetime", type=float, default=None, help="segundos fixos por lance (mais rápido, menos fiel à calibração)")
+    ap.add_argument(
+        "--movetime",
+        type=float,
+        default=None,
+        help="segundos fixos por lance (mais rápido, menos fiel à calibração)",
+    )
     ap.add_argument("--stockfish", default=None, help="caminho do executável")
     ap.add_argument("--history", type=Path, default=Path("rating/runs/history.jsonl"))
+    ap.add_argument(
+        "--resign", action="store_true", help="a Luna desiste em posição perdida (rating.resign)"
+    )
     ap.add_argument("--json", action="store_true", help="imprime o resultado final em JSON")
     args = ap.parse_args(argv)
 
@@ -42,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
         movetime=args.movetime,
         stockfish_path=args.stockfish,
         history_file=args.history,
+        luna_resigns=args.resign,
     )
 
     def progress(rep):
