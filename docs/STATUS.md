@@ -1,6 +1,6 @@
 # Relatório de status do projeto
 
-**Última atualização:** 2026-11-09
+**Última atualização:** 2026-11-16
 **Atualizado por:** agente de documentação ([.claude/agents/documentador.md](../.claude/agents/documentador.md))
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
@@ -145,6 +145,8 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Quinto treino estendido até a geração 32, já com o limite de 14 s por lance
 - [x] Catraca da `g0019-i00` contra a `luna-v4`: interrompida por um reinício do contêiner com 132,5 pontos em 256 partidas (+12 ± 19 Elo); o Lucas mandou encerrar como empate técnico, sem promoção
 - [x] Catraca da `g0032-i01` contra a `luna-v4`: o teste sequencial decidiu por H0 (sem ganho) com 119 pontos em 256 partidas (97 vitórias, 44 empates, 115 derrotas), -24 ± 18 Elo. Não promovida; arquivos na pasta compartilhada, `luna-treinos/promocao-g32/`
+- [x] Quinto treino estendido até a geração 47 (de 2,5 a 3,4 h por geração, mates em 5% a 10% das partidas). Melhor da geração 47: `g0047-i00`, exportada como `candidata-v4-g47` (pasta compartilhada, `luna-treinos/versoes/`)
+- [x] Medição da `candidata-v4-g47`, já na profundidade oficial 2/4/5 com até 14 s por lance: 60 partidas contra o Stockfish 16 (23 vitórias, 14 empates, 23 derrotas, 50%), 1809 ± 46 (IC 90%: 1732 a 1885). Não dá para comparar direto com os 1936 ± 47 da `luna-v4`, medidos em profundidade fixa 3, sem limite de tempo e com código anterior. Sem catraca e sem promoção: a `luna-v4` continua oficial
 - [ ] Entender por que as gerações do quinto treino não superam a `luna-v4`: três candidatas seguidas (gerações 13, 19 e 32) empataram ou perderam para ela
 - [ ] Avaliar o custo do treino com a escala 2/3/4/5 (cerca de 30 vezes mais lento por geração) e decidir se mantém, encurta a escala ou usa mais núcleos
 - [ ] Entender por que os pesos iniciais continuam à frente e definir os próximos ajustes do treino
@@ -280,3 +282,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-11-02 | Catraca da candidata do quinto treino contra a `luna-v4` interrompida sem promoção (-19 ± 27 Elo); a `luna-v4` continua oficial |
 | 2026-11-02 | PR #22 mergeado: limite de 14 s por lance; gerações 14 a 19 do quinto treino em andamento |
 | 2026-11-09 | Quinto treino até a geração 32; candidatas das gerações 19 (empate técnico) e 32 (-24 ± 18 Elo) não superaram a `luna-v4`, que continua oficial |
+| 2026-11-16 | Quinto treino até a geração 47; candidata da geração 47 medida em 1809 ± 46 nas condições oficiais atuais; `luna-v4` continua oficial |
