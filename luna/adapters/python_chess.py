@@ -98,6 +98,9 @@ class PythonChessGame:
     def gives_check(self, move: chess.Move) -> bool:
         return self._board.gives_check(move)
 
+    def key(self) -> tuple:
+        return self._board._transposition_key()
+
     def is_repetition(self) -> bool:
         return self._board.is_repetition(2)
 
