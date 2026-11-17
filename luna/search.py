@@ -48,6 +48,7 @@ from luna.genome import Genome
 _ORDER_VALUE = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9, "K": 0}
 _EXACT, _LOWER, _UPPER = 0, 1, 2  # tipo do escore guardado na tabela de transposição
 _TT_MAX = 500_000  # posições na tabela antes de esvaziá-la
+EXTRA_START_FRACTION = 0.25  # camada além da escala só começa antes deste tanto do limite
 INF = float("inf")
 MAX_PLY = 1000  # escores acima de MATE_SCORE - MAX_PLY são mates
 #: Segundos por lance em todas as partidas da Luna, treino e oficiais (decisão do
@@ -85,6 +86,10 @@ class SearchConfig:
     time_limit: Optional[float] = None
     # Tabela de transposição + killer + history. False = busca anterior (para comparar).
     heuristics: bool = True
+    # Com ``time_limit``: meios-lances a mais que a busca pode ir além da escala enquanto
+    # sobra tempo. Uma camada extra só começa se o lance gastou menos de
+    # ``EXTRA_START_FRACTION`` do limite, porque cada camada custa várias vezes a anterior.
+    extra_depth: int = 0
 
     @classmethod
     def from_dict(cls, d: dict) -> "SearchConfig":
@@ -99,6 +104,7 @@ class SearchConfig:
             "schedule",
             "time_limit",
             "heuristics",
+            "extra_depth",
         )
         kwargs = {k: d[k] for k in keys if k in d}
         if kwargs.get("schedule") is not None:
@@ -166,7 +172,9 @@ class Searcher:
         best_move, best_real = moves[0], 0.0
         start = state.ply
         try:
-            for d in range(1, depth + 1):
+            for d in range(1, depth + self.config.extra_depth + 1):
+                if d > depth and time.monotonic() > deadline - limit * (1 - EXTRA_START_FRACTION):
+                    break  # camada além da escala: só se ainda sobra bastante tempo
                 # A camada 1 sempre termina (custa milissegundos): garante um lance e
                 # um escore para a regra de desistência.
                 self._deadline = deadline if d > 1 else None

@@ -47,6 +47,10 @@ from luna.search import MOVE_TIME_LIMIT, SearchConfig
 #: (decisão do Lucas em 2026-10-31). A quiescência (gene ``quiescence_depth``)
 #: continua as capturas além desse limite.
 OFFICIAL_SCHEDULE: tuple[tuple[int, int], ...] = ((1, 2), (10, 4), (17, 5))
+# Nas partidas oficiais, com limite de tempo, a busca pode passar da escala em até
+# tantos meios-lances enquanto sobra tempo (a busca com tabela de transposição chega à
+# escala bem antes dos 14 s). A escala continua sendo o mínimo de cada lance.
+OFFICIAL_EXTRA_DEPTH = 4
 #: Profundidade fixa usada até 2026-10-31 (luna-v2 a luna-v4 foram medidas assim).
 OFFICIAL_DEPTH = 3
 
@@ -64,6 +68,7 @@ def official_search(
         noise=0.0,
         schedule=OFFICIAL_SCHEDULE,
         time_limit=time_limit,
+        extra_depth=OFFICIAL_EXTRA_DEPTH if time_limit else 0,
     )
 
 

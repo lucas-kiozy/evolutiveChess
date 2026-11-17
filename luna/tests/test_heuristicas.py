@@ -58,3 +58,16 @@ def test_com_limite_de_tempo():
 def test_configuracao_salva_e_lida():
     assert SearchConfig.from_dict({"heuristics": False}).heuristics is False
     assert SearchConfig.from_dict({}).heuristics is True
+
+
+def test_profundidade_extra_so_com_tempo_sobrando():
+    from luna.promotion import OFFICIAL_EXTRA_DEPTH, official_search
+
+    assert official_search().extra_depth == OFFICIAL_EXTRA_DEPTH
+    assert official_search(time_limit=0).extra_depth == 0
+    # Com folga, vai além da profundidade pedida e continua achando o mate.
+    fen = "6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1"
+    assert _search(fen, True, depth=1, time_limit=30.0, extra_depth=2)[0] == "d1d8"
+    # Sem folga (limite minúsculo), não começa camada extra e devolve o estado intacto.
+    move, _, _, after = _search(FENS[2], True, depth=1, time_limit=0.001, extra_depth=3)
+    assert after == FENS[2] and move
