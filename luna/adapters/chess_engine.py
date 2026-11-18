@@ -81,6 +81,9 @@ class ChessEngineGame:
     def gives_check(self, move: int) -> bool:
         return self._board.gives_check(move)
 
+    def key(self) -> int:
+        return self._board.key()
+
     def is_repetition(self) -> bool:
         return self._board.repetitions() >= 2
 

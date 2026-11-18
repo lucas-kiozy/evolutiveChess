@@ -18,7 +18,7 @@ Convenções:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterable, Optional, Protocol, runtime_checkable
+from typing import Any, Hashable, Iterable, Optional, Protocol, runtime_checkable
 
 Move = Any  # tipo opaco definido por cada backend
 
@@ -72,6 +72,10 @@ class GameState(Protocol):
     def is_promotion(self, move: Move) -> bool: ...
 
     def gives_check(self, move: Move) -> bool: ...
+
+    def key(self) -> Hashable:
+        """Chave da posição (peças, vez, roques e en passant), igual para posições
+        iguais: é o índice da tabela de transposição da busca."""
 
     def is_repetition(self) -> bool:
         """A posição atual (peças, vez, roques e en passant) já apareceu pelo menos

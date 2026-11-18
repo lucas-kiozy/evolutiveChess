@@ -47,6 +47,10 @@ from luna.search import MOVE_TIME_LIMIT, SearchConfig
 #: (decisão do Lucas em 2026-10-31). A quiescência (gene ``quiescence_depth``)
 #: continua as capturas além desse limite.
 OFFICIAL_SCHEDULE: tuple[tuple[int, int], ...] = ((1, 2), (10, 4), (17, 5))
+# Nas partidas oficiais, com limite de tempo, a busca pode passar da escala em até
+# tantos meios-lances enquanto sobra tempo (a busca com tabela de transposição chega à
+# escala bem antes dos 14 s). A escala continua sendo o mínimo de cada lance.
+OFFICIAL_EXTRA_DEPTH = 4
 #: Profundidade fixa usada até 2026-10-31 (luna-v2 a luna-v4 foram medidas assim).
 OFFICIAL_DEPTH = 3
 
@@ -64,10 +68,17 @@ def official_search(
         noise=0.0,
         schedule=OFFICIAL_SCHEDULE,
         time_limit=time_limit,
+        extra_depth=OFFICIAL_EXTRA_DEPTH if time_limit else 0,
     )
 
 
-MIN_PAIRS = 8  # pares antes de o teste poder parar (a variância precisa de amostra)
+MIN_PAIRS = 16  # pares antes de o teste poder parar (a variância precisa de amostra)
+# Um pseudo-par em cada resultado possível de um par (0, 1/4, 1/2, 3/4, 1), usado só na
+# variância. Sem ele, quando quase todo par dá 1/2 (cada lado vence com as brancas), a
+# variância observada fica quase zero e um único par diferente decidia o teste: foi o que
+# aconteceu em 2026-11-18 (LLR -3,10 com 8,5/18). É uma regularização do mesmo tipo da que
+# o Fishtest aplica às contagens pentanomiais antes de estimar a variância.
+PRIOR_PAIRS = (0.0, 0.25, 0.5, 0.75, 1.0)
 
 
 def expected_score(elo: float) -> float:
@@ -116,11 +127,17 @@ def llr(pair_scores: list[float], elo0: float, elo1: float) -> float:
     if n < 2:
         return 0.0
     mean = sum(pair_scores) / n
-    var = sum((x - mean) ** 2 for x in pair_scores) / n
+    var = _variance(pair_scores, mean)
     if var <= 0:
         return 0.0
     s0, s1 = expected_score(elo0), expected_score(elo1)
     return n * (s1 - s0) * (2 * mean - s0 - s1) / (2 * var)
+
+
+def _variance(pair_scores: list[float], mean: float) -> float:
+    """Variância por par, com os pseudo-pares de ``PRIOR_PAIRS`` (o peso deles some com n)."""
+    points = list(pair_scores) + list(PRIOR_PAIRS)
+    return sum((x - mean) ** 2 for x in points) / len(points)
 
 
 def elo_estimate(pair_scores: list[float]) -> tuple[float, float]:
@@ -129,7 +146,7 @@ def elo_estimate(pair_scores: list[float]) -> tuple[float, float]:
     if n == 0:
         return 0.0, float("inf")
     mean = min(max(sum(pair_scores) / n, 1e-3), 1 - 1e-3)
-    var = sum((x - mean) ** 2 for x in pair_scores) / max(1, n - 1)
+    var = _variance(pair_scores, mean)
     elo = -400.0 * math.log10(1.0 / mean - 1.0)
     slope = 400.0 / (math.log(10) * mean * (1 - mean))
     return elo, slope * math.sqrt(var / n)

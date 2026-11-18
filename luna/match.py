@@ -17,6 +17,8 @@ _STANDARD_VALUE = {"P": 1, "N": 3, "B": 3, "R": 5, "Q": 9, "K": 0}
 @dataclass
 class MatchConfig:
     search: SearchConfig = field(default_factory=SearchConfig)
+    # Busca das pretas, se diferente da das brancas (para comparar buscas). None = ``search``.
+    black_search: Optional[SearchConfig] = None
     max_plies: int = 200  # limite de meios-lances; ao atingir, empate por limite
     random_opening_plies: int = 2  # lances aleatórios no começo para variar as partidas
     backend: str = DEFAULT_BACKEND
@@ -58,7 +60,7 @@ def play_game(
     state = new_game(config.backend)
     searchers = {
         True: Searcher(white, config.search, rng),
-        False: Searcher(black, config.search, rng),
+        False: Searcher(black, config.black_search or config.search, rng),
     }
     trackers = {}
     if config.resign_moves > 0:
