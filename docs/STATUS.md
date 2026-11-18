@@ -1,11 +1,11 @@
 # Relatório de status do projeto
 
-**Última atualização:** 2026-11-16
+**Última atualização:** 2026-11-18
 **Atualizado por:** agente de documentação ([.claude/agents/documentador.md](../.claude/agents/documentador.md))
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
 
-**Último commit do `main` coberto:** `ff3c61e`
+**Último commit do `main` coberto:** `b9b151f`
 
 Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ ]` não iniciado
 
@@ -42,6 +42,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 2026-10-08 | Busca de empate forçado mais leve, para a desistência funcionar no meio-jogo | 3 | [PR #18](https://github.com/lucas-kiozy/evolutiveChess/pull/18) |
 | 2026-10-08 | Regra única de empate forçado antes de desistir, para treino, rating, Lichess e tabuleiro | 3, 4 e 5 | [PR #17](https://github.com/lucas-kiozy/evolutiveChess/pull/17) |
 | 2026-10-08 | Desistência nas partidas de treino e vitória por desistência na régua (6) | 3 | [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16) |
+| 2026-11-18 | Busca com tabela de transposição, killer moves e history; até 4 meios-lances extras nas partidas oficiais; teste sequencial da catraca corrigido | 2, 3 e 4 | [PR #23](https://github.com/lucas-kiozy/evolutiveChess/pull/23) |
 | 2026-11-02 | Limite de 14 s por lance, com aprofundamento iterativo, em treino, rating, promoção e Lichess | 3, 4 e 5 | [PR #22](https://github.com/lucas-kiozy/evolutiveChess/pull/22) |
 | 2026-10-31 | Profundidade de busca por lance: 2/4/5 nas partidas oficiais e 2/3/4/5 no treino | 3, 4 e 5 | [PR #21](https://github.com/lucas-kiozy/evolutiveChess/pull/21) |
 | 2026-10-30 | `luna-v4` vira a Luna oficial (venceu a `luna-v3` por +69 ± 24 Elo; 1936 ± 47 contra o Stockfish) | 3 e 4 | [PR #20](https://github.com/lucas-kiozy/evolutiveChess/pull/20) |
@@ -147,6 +148,9 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Catraca da `g0032-i01` contra a `luna-v4`: o teste sequencial decidiu por H0 (sem ganho) com 119 pontos em 256 partidas (97 vitórias, 44 empates, 115 derrotas), -24 ± 18 Elo. Não promovida; arquivos na pasta compartilhada, `luna-treinos/promocao-g32/`
 - [x] Quinto treino estendido até a geração 47 (de 2,5 a 3,4 h por geração, mates em 5% a 10% das partidas). Melhor da geração 47: `g0047-i00`, exportada como `candidata-v4-g47` (pasta compartilhada, `luna-treinos/versoes/`)
 - [x] Medição da `candidata-v4-g47`, já na profundidade oficial 2/4/5 com até 14 s por lance: 60 partidas contra o Stockfish 16 (23 vitórias, 14 empates, 23 derrotas, 50%), 1809 ± 46 (IC 90%: 1732 a 1885). Não dá para comparar direto com os 1936 ± 47 da `luna-v4`, medidos em profundidade fixa 3, sem limite de tempo e com código anterior. Sem catraca e sem promoção: a `luna-v4` continua oficial
+- [x] Busca mais eficiente: tabela de transposição (chaves Zobrist), killer moves e history heuristic, ligadas por padrão. Nas partidas oficiais, a busca pode ir até 4 meios-lances além da escala quando sobra tempo dentro dos 14 s; o treino continua na escala 2/3/4/5. Com o mesmo genoma (`luna-v4`), a busca nova venceu a anterior por 36,5 a 9,5 em 46 partidas (+234 ± 65 Elo, teste sequencial decidiu H1). Só as heurísticas, sem a profundidade extra, não deram ganho (15,5/32) — [PR #23](https://github.com/lucas-kiozy/evolutiveChess/pull/23)
+- [x] Teste sequencial da catraca corrigido: a variância ganha um pseudo-par de cada resultado e o teste exige pelo menos 16 pares, porque antes um único par podia decidir quando quase todos davam empate — [PR #23](https://github.com/lucas-kiozy/evolutiveChess/pull/23)
+- [~] Catraca da `g0045` contra a `luna-v4`, retomada com o teste corrigido
 - [ ] Entender por que as gerações do quinto treino não superam a `luna-v4`: três candidatas seguidas (gerações 13, 19 e 32) empataram ou perderam para ela
 - [ ] Avaliar o custo do treino com a escala 2/3/4/5 (cerca de 30 vezes mais lento por geração) e decidir se mantém, encurta a escala ou usa mais núcleos
 - [ ] Entender por que os pesos iniciais continuam à frente e definir os próximos ajustes do treino
@@ -181,7 +185,8 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 - [x] Medições do quarto treino em profundidade 3, 60 partidas cada contra o Stockfish 16: a melhor da geração 5 (`g0005-i19`, hoje `luna-v4`) mede 1936 ± 47 (IC 90%: 1859 a 2013; 22 vitórias, 15 empates, 23 derrotas) e a da geração 10 mede 1759 ± 47 (IC 90%: 1682 a 1837). A geração 10 ficou cerca de 180 pontos abaixo da 5: a melhor da última geração nem sempre é a mais forte
 - [x] **Critério do Lichess cumprido:** o limite inferior do IC 90% da `luna-v4` (1859) passa de 1600. Ressalva: o código da jogadora mudou entre a medição da `luna-v3` (1633) e esta (PRs #14 a #19), então parte da subida pode vir do código e não do treino; a `luna-v3` não foi medida de novo com o código atual
 - [x] Teste contra o Stockfish 16 no máximo do `UCI_Elo` (3190), 20 partidas: 0 vitórias, 3 empates por repetição tripla e 17 derrotas. Os empates vêm de o Stockfish limitado não evitar repetições; o resultado não indica força perto de 3190 nem vira rating confiável
-- [ ] Medir a `luna-v4` com a nova profundidade por lance das partidas oficiais (2/4/5): os 1936 ± 47 foram medidos em profundidade fixa 3
+- [x] Medição da `luna-v4` nas condições oficiais atuais (2/4/5, até 14 s por lance, busca anterior ao PR #23): 60 partidas contra o Stockfish 16 (22 vitórias, 16 empates, 22 derrotas), 1899 ± 47 (IC 90%: 1823 a 1976). Contra os 1809 ± 46 da `candidata-v4-g47` no mesmo protocolo, a `luna-v4` fica +90 ± 66 à frente: indício, não prova
+- [ ] Medir a `luna-v4` com a busca nova do PR #23 contra o Stockfish
 - [ ] Medir a `luna-v3` com o código atual, para separar o efeito do código do efeito do treino
 - [ ] Medir a melhor Luna de cada novo treino
 - [x] Jogadora única para rating e Lichess: `luna.player:official_factory`, com a Luna oficial em profundidade 3 e histórico da partida, para enxergar repetições — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
@@ -283,3 +288,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-11-02 | PR #22 mergeado: limite de 14 s por lance; gerações 14 a 19 do quinto treino em andamento |
 | 2026-11-09 | Quinto treino até a geração 32; candidatas das gerações 19 (empate técnico) e 32 (-24 ± 18 Elo) não superaram a `luna-v4`, que continua oficial |
 | 2026-11-16 | Quinto treino até a geração 47; candidata da geração 47 medida em 1809 ± 46 nas condições oficiais atuais; `luna-v4` continua oficial |
+| 2026-11-18 | PR #23 mergeado: busca nova (+234 ± 65 Elo sobre a anterior com o mesmo genoma); `luna-v4` medida em 1899 ± 47 nas condições atuais |
