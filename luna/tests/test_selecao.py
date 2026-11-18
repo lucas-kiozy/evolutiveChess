@@ -375,3 +375,12 @@ def test_schedule_uses_the_move_number_of_the_fen():
     assert cfg.schedule == OFFICIAL_SCHEDULE
     assert PromotionConfig().match_config().search.schedule == OFFICIAL_SCHEDULE
     assert PromotionConfig(depth=3).match_config().search.depth_for_move(40) == 3
+
+
+def test_um_par_diferente_nao_decide_o_teste():
+    # 8 pares em 1/2 (cada lado vence com as brancas) e um par em 1/4: antes dava LLR -3,1.
+    pairs = [0.5] * 8 + [0.25]
+    lower, upper = PromotionConfig().bounds
+    assert lower < llr(pairs, 0, 30) < upper
+    # Com evidência de verdade (40 pares de 3/4), o teste continua decidindo.
+    assert llr([0.75, 0.5, 0.75, 1.0] * 10, 0, 30) > upper
