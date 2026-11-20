@@ -1,0 +1,141 @@
+{
+  "name": "luna-v5",
+  "created": "2026-11-20T06:00:00+00:00",
+  "notes": "Melhor da geracao 45 do treino-v4 (g0045-i09). Venceu a luna-v4 na catraca de promocao: 333V 89E 282D em 704 partidas (53,6%, Elo +25 +- 10, LLR +3,10, H1), apos pre-selecao entre g43-g47.",
+  "source": {
+    "run_dir": "/mnt/project-files/luna-treinos/treino-v4",
+    "generation": 45,
+    "id": "g0045-i09",
+    "rank": 1,
+    "stats": {
+      "games": 26,
+      "wins": 16,
+      "resign_wins": 12,
+      "draws": 2,
+      "losses": 8,
+      "mates": 4,
+      "mate_moves": [
+        26,
+        77,
+        39,
+        16
+      ],
+      "win_checks": [
+        8,
+        3,
+        0,
+        9,
+        4,
+        9,
+        4,
+        3,
+        4,
+        8,
+        8,
+        7,
+        12,
+        1,
+        6,
+        9
+      ],
+      "checks_given": 141,
+      "capture_points": 41.0,
+      "result_points": 88.0,
+      "mean_mate_moves": 39.5,
+      "mean_win_checks": 5.9375,
+      "checks_per_game": 5.423076923076923
+    },
+    "backend": "chess_engine",
+    "summary": {
+      "generation": 45,
+      "games": 228,
+      "mate_rate": 0.07894736842105263,
+      "mean_mate_moves": 41.55555555555556,
+      "mean_checks_per_game": 8.653508771929825,
+      "terminations": {
+        "resignation": 182,
+        "insufficient_material": 10,
+        "max_plies": 15,
+        "threefold_repetition": 3,
+        "checkmate": 18
+      },
+      "best_id": "g0045-i09",
+      "best_result_points": 88.0,
+      "best_resign_wins": 12,
+      "best_record": [
+        16,
+        2,
+        8
+      ],
+      "best_mean_win_checks": 5.9375,
+      "best_mean_mate_moves": 39.5,
+      "best_checks_per_game": 5.423076923076923,
+      "best_games": 26,
+      "best_elo": 128.97095531565296,
+      "best_elo_error": 57.21824738772004,
+      "seconds": 9740.09,
+      "boundary": [
+        "g0045-i01",
+        "g0045-i09"
+      ]
+    }
+  },
+  "search": {
+    "depth": 2,
+    "noise": 5.0,
+    "quiescence_depth": null,
+    "contempt": null,
+    "deep_depth": 3,
+    "deep_from_move": 8,
+    "deep_to_move": 12,
+    "schedule": [
+      [
+        1,
+        2
+      ],
+      [
+        11,
+        3
+      ],
+      [
+        30,
+        4
+      ],
+      [
+        46,
+        5
+      ]
+    ],
+    "time_limit": 14.0
+  },
+  "genome": {
+    "id": "g0045-i09",
+    "parents": [
+      "g0044-i00",
+      "g0044-i12"
+    ],
+    "genes": {
+      "pawn": 88.79905346049547,
+      "knight": 243.713021343484,
+      "bishop": 302.4745702658037,
+      "rook": 491.44621685875114,
+      "queen": 954.5586615136065,
+      "pst_weight": 0.8196854404324094,
+      "mobility": 2.8157748681602435,
+      "bishop_pair": 22.3679212046403,
+      "doubled_pawn": 16.4569244309051,
+      "isolated_pawn": 11.677132912130187,
+      "passed_pawn": 37.42625828860678,
+      "rook_open_file": 25.48773153794507,
+      "king_shield": 6.845871202002861,
+      "check_bonus": 9.739110573401767,
+      "passed_pawn_rank": 10.58577827006352,
+      "king_edge": 4.463995667573018,
+      "king_proximity": 12.128321142356803,
+      "king_open_file": 8.683268092270549,
+      "quiescence_depth": 8.0,
+      "contempt": 47.6194068881257,
+      "check_extension": 2.0
+    }
+  }
+}
