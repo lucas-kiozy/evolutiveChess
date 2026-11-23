@@ -2,7 +2,7 @@
 
 Um jogo de xadrez em Python com uma inteligência evolutiva chamada **Luna**. A Luna aprende jogando contra outras Lunas, em várias partidas em paralelo, e cada geração seleciona os melhores descendentes por algoritmo genético. Quando a Luna atingir rating equivalente a ~1600, ela passa a jogar no [Lichess](https://lichess.org/), uma partida por vez, e continua se aperfeiçoando.
 
-> **Status atual:** as etapas 1 a 3 estão no `main`: o motor de xadrez com todas as regras e a Luna evoluindo por self-play paralelo. A medição de rating e o bot do Lichess também já estão no `main`; a Luna já passou de 1600. A Luna oficial hoje é a `luna-v5`, promovida em 2026-11-20 depois de vencer a `luna-v4` (1899 ± 47 nas condições atuais) por +25 ± 10 Elo, e indicada em `luna/versions/oficial.txt`. Uma candidata só substitui a oficial se vencer o match de promoção.
+> **Status atual:** as etapas 1 a 3 estão no `main`: o motor de xadrez com todas as regras e a Luna evoluindo por self-play paralelo. A medição de rating e o bot do Lichess também já estão no `main`; a Luna já passou de 1600. A Luna oficial hoje é a `luna-v5`, promovida em 2026-11-20 depois de vencer a `luna-v4` por +25 ± 10 Elo; ela mede 2043 ± 49 contra o Stockfish e está indicada em `luna/versions/oficial.txt`. Uma candidata só substitui a oficial se vencer o match de promoção.
 > O relatório completo do que já foi feito e do que falta está em [docs/STATUS.md](docs/STATUS.md).
 
 ## Etapas do projeto
@@ -12,7 +12,7 @@ Um jogo de xadrez em Python com uma inteligência evolutiva chamada **Luna**. A 
 | 1 | Jogo de xadrez funcional com todas as regras validadas | **Concluída** ([PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2)) |
 | 2 | Luna: IA evolutiva com algoritmo genético | **Concluída** ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)) |
 | 3 | Self-play paralelo: Luna contra Luna, seleção dos melhores descendentes | **Concluída** ([PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1)); treino longo em andamento |
-| 4 | Medição de rating (meta: ~1600) | **Meta atingida:** a `luna-v4` mede 1899 ± 47 nas condições atuais (intervalo de confiança de 90%: 1823 a 1976); a `luna-v5`, que a venceu, ainda não foi medida |
+| 4 | Medição de rating (meta: ~1600) | **Meta atingida:** a Luna oficial (`luna-v5`) mede 2043 ± 49 contra o Stockfish |
 | 5 | Luna jogando no Lichess, partida a partida, e evoluindo | Em andamento: bot pronto e ligado à Luna oficial; falta a conta BOT do Lucas |
 
 O detalhamento de cada etapa, com backlog e critérios de pronto, está em [docs/STATUS.md](docs/STATUS.md).
