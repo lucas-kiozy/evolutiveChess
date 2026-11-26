@@ -1,6 +1,6 @@
 # Relatório de status do projeto
 
-**Última atualização:** 2026-11-23
+**Última atualização:** 2026-11-26
 **Atualizado por:** agente de documentação ([.claude/agents/documentador.md](../.claude/agents/documentador.md))
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
@@ -19,7 +19,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 1 | Jogo de xadrez com regras validadas | **Concluída** | Motor mergeado no `main` pelo [PR #2](https://github.com/lucas-kiozy/evolutiveChess/pull/2) |
 | 2 | Luna: IA evolutiva com algoritmo genético | **Concluída** | Luna no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); 21 genes desde o [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11); Luna oficial `luna-v5` desde o [PR #24](https://github.com/lucas-kiozy/evolutiveChess/pull/24) |
 | 3 | Self-play paralelo e seleção de descendentes | **Concluída** | Laço no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); 7.000 partidas de treino até a geração 32; catraca de promoção e ordenação por Bradley–Terry desde o [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11) |
-| 4 | Medição de rating (meta ~1600) | **Meta atingida** | A `luna-v4` mede 1936 ± 47 (IC 90%: 1859 a 2013) em profundidade 3: o limite inferior passa de 1600. Desde o [PR #24](https://github.com/lucas-kiozy/evolutiveChess/pull/24), a oficial é a `luna-v5`, que venceu a `luna-v4` por +25 ± 10 Elo e mede 2043 ± 49 com a busca nova |
+| 4 | Medição de rating (meta ~1600) | **Meta atingida** | A `luna-v4` mede 1936 ± 47 (IC 90%: 1859 a 2013) em profundidade 3: o limite inferior passa de 1600. Desde o [PR #24](https://github.com/lucas-kiozy/evolutiveChess/pull/24), a oficial é a `luna-v5`, que venceu a `luna-v4` por +25 ± 10 Elo e mede 2090 ± 43 juntando as partidas contra o Stockfish e a Leela Chess Zero |
 | 5 | Luna jogando no Lichess | Em andamento | Bot no `main` pelo [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4); a Luna já cumpre o critério. Falta o Lucas criar a conta BOT e o token, o [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14) (desistência e ritmo no Lichess) e o aprendizado online |
 
 ---
@@ -154,6 +154,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Pré-seleção das melhores das gerações 43 a 47 (32 partidas cada); a da geração 45 fez 20,5/32
 - [x] Catraca da `g0045-i09` contra a `luna-v4`, com o teste corrigido: 704 partidas (333 vitórias, 89 empates, 282 derrotas, 53,6%), +25 ± 10 Elo, teste sequencial decidiu H1. Promovida a `luna-v5`, a Luna oficial no `main` — [PR #24](https://github.com/lucas-kiozy/evolutiveChess/pull/24)
 - [x] Medição da `luna-v5` com a busca nova, nas condições oficiais (até 14 s por lance): 60 partidas contra o Stockfish 16 (29 vitórias, 19 empates, 12 derrotas), **2043 ± 49** (IC 90% de cerca de 1962 a 2124). São +144 ± 68 sobre a `luna-v4` com a busca antiga (1899 ± 47); o ganho mistura a busca nova (+234 ± 65 no confronto direto) e o genoma (+25 ± 10 na catraca). A medição foi interrompida por um reinício com 48 partidas e completada depois, com as 60 combinadas no mesmo cálculo
+- [x] Medição da `luna-v5` contra a Leela Chess Zero (lc0 0.31.2 em CPU, rede oficial 394, limitada por nós). Cada nível da Leela foi calibrado em 24 partidas contra o Stockfish 16: 1 nó 2121 ± 64, 16 nós 2324 ± 68, 128 nós 2815 ± 71, 800 nós 2919 ± 72. A Luna jogou 16 partidas por nível (vitórias, empates, derrotas): 10-2-4, 2-2-12, 2-0-14 e 0-0-16. Rating pelas partidas contra a Leela: 2200 ± 77; **juntando com as 60 contra o Stockfish: 2090 ± 43**. A diferença entre as duas medidas (+157 ± 91) fica dentro de 2 erros-padrão. Scripts e dados na pasta compartilhada, `luna-treinos/leela/`
 - [x] ~~Entender por que as gerações do quinto treino não superavam a `luna-v4`~~: resolvido na prática, a geração 45 a superou (+25 ± 10 Elo) depois das gerações 13, 19 e 32 terem empatado ou perdido
 - [ ] Avaliar o custo do treino com a escala 2/3/4/5 (cerca de 30 vezes mais lento por geração) e decidir se mantém, encurta a escala ou usa mais núcleos
 - [ ] Entender por que os pesos iniciais continuam à frente e definir os próximos ajustes do treino
@@ -293,3 +294,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-11-18 | PR #23 mergeado: busca nova (+234 ± 65 Elo sobre a anterior com o mesmo genoma); `luna-v4` medida em 1899 ± 47 nas condições atuais |
 | 2026-11-20 | PR #24 mergeado: `luna-v5` oficial; falta medir o rating dela contra o Stockfish |
 | 2026-11-23 | Rating da `luna-v5` com a busca nova: 2043 ± 49 |
+| 2026-11-26 | Rating da `luna-v5` contra a Leela Chess Zero (2200 ± 77) e combinado com o Stockfish (2090 ± 43) |
