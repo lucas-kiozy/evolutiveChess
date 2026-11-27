@@ -117,7 +117,7 @@ python -m pytest
 
 Rodar `python -m luna train` de novo com o mesmo `--run-dir` continua o treino de onde parou.
 
-Para medir o rating da Luna oficial contra o Stockfish e para colocá-la no Lichess, use `--player luna.player:official_factory` e siga [rating/GUIA.md](rating/GUIA.md) e [lichess_bot/GUIA.md](lichess_bot/GUIA.md).
+Para medir o rating da Luna oficial contra o Stockfish e para colocá-la no Lichess, use `--player luna.player:official_factory` (rating) ou `--player luna.player:lichess_factory` (Lichess, com 1.e4 / 1...c6 fixos e um ruído pequeno para não repetir partidas) e siga [rating/GUIA.md](rating/GUIA.md) e [lichess_bot/GUIA.md](lichess_bot/GUIA.md).
 
 ## Referências
 
