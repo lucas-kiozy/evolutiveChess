@@ -10,9 +10,13 @@ Duas diferenças em relação ao treino, decididas pelo Lucas com base na análi
   em profundidade 3 venceu a de profundidade 2 por +319 ± 54 Elo). Desde então é
   a escala ``OFFICIAL_SCHEDULE`` pedida pelo Lucas: 2 meios-lances do lance 1 ao
   9, 4 do 10 ao 16 e 5 do 17 em diante. ``LUNA_DEPTH`` fixa uma profundidade.
-- **No máximo 14 s por lance** (``luna.search.MOVE_TIME_LIMIT``, decisão do Lucas
-  em 2026-11-02): se o tempo acabar, ela joga o melhor lance calculado até ali.
-  ``LUNA_TIME_LIMIT`` muda o limite (0 desliga).
+- **Orçamento de tempo** (``luna.search.TimeBudget``, pedido do Lucas em
+  2026-11-27, no lugar do limite fixo de 14 s de 2026-11-02): teto normal de 20 s
+  por lance; até 5 lances por partida podem ir até 40 s, só quando a busca está
+  instável; lance óbvio e estável sai antes. ``LUNA_TIME_LIMIT`` muda o teto normal
+  (0 desliga tudo), ``LUNA_EXTENDED_TIME`` o teto estendido e ``LUNA_EXTENSIONS`` o
+  número de lances estendidos por partida. No Lichess, ``set_clock`` recebe o relógio
+  e os tetos encolhem para caber no tempo que resta.
 - **Histórico da partida.** ``rating`` e ``lichess_bot`` passam só a FEN, e sem o
   histórico a busca não sabe quais posições já ocorreram: nas medições, ~4 empates
   por repetição em cada 60 partidas tinham a Luna 3 ou mais peões à frente. A
@@ -31,9 +35,9 @@ from typing import Optional, Sequence
 from luna.adapters import DEFAULT_BACKEND, new_game
 from luna.game_interface import GameState
 from luna.genome import Genome
-from luna.promotion import official_search
+from luna.promotion import OFFICIAL_BUDGET, OFFICIAL_MOVE_TIME, official_search
 from luna.resign import sees_forced_draw
-from luna.search import MOVE_TIME_LIMIT, SearchConfig, Searcher
+from luna.search import SearchConfig, Searcher, TimeBudget
 
 
 def _position_key(fen: str) -> str:
@@ -51,10 +55,11 @@ class LunaPlayer:
         backend: str = DEFAULT_BACKEND,
         search: Optional[SearchConfig] = None,
         seed: Optional[int] = None,
-        time_limit: Optional[float] = MOVE_TIME_LIMIT,
+        time_limit: Optional[float] = OFFICIAL_MOVE_TIME,
+        budget: Optional[TimeBudget] = None,
     ):
         base = search or SearchConfig()
-        config = official_search(depth, time_limit)  # sem ruído; None = escala por lance
+        config = official_search(depth, time_limit, budget)  # sem ruído; None = escala
         config.quiescence_depth = base.quiescence_depth
         config.contempt = base.contempt
         self.searcher = Searcher(genome, config, random.Random(seed))
@@ -80,8 +85,21 @@ class LunaPlayer:
         finally:
             state.push(move)
 
+    @property
+    def last_info(self) -> dict:
+        """Tempo, profundidade, nós e se o último lance usou extensão (vazio sem orçamento)."""
+        return self.searcher.last_info
+
     def new_game(self, color: object = None) -> None:
         self._state = None
+        self.searcher.new_game()
+
+    def set_clock(self, time_ms: Optional[float], inc_ms: Optional[float] = None) -> None:
+        """Relógio do Lichess (milissegundos): os tetos de tempo passam a caber nele."""
+        if time_ms is None:
+            self.searcher.clock = None
+        else:
+            self.searcher.clock = (float(time_ms) / 1000.0, float(inc_ms or 0) / 1000.0)
 
     def choose_move(self, fen: str, legal_moves: Sequence[str]) -> str:
         state = self._follow(fen)
@@ -108,27 +126,46 @@ class LunaPlayer:
                 state.pop()
                 if _position_key(state.fen()) == key:
                     return state
+            # Não continua a partida guardada: é outra partida, com créditos novos.
+            clock = self.searcher.clock
+            self.searcher.new_game()
+            self.searcher.clock = clock
         return new_game(self.backend, fen)
 
 
 def player_from_version(
-    name_or_path: str, depth: Optional[int] = None, time_limit: Optional[float] = MOVE_TIME_LIMIT
+    name_or_path: str,
+    depth: Optional[int] = None,
+    time_limit: Optional[float] = OFFICIAL_MOVE_TIME,
+    budget: Optional[TimeBudget] = None,
 ) -> LunaPlayer:
     from luna.versions import load_version
 
     version = load_version(name_or_path)
-    return LunaPlayer(version.genome, depth=depth, search=version.search, time_limit=time_limit)
+    return LunaPlayer(
+        version.genome, depth=depth, search=version.search, time_limit=time_limit, budget=budget
+    )
 
 
 def official_factory() -> LunaPlayer:
     """Luna oficial (``luna/versions/oficial.txt``) na escala oficial de profundidade, sem ruído.
 
     ``LUNA_VERSION`` (nome ou caminho de uma versão), ``LUNA_DEPTH`` e
-    ``LUNA_TIME_LIMIT`` (segundos por lance; 0 desliga) sobrepõem."""
+    ``LUNA_TIME_LIMIT`` (teto normal por lance; 0 desliga), ``LUNA_EXTENDED_TIME``
+    (teto dos lances estendidos) e ``LUNA_EXTENSIONS`` (lances estendidos por partida)
+    sobrepõem."""
+    from dataclasses import replace
+
     from luna.versions import official_name
 
-    name = os.environ.get("LUNA_VERSION") or official_name()
-    depth = os.environ.get("LUNA_DEPTH")
-    limit = os.environ.get("LUNA_TIME_LIMIT")
-    time_limit = float(limit) if limit else MOVE_TIME_LIMIT
-    return player_from_version(name, int(depth) if depth else None, time_limit)
+    env = os.environ.get
+    name = env("LUNA_VERSION") or official_name()
+    depth = env("LUNA_DEPTH")
+    limit = env("LUNA_TIME_LIMIT")
+    time_limit = float(limit) if limit else OFFICIAL_MOVE_TIME
+    budget = OFFICIAL_BUDGET
+    if env("LUNA_EXTENDED_TIME"):
+        budget = replace(budget, extended_time=float(env("LUNA_EXTENDED_TIME")))
+    if env("LUNA_EXTENSIONS"):
+        budget = replace(budget, max_extensions=int(env("LUNA_EXTENSIONS")))
+    return player_from_version(name, int(depth) if depth else None, time_limit, budget)

@@ -32,6 +32,34 @@ aprovada pelo Lucas em 2026-11-17 de tratar a busca como alavanca de força):
   que mediu a history e a tabela de transposição como as que mais reduzem a árvore).
 
 Nenhuma delas muda o valor minimax: só a ordem e o que deixa de ser buscado de novo.
+
+Orçamento de tempo (``SearchConfig.budget``, pedido do Lucas em 2026-11-27): nas
+partidas oficiais, em vez de um limite fixo, a busca administra o tempo de cada lance
+dentro de uma regra por partida, "pelo menos 30 de 35 lances em até 20 s":
+
+- **Teto normal** (``TimeBudget.move_time``, 20 s): nenhum lance comum passa disso.
+- **Só começa uma camada que cabe**: o tempo da próxima camada é previsto pelo fator
+  de ramificação efetivo das duas últimas (tempo da última x razão entre elas); se ela
+  não cabe no teto, a busca para ali em vez de começar e jogar fora a camada.
+- **Parada antecipada**: se o melhor lance foi o mesmo nas últimas
+  ``stable_depths`` camadas, sem queda de avaliação, a próxima camada só começa se
+  terminar até ``stable_fraction`` do teto. É a ideia da "estabilidade do melhor
+  lance" que os motores usam para economizar tempo em lances óbvios (Hyatt 1984,
+  *ICCA Journal* 7(1):4-23; Šolak e Vučković 2009, *Computer Science and Information
+  Systems* 6(2):157-176, que testaram regras desse tipo em partidas).
+- **Extensão**: passar do teto só é permitido quando a busca está instável, isto é,
+  o melhor lance mudou entre as duas últimas camadas, a avaliação caiu
+  ``drop_cp`` centipeões ou mais, ou, na camada em andamento, outro lance passou à
+  frente do anterior. Aí o teto sobe até ``extended_time`` (40 s). Cada lance que
+  passa de ``move_time`` gasta um crédito; com ``max_extensions`` (5) créditos usados
+  na partida, o teto volta a ser fixo até o fim.
+- **Lance único**: com só um lance legal, ele é jogado depois da camada 1.
+- **Relógio** (``Searcher.clock``): quando há relógio de verdade, como no Lichess, os
+  tetos encolhem para caber no tempo restante (restante / 25 + 3/4 do incremento, e
+  no máximo 1/8 do restante na extensão).
+
+A escala de profundidade continua sendo o mínimo de cada lance: as camadas até ela
+sempre começam, e só o teto de tempo as interrompe.
 """
 
 from __future__ import annotations
@@ -59,6 +87,24 @@ _CLOCK_EVERY = 256  # nós entre consultas ao relógio
 
 class _Timeout(Exception):
     pass
+
+
+@dataclass
+class TimeBudget:
+    """Gestão de tempo por partida (pedido do Lucas em 2026-11-27); ver o topo do módulo."""
+
+    move_time: float = 20.0  # teto normal por lance, em segundos
+    extended_time: float = 40.0  # teto absoluto de um lance estendido
+    max_extensions: int = 5  # lances por partida que podem passar de move_time
+    stable_depths: int = 3  # camadas seguidas com o mesmo melhor lance = lance estável
+    stable_fraction: float = 0.4  # com lance estável, a próxima camada tem que caber nisto
+    drop_cp: float = 50.0  # queda de avaliação entre camadas que conta como instabilidade
+    unstable_from_depth: int = 4  # mudanças em camadas mais rasas não contam
+    safety: float = 0.2  # margem antes do teto, para o lance sair antes dele
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "TimeBudget":
+        return cls(**{k: d[k] for k in cls.__dataclass_fields__ if k in d})
 
 
 @dataclass
@@ -90,6 +136,8 @@ class SearchConfig:
     # sobra tempo. Uma camada extra só começa se o lance gastou menos de
     # ``EXTRA_START_FRACTION`` do limite, porque cada camada custa várias vezes a anterior.
     extra_depth: int = 0
+    # Orçamento de tempo por partida. Se existir, manda sobre ``time_limit``.
+    budget: Optional[TimeBudget] = None
 
     @classmethod
     def from_dict(cls, d: dict) -> "SearchConfig":
@@ -105,8 +153,11 @@ class SearchConfig:
             "time_limit",
             "heuristics",
             "extra_depth",
+            "budget",
         )
         kwargs = {k: d[k] for k in keys if k in d}
+        if isinstance(kwargs.get("budget"), dict):
+            kwargs["budget"] = TimeBudget.from_dict(kwargs["budget"])
         if kwargs.get("schedule") is not None:
             kwargs["schedule"] = tuple((int(m), int(dp)) for m, dp in kwargs["schedule"])
         return cls(**kwargs)
@@ -155,6 +206,18 @@ class Searcher:
         self._tt: dict = {}
         self._killers: dict[int, list] = {}
         self._history: dict = {}
+        # Orçamento de tempo: créditos gastos na partida, relógio e estatísticas do lance.
+        self.extensions_used = 0
+        self.clock: Optional[tuple[float, float]] = None  # (restante, incremento) em s
+        self.last_info: dict = {}
+        self._extend_to: Optional[float] = None
+        self._unstable = False
+        self._prev_iter_score: Optional[float] = None
+
+    def new_game(self) -> None:
+        """Zera os créditos de extensão e o relógio (uma partida nova começa)."""
+        self.extensions_used = 0
+        self.clock = None
 
     def choose_move(self, state: GameState) -> Optional[Move]:
         # Ordem UCI antes da ordenação por capturas: desempates e ruído ficam iguais
@@ -164,6 +227,8 @@ class Searcher:
             return None
         depth = self.config.depth_for_move(_move_number(state))
         self._tt, self._killers, self._history = {}, {}, {}
+        if self.config.budget is not None:
+            return self._choose_budgeted(state, moves, depth)
         limit = self.config.time_limit
         if not limit:
             best_move, self.last_score, _ = self._root(state, moves, depth)
@@ -193,6 +258,103 @@ class Searcher:
         self.last_score = best_real
         return best_move
 
+    def caps(self) -> tuple[float, float]:
+        """(teto normal, teto estendido) do próximo lance, já com o relógio, se houver."""
+        b = self.config.budget
+        cap, ext = b.move_time, max(b.move_time, b.extended_time)
+        if self.clock is not None:
+            remaining, inc = self.clock
+            cap = min(cap, max(0.3, remaining / 25 + 0.75 * inc))
+            ext = min(ext, max(cap, remaining / 8))
+        return cap, ext
+
+    def _choose_budgeted(self, state: GameState, moves: list[Move], min_depth: int) -> Move:
+        b = self.config.budget
+        cap, ext = self.caps()
+        t0 = time.monotonic()
+        nodes0 = self.nodes
+        can_extend = self.extensions_used < b.max_extensions and ext > cap
+        max_depth = min_depth + self.config.extra_depth
+        best_move, best_real = moves[0], 0.0
+        done: list[tuple[int, Move, float, float]] = []  # (camada, lance, escore, segundos)
+        reason = "profundidade máxima"
+        start = state.ply
+        self._unstable = False
+        self._prev_iter_score = None
+        try:
+            for d in range(1, max_depth + 1):
+                elapsed = time.monotonic() - t0
+                if d > 1 and len(moves) == 1:
+                    reason = "lance único"
+                    break
+                if d > min_depth and len(done) >= 2:
+                    last, before = done[-1][3], done[-2][3]
+                    factor = min(8.0, max(1.5, last / before)) if before > 1e-3 else 4.0
+                    finish = elapsed + last * factor
+                    if self._unstable and can_extend:
+                        room, why = ext, "não cabe no teto estendido"
+                    elif self._stable(done):
+                        room, why = cap * b.stable_fraction, "lance estável"
+                    else:
+                        room, why = cap, "próxima camada não cabe no teto"
+                    if finish > room - b.safety:
+                        reason = why
+                        break
+                # A camada 1 sempre termina (custa milissegundos): garante um lance e
+                # um escore para a regra de desistência.
+                if d > 1:
+                    self._deadline = t0 + cap - b.safety
+                    self._extend_to = t0 + ext - b.safety if can_extend else None
+                else:
+                    self._deadline = self._extend_to = None
+                t_iter = time.monotonic()
+                best_move, best_real, _ = self._root(state, moves, d)
+                done.append((d, best_move, best_real, time.monotonic() - t_iter))
+                self._prev_iter_score = best_real
+                self._unstable = self._is_unstable(done)
+                moves = [best_move] + [m for m in moves if m != best_move]
+                if abs(best_real) >= MATE_SCORE - MAX_PLY:
+                    reason = "mate"
+                    break
+        except _Timeout as stop:
+            while state.ply > start:  # desfaz os lances que a busca deixou no meio
+                state.pop()
+            partial = stop.args[0] if stop.args else None
+            if partial is not None:  # a camada interrompida já achou algo
+                best_move, best_real = partial
+            reason = "tempo"
+        finally:
+            self._deadline = self._extend_to = None
+        seconds = time.monotonic() - t0
+        extended = seconds > cap
+        if extended:
+            self.extensions_used += 1
+        self.last_score = best_real
+        self.last_info = {
+            "seconds": seconds,
+            "depth": done[-1][0] if done else 0,
+            "nodes": self.nodes - nodes0,
+            "cap": cap,
+            "extended": extended,
+            "extensions_used": self.extensions_used,
+            "stop": reason,
+        }
+        return best_move
+
+    def _stable(self, done: list) -> bool:
+        n = self.config.budget.stable_depths
+        if len(done) < n:
+            return False
+        last = done[-n:]
+        return len({m for _, m, _, _ in last}) == 1 and not self._unstable
+
+    def _is_unstable(self, done: list) -> bool:
+        b = self.config.budget
+        if len(done) < 2 or done[-1][0] < b.unstable_from_depth:
+            return False
+        (_, m1, s1, _), (_, m0, s0, _) = done[-2], done[-1]
+        return m0 != m1 or s0 <= s1 - b.drop_cp
+
     def _root(self, state: GameState, moves: list[Move], depth: int) -> tuple[Move, float, float]:
         """Busca na raiz até ``depth``; devolve (lance, escore real, escore com ruído).
 
@@ -200,7 +362,7 @@ class Searcher:
         entre os lances já buscados por completo nesta camada, ou None."""
         noise = self.config.noise
         best_move, best_score, best_real = moves[0], -INF, -INF
-        for move in moves:
+        for i, move in enumerate(moves):
             # Um lance só pode superar o melhor (já com ruído) se o valor real passar de
             # best_score - noise. Abaixo desse piso o alfa-beta devolve só um limite
             # superior, e nem o maior ruído possível o faria vencer. O ruído entra
@@ -213,6 +375,13 @@ class Searcher:
                 found = (best_move, best_real) if best_score > -INF else None
                 raise _Timeout(found) from None
             state.pop()
+            if self._extend_to is not None and depth >= self._unstable_depth():
+                if i == 0:
+                    prev = self._prev_iter_score
+                    if prev is not None and score <= prev - self.config.budget.drop_cp:
+                        self._unstable = True  # o lance da camada anterior piorou muito
+                elif score > alpha and best_score > -INF:
+                    self._unstable = True  # outro lance passou à frente
             if score <= alpha:
                 continue
             real = score
@@ -222,6 +391,10 @@ class Searcher:
                 best_move, best_score, best_real = move, score, real
         return best_move, best_real, best_score
 
+    def _unstable_depth(self) -> int:
+        b = self.config.budget
+        return b.unstable_from_depth if b is not None else MAX_PLY
+
     def _tick(self) -> None:
         self.nodes += 1
         if (
@@ -229,6 +402,9 @@ class Searcher:
             and self.nodes % _CLOCK_EVERY == 0
             and time.monotonic() > self._deadline
         ):
+            if self._extend_to is not None and self._unstable:
+                self._deadline, self._extend_to = self._extend_to, None  # usa a extensão
+                return
             raise _Timeout
 
     def _negamax(

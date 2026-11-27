@@ -18,6 +18,7 @@ import json
 from luna.evolution import EvolutionConfig, evolve
 from luna.genome import Genome
 from luna.match import MatchConfig
+from luna.promotion import OFFICIAL_MOVE_TIME
 from luna.search import MOVE_TIME_LIMIT, SearchConfig
 from luna.storage import RunStorage
 
@@ -98,7 +99,10 @@ def main(argv: list[str] | None = None) -> None:
         "--depth", type=int, help="profundidade fixa (padrão: 2/4/5 por lance, OFFICIAL_SCHEDULE)"
     )
     p.add_argument(
-        "--time-limit", type=float, default=MOVE_TIME_LIMIT, help="segundos por lance; 0 desliga"
+        "--time-limit",
+        type=float,
+        default=OFFICIAL_MOVE_TIME,
+        help="teto normal por lance, com o orçamento de tempo; 0 desliga",
     )
     p.add_argument("--elo1", type=float, default=30.0, help="H1 do teste sequencial, em Elo")
     p.add_argument("--max-games", type=int, default=2000)
