@@ -26,7 +26,9 @@ class BotConfig:
     #: Matchmaking: desafiar outros bots quando ficar ocioso (desligado por padrão).
     matchmaking: bool = False
     matchmaking_idle_seconds: float = 120.0
-    matchmaking_clock: tuple[int, int] = (300, 3)  # 5+3
+    #: 15+5, decisão do Lucas em 2026-11-27: cabe o teto de 20 s por lance da Luna
+    #: (com o relógio, os tetos encolhem só a partir do lance ~30 no pior caso).
+    matchmaking_clock: tuple[int, int] = (900, 5)  # 15+5
     matchmaking_rating_window: int = 300
 
 
