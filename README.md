@@ -3,6 +3,7 @@
 Um jogo de xadrez em Python com uma inteligência evolutiva chamada **Luna**. A Luna aprende jogando contra outras Lunas, em várias partidas em paralelo, e cada geração seleciona os melhores descendentes por algoritmo genético. Quando a Luna atingir rating equivalente a ~1600, ela passa a jogar no [Lichess](https://lichess.org/), uma partida por vez, e continua se aperfeiçoando.
 
 > **Status atual:** as etapas 1 a 3 estão no `main`: o motor de xadrez com todas as regras e a Luna evoluindo por self-play paralelo. A medição de rating e o bot do Lichess também já estão no `main`; a Luna já passou de 1600. A Luna oficial hoje é a `luna-v5`, promovida em 2026-11-20 depois de vencer a `luna-v4` por +25 ± 10 Elo; ela mede 2090 ± 43 (Stockfish e Leela Chess Zero) e está indicada em `luna/versions/oficial.txt`. Uma candidata só substitui a oficial se vencer o match de promoção.
+> Desde 2026-11-28, nas partidas oficiais a Luna administra o próprio tempo: até 20 s na grande maioria dos lances e no máximo 5 lances por partida acima disso (veja "Como a Luna pensa").
 > O relatório completo do que já foi feito e do que falta está em [docs/STATUS.md](docs/STATUS.md).
 
 ## Etapas do projeto
@@ -33,6 +34,19 @@ Se duas Lunas empatarem na soma, os desempates são, nesta ordem:
 1. **Mais pontos de captura** em empates e derrotas: peão 0,1, cavalo 0,3, bispo 0,4, torre 0,6, dama 2.
 2. **Menos xeques nas vitórias:** o ideal é vencer sendo objetivo no ataque.
 3. **Menos lances até o xeque-mate.**
+
+## Como a Luna pensa
+
+A Luna é escrita em Python puro, motor de regras inclusive, e analisa cerca de **19 mil posições (nós) por segundo** (medido em 2026-11-27 em posições reais, 4 partidas em paralelo). Para cada lance ela faz uma busca alfa-beta com aprofundamento iterativo: olha 1 meio-lance à frente, depois 2, 3 e assim por diante, reaproveitando o que aprendeu na camada anterior. Ajudam a busca a tabela de transposição, os lances killer, a heurística history, a quiescência sobre capturas e as extensões em xeque. A avaliação de cada posição vem dos 21 genes do genoma, que o algoritmo genético ajusta.
+
+| Onde | Profundidade mínima (meios-lances) | Tempo por lance |
+|------|-------------------------------------|-----------------|
+| Partidas oficiais (rating, promoção, Lichess) | 2 nos lances 1 a 9, 4 nos 10 a 16, 5 do 17 em diante, e até 4 a mais quando sobra tempo | Orçamento: teto normal de 20 s; para cedo se o melhor lance se repete por 3 camadas; passa de 20 s (até 40 s) só se o melhor lance mudar ou a avaliação cair meio peão, e no máximo em 5 lances por partida |
+| Treino (Luna contra Luna) | 2/3/4/5 nos lances 1 a 10, 11 a 29, 30 a 45 e 46 em diante | Limite fixo de 14 s |
+
+No Lichess a Luna abre sempre 1.e4 de brancas e 1...c6 de pretas, sorteia entre lances que diferem até 5 centipeões para não repetir partidas e encolhe os tetos de tempo conforme o relógio. O desafio automático é 15+5. Nas medições de rating não há sorteio, e as partidas começam do livro de aberturas, com pares de cores trocadas.
+
+Na validação do orçamento de tempo (128 partidas, 2026-11-28), nenhuma das 96 partidas da Luna passou de 5 lances acima de 20 s. A mediana ficou em 6,2 s por lance, e 93% dos lances levaram até 20 s. Contra a Leela de 16 nós, a Luna com orçamento fez 14 pontos em 32, contra 9,5 da versão de 14 s fixos nas mesmas aberturas. Os detalhes estão em [docs/STATUS.md](docs/STATUS.md).
 
 ## Organização do trabalho
 
