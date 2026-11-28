@@ -49,9 +49,10 @@ from luna.storage import RunStorage
 #: 2026-10-31; antes era 2 com 3 só nos lances 8 a 12).
 TRAINING_SCHEDULE: tuple[tuple[int, int], ...] = ((1, 2), (11, 3), (30, 4), (46, 5))
 #: Nós por lance no treino, a partir do treino-v5 (revisão do AG de 2026-11-28,
-#: aprovada pelo Lucas): ~14 s a ~10 mil nós/s, medido em 2026-11-28. Com nós em vez de
+#: aprovada pelo Lucas): de ~10 s a ~20 s, conforme a máquina (10 a 19 mil nós/s,
+#: medidos em 2026-11-27 e 2026-11-28), perto dos 14 s de antes. Com nós em vez de
 #: relógio a aptidão não depende da carga da máquina e a mesma semente reproduz a partida.
-TRAINING_NODE_LIMIT = 150_000
+TRAINING_NODE_LIMIT = 200_000
 #: Busca padrão do treino.
 TRAINING_SEARCH = SearchConfig(
     depth=2, noise=5.0, schedule=TRAINING_SCHEDULE, node_limit=TRAINING_NODE_LIMIT
