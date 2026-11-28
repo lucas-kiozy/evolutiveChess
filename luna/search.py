@@ -17,6 +17,15 @@ camadas rasas custam pouco perto da última (Korf 1985, *Artificial Intelligence
 27:97-109) e melhoram a ordem dos lances da seguinte (Slate & Atkin 1977, Chess 4.5).
 Sem ``time_limit`` a busca vai direto à profundidade pedida, como antes.
 
+Limite de nós (``SearchConfig.node_limit``, recomendação da revisão do AG de
+2026-11-28 aprovada pelo Lucas): o mesmo aprofundamento iterativo, mas o lance acaba
+quando a busca visita ``node_limit`` nós, e não quando o relógio passa. O resultado
+deixa de depender da velocidade e da carga da máquina, e a mesma semente reproduz a
+mesma partida. É o que o treino usa a partir do treino-v5: com o relógio, genes que
+deixam a busca mais lenta (quiescência, extensão em xeque) eram julgados também pela
+CPU (Jin e Branke 2005, IEEE Trans. Evol. Comput. 9(3):303-317, sobre aptidão que
+muda com o tempo). Com os dois limites, vale o que acabar primeiro.
+
 Heurísticas de busca (``SearchConfig.heuristics``, ligadas por padrão; recomendação
 aprovada pelo Lucas em 2026-11-17 de tratar a busca como alavanca de força):
 
@@ -138,6 +147,10 @@ class SearchConfig:
     extra_depth: int = 0
     # Orçamento de tempo por partida. Se existir, manda sobre ``time_limit``.
     budget: Optional[TimeBudget] = None
+    # Nós por lance (aprofundamento iterativo, como ``time_limit``). None = sem limite.
+    # Com ``extra_depth``, uma camada além da escala só começa se o lance gastou menos
+    # de ``EXTRA_START_FRACTION`` dos nós.
+    node_limit: Optional[int] = None
 
     @classmethod
     def from_dict(cls, d: dict) -> "SearchConfig":
@@ -154,6 +167,7 @@ class SearchConfig:
             "heuristics",
             "extra_depth",
             "budget",
+            "node_limit",
         )
         kwargs = {k: d[k] for k in keys if k in d}
         if isinstance(kwargs.get("budget"), dict):
@@ -203,6 +217,7 @@ class Searcher:
         self.contempt = g["contempt"] if config.contempt is None else config.contempt
         self.check_extensions = int(g["check_extension"])
         self._deadline: Optional[float] = None
+        self._node_cap: Optional[int] = None  # nós absolutos em que o lance acaba
         self._tt: dict = {}
         self._killers: dict[int, list] = {}
         self._history: dict = {}
@@ -230,19 +245,22 @@ class Searcher:
         if self.config.budget is not None:
             return self._choose_budgeted(state, moves, depth)
         limit = self.config.time_limit
-        if not limit:
+        node_limit = self.config.node_limit
+        if not limit and not node_limit:
             best_move, self.last_score, _ = self._root(state, moves, depth)
             return best_move
-        deadline = time.monotonic() + limit
+        deadline = time.monotonic() + limit if limit else None
+        node_cap = self.nodes + node_limit if node_limit else None
         best_move, best_real = moves[0], 0.0
         start = state.ply
         try:
             for d in range(1, depth + self.config.extra_depth + 1):
-                if d > depth and time.monotonic() > deadline - limit * (1 - EXTRA_START_FRACTION):
-                    break  # camada além da escala: só se ainda sobra bastante tempo
+                if d > depth and not self._room_for_extra(deadline, limit, node_cap):
+                    break  # camada além da escala: só se ainda sobra bastante tempo/nós
                 # A camada 1 sempre termina (custa milissegundos): garante um lance e
                 # um escore para a regra de desistência.
                 self._deadline = deadline if d > 1 else None
+                self._node_cap = node_cap if d > 1 else None
                 best_move, best_real, _ = self._root(state, moves, d)
                 moves = [best_move] + [m for m in moves if m != best_move]
                 if abs(best_real) >= MATE_SCORE - MAX_PLY:
@@ -255,8 +273,22 @@ class Searcher:
                 best_move, best_real = partial
         finally:
             self._deadline = None
+            self._node_cap = None
         self.last_score = best_real
         return best_move
+
+    def _room_for_extra(
+        self, deadline: Optional[float], limit: Optional[float], node_cap: Optional[int]
+    ) -> bool:
+        """Uma camada além da escala só começa se sobra mais que 1 - EXTRA_START_FRACTION
+        do tempo e dos nós do lance."""
+        keep = 1 - EXTRA_START_FRACTION
+        if deadline is not None and time.monotonic() > deadline - limit * keep:
+            return False
+        node_limit = self.config.node_limit
+        if node_cap is not None and self.nodes > node_cap - node_limit * keep:
+            return False
+        return True
 
     def caps(self) -> tuple[float, float]:
         """(teto normal, teto estendido) do próximo lance, já com o relógio, se houver."""
@@ -397,6 +429,8 @@ class Searcher:
 
     def _tick(self) -> None:
         self.nodes += 1
+        if self._node_cap is not None and self.nodes > self._node_cap:
+            raise _Timeout
         if (
             self._deadline is not None
             and self.nodes % _CLOCK_EVERY == 0
