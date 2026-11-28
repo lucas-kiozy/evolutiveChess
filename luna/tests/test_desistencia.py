@@ -161,7 +161,9 @@ def test_bonus_moves_bradley_terry_strength():
 def test_evolution_config_scale():
     cfg = EvolutionConfig.from_dict({"resign_win_points": 1.0})
     assert cfg.scale["resign_win"] == 1.0 and cfg.scale["win"] == 5.0
-    assert EvolutionConfig().scale["resign_win"] == 6.0
+    # Sem bônus da desistência nos treinos novos (revisão de 2026-11-28); 6 nos antigos.
+    assert EvolutionConfig().scale["resign_win"] == 5.0
+    assert EvolutionConfig.from_dict({}).scale["resign_win"] == 6.0
     assert EvolutionConfig().match.resign_moves == 3
 
 

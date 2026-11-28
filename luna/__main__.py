@@ -77,7 +77,10 @@ def main(argv: list[str] | None = None) -> None:
     t.add_argument("--workers", type=int, default=0, help="0 = número de CPUs")
     t.add_argument("--seed", type=int, default=42)
     t.add_argument(
-        "--resign-win-points", type=float, default=6.0, help="régua da vitória por desistência"
+        "--resign-win-points",
+        type=float,
+        default=5.0,
+        help="régua da vitória por desistência (5 = sem bônus; treinos até o v4 usavam 6)",
     )
     t.add_argument(
         "--resign-moves", type=int, default=3, help="lances perdidos seguidos; 0 desliga"

@@ -70,6 +70,7 @@ LEGACY_CONFIG: dict = {
     "paired": False,
     "integer_mutation_rate": None,
     "mutation_boundary": "clip",
+    "resign_win_points": RESULT_POINTS["resign_win"],
 }
 
 
@@ -87,7 +88,10 @@ class EvolutionConfig:
     ranking: str = "bradley_terry"  # ou "regua": soma da régua com os desempates
     boundary_games: int = 8  # partidas extras na fronteira da elite (par; 0 desliga)
     prior_games: float = 12.0  # partidas virtuais contra a média (Bradley–Terry)
-    resign_win_points: float = RESULT_POINTS["resign_win"]  # vitória por desistência
+    # Vitória por desistência. Desde a revisão de 2026-11-28 (aprovada pelo Lucas) vale
+    # o mesmo que a vitória: o bônus de +1 entrava na aptidão sem medir força, e o
+    # gatilho de desistência depende da escala da avaliação de cada genoma.
+    resign_win_points: float = RESULT_POINTS["win"]
     match: MatchConfig = field(default_factory=lambda: MatchConfig(search=TRAINING_SEARCH))
     # Treino congelado (a partir do treino-v5): a configuração salva é lida como está,
     # sem migrações; mudou busca, limite ou avaliação, começa um treino novo.

@@ -129,3 +129,18 @@ def test_integer_genes_have_their_own_rate():
         del d[key]
     old = EvolutionConfig.from_dict(d)
     assert old.integer_mutation_rate is None and old.mutation_boundary == "clip"
+
+
+# ------------------------------------------------------------- desistência
+
+
+def test_new_trainings_give_no_resign_bonus_old_ones_keep_it():
+    from luna.fitness import RESULT_POINTS, resign_bonus_games
+
+    cfg = EvolutionConfig()
+    assert cfg.resign_win_points == RESULT_POINTS["win"]
+    assert resign_bonus_games(cfg.scale) == 0.0
+    d = cfg.to_dict()
+    for key in ("frozen", "resign_win_points"):
+        del d[key]
+    assert EvolutionConfig.from_dict(d).resign_win_points == 6.0
