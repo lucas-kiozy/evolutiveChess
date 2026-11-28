@@ -45,9 +45,12 @@ GENE_SPECS: dict[str, tuple[float, float, float]] = {
     "king_proximity": (0.0, 20.0, 4.0),  # com vantagem no final: aproximar o próprio rei
     "king_open_file": (0.0, 60.0, 15.0),  # meio-jogo: coluna sem peão próprio junto ao rei
     # Busca
-    "quiescence_depth": (0.0, 8.0, 4.0),  # meios-lances de capturas depois da busca
+    # Faixas de quiescence_depth e check_extension ampliadas de 0-8 e 0-2 na revisão de
+    # 2026-11-28 (aprovada pelo Lucas): no treino-v4, 60% e 90% das Lunas estavam no teto,
+    # e são os dois genes em que a seleção mostrou efeito (+29 Elo de 2 contra 1 extensão).
+    "quiescence_depth": (0.0, 12.0, 4.0),  # meios-lances de capturas depois da busca
     "contempt": (0.0, 150.0, 50.0),  # quanto um empate vale de menos para quem busca
-    "check_extension": (0.0, 2.0, 1.0),  # extensões por xeque em cada linha da busca
+    "check_extension": (0.0, 4.0, 1.0),  # extensões por xeque em cada linha da busca
 }
 
 GENE_NAMES: tuple[str, ...] = tuple(GENE_SPECS)
@@ -113,22 +116,46 @@ def crossover(a: Genome, b: Genome, rng: random.Random, id: str = "") -> Genome:
     return Genome(genes, id=id, parents=(a.id, b.id))
 
 
+BOUNDARIES = ("clip", "reflect")
+
+
+def reflect(name: str, value: float) -> float:
+    """Reflete nos limites: passar do teto em x volta x para dentro. Com o recorte,
+    toda mutação para fora parava exatamente no limite e as Lunas se acumulavam nele."""
+    lo, hi, _ = GENE_SPECS[name]
+    width = hi - lo
+    if width <= 0:
+        return lo
+    period = 2 * width
+    offset = (value - lo) % period
+    return lo + (offset if offset <= width else period - offset)
+
+
 def mutate(
     g: Genome,
     rng: random.Random,
     rate: float,
     scale: float,
     id: Optional[str] = None,
+    integer_rate: Optional[float] = None,
+    boundary: str = "clip",
 ) -> Genome:
     """Mutação gaussiana: cada gene muda com probabilidade ``rate`` e desvio
-    ``scale`` vezes a largura da faixa do gene; o valor é recortado aos limites.
-    Um gene inteiro que muta anda pelo menos uma unidade, senão o arredondamento
-    desfaria quase toda mutação em faixas curtas como 0 a 2."""
+    ``scale`` vezes a largura da faixa do gene. Um gene inteiro que muta anda pelo
+    menos uma unidade, senão o arredondamento desfaria quase toda mutação em faixas
+    curtas; ``integer_rate`` (None = ``rate``) dá a eles uma taxa própria, porque um
+    passo de 1 é muito maior que o dos genes contínuos. ``boundary`` diz o que fazer
+    com valores fora da faixa: ``clip`` recorta (treinos antigos), ``reflect`` reflete."""
+    if boundary not in BOUNDARIES:
+        raise ValueError(f"boundary deve ser um de {BOUNDARIES}")
     genes = dict(g.genes)
     for name, (lo, hi, _) in GENE_SPECS.items():
-        if rng.random() < rate:
+        integer = name in INTEGER_GENES
+        p = rate if not integer or integer_rate is None else integer_rate
+        if rng.random() < p:
             step = rng.gauss(0.0, scale * (hi - lo))
-            if name in INTEGER_GENES:
+            if integer:
                 step = round(step) or rng.choice((-1, 1))
-            genes[name] = genes[name] + step
+            value = genes[name] + step
+            genes[name] = reflect(name, value) if boundary == "reflect" else value
     return Genome(genes, id=g.id if id is None else id, parents=g.parents)

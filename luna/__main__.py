@@ -15,7 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from luna.evolution import EvolutionConfig, evolve
+from luna.evolution import TRAINING_NODE_LIMIT, EvolutionConfig, evolve
 from luna.genome import Genome
 from luna.match import MatchConfig
 from luna.promotion import OFFICIAL_MOVE_TIME
@@ -51,8 +51,18 @@ def main(argv: list[str] | None = None) -> None:
         help="profundidade por lance, 'lance:profundidade,...'; vazio usa --depth e a janela",
     )
     t.add_argument(
-        "--time-limit", type=float, default=MOVE_TIME_LIMIT, help="segundos por lance; 0 desliga"
+        "--time-limit",
+        type=float,
+        default=0.0,
+        help=f"segundos por lance; 0 desliga (treinos até o v4 usavam {MOVE_TIME_LIMIT:g})",
     )
+    t.add_argument(
+        "--node-limit",
+        type=int,
+        default=TRAINING_NODE_LIMIT,
+        help="nós por lance (reproduzível em qualquer máquina); 0 desliga",
+    )
+    t.add_argument("--run-tag", default="", help="prefixo dos ids; padrão: o nome do --run-dir")
     t.add_argument("--deep-depth", type=int, default=0, help="profundidade na janela; 0 desliga")
     t.add_argument("--deep-from", type=int, default=8, help="primeiro lance da janela funda")
     t.add_argument("--deep-to", type=int, default=12, help="último lance da janela funda")
@@ -67,7 +77,10 @@ def main(argv: list[str] | None = None) -> None:
     t.add_argument("--workers", type=int, default=0, help="0 = número de CPUs")
     t.add_argument("--seed", type=int, default=42)
     t.add_argument(
-        "--resign-win-points", type=float, default=6.0, help="régua da vitória por desistência"
+        "--resign-win-points",
+        type=float,
+        default=5.0,
+        help="régua da vitória por desistência (5 = sem bônus; treinos até o v4 usavam 6)",
     )
     t.add_argument(
         "--resign-moves", type=int, default=3, help="lances perdidos seguidos; 0 desliga"
@@ -108,7 +121,17 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--max-games", type=int, default=2000)
     p.add_argument("--random-plies", type=int, default=2, help="lances aleatórios após o livro")
     p.add_argument("--workers", type=int, default=0, help="0 = número de CPUs")
-    p.add_argument("--seed", type=int, default=2026)
+    p.add_argument(
+        "--seed", help="semente fixa; padrão: a do desafio (nomes da candidata e da oficial)"
+    )
+    p.add_argument("--out", help="pasta para gravar os pares e retomar o desafio de lá")
+    p.add_argument("--offset", type=int, default=0, help="primeiro índice de par")
+    p.add_argument("--sem-confirmacao", action="store_true", help="H1 promove sem o segundo teste")
+    p.add_argument(
+        "--fixo",
+        action="store_true",
+        help="joga exatamente --max-games, sem parar pelo teste e sem promover (pré-seleção)",
+    )
     p.add_argument("--report", help="JSON com o resultado e as partidas do match")
 
     args = parser.parse_args(argv)
@@ -145,6 +168,7 @@ def main(argv: list[str] | None = None) -> None:
             workers=args.workers,
             seed=args.seed,
             resign_win_points=args.resign_win_points,
+            run_tag=args.run_tag,
             match=MatchConfig(
                 search=SearchConfig(
                     depth=args.depth,
@@ -154,6 +178,7 @@ def main(argv: list[str] | None = None) -> None:
                     deep_depth=args.deep_depth or None,
                     schedule=_parse_schedule(args.schedule),
                     time_limit=args.time_limit or None,
+                    node_limit=args.node_limit or None,
                     deep_from_move=args.deep_from,
                     deep_to_move=args.deep_to,
                 ),
@@ -203,6 +228,10 @@ def _promote(args: argparse.Namespace) -> None:
         time_limit=args.time_limit or None,
         random_plies=args.random_plies,
         seed=args.seed,
+        confirm=not args.sem_confirmacao,
+        sequential=not args.fixo,
+        offset=args.offset,
+        out_dir=args.out,
     )
     depth = args.depth if args.depth is not None else "2/4/5 por lance"
     limit = f", até {args.time_limit:g} s por lance" if args.time_limit else ""
@@ -216,6 +245,12 @@ def _promote(args: argparse.Namespace) -> None:
     if args.report:
         with open(args.report, "w", encoding="utf-8") as fh:
             json.dump(result.to_dict(with_games=True), fh, ensure_ascii=False, indent=1)
+    if args.fixo:
+        print(
+            f"Pré-seleção: {result.score:.1%} em {result.games} partidas, "
+            f"Elo {result.elo:+.0f} ± {result.elo_error:.0f} (sem promoção)."
+        )
+        return
     if not result.promoted:
         print(
             f"Não promovida ({result.decision}): {result.score:.1%} em {result.games} partidas, "

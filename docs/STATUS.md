@@ -160,11 +160,23 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Velocidade da Luna medida em 2026-11-27: cerca de 19 mil nós por segundo (16 a 23 mil), em Python puro, com 4 partidas em paralelo, em 40 posições das partidas contra a Leela. Com 14 s fixos ela jogava em 6 a 7 s na mediana, porque uma camada além da escala só começava antes de 3,5 s
 - [~] Orçamento de tempo nas partidas oficiais (`luna.search.TimeBudget`), pedido do Lucas: teto normal de 20 s; uma camada só começa se o tempo previsto couber; parada antecipada quando o melhor lance se repete por 3 camadas; extensão até 40 s só com busca instável (melhor lance mudou, avaliação caiu 50 cp ou mais, ou outro lance passou à frente), no máximo 5 lances por partida; lance único jogado na hora; no Lichess os tetos seguem o relógio. O treino continua com 14 s fixos — [PR #25](https://github.com/lucas-kiozy/evolutiveChess/pull/25)
 - [~] Validação do orçamento, 128 partidas pareadas com a `luna-v5` dos dois lados: contra a versão de 14 s fixos, 28-11-25 (+16 Elo, IC 95% de -56 a +91); contra a Leela de 16 nós, 11-6-15 (-44, IC de -147 a +53), contra 8-3-21 (-150, IC de -333 a -24) da versão de 14 s nas mesmas aberturas (diferença pareada de +106, IC de -23 a +224). Tempo por lance: mediana de 6,2 s, p90 de 19,8 s, máximo de 39,8 s, 93% dos lances em até 20 s e **nenhuma das 96 partidas com mais de 5 lances acima de 20 s**. Dados em `luna-treinos/orcamento-tempo/` — [PR #25](https://github.com/lucas-kiozy/evolutiveChess/pull/25)
+- [~] **Revisão do AG por quatro especialistas e um revisor (2026-11-28)**, aplicada a pedido do Lucas (pareceres e síntese na pasta compartilhada, `revisoes/especialistas-ag-2026-11-28/`). Diagnóstico comum: a seleção quase não enxerga força (confiabilidade do ranking de 0% a 2%) e o progresso fica perto de 0 a 1 Elo por geração. Mudanças, todas no PR da revisão do AG e só para treinos novos (os antigos continuam como rodavam):
+  - limite de **nós** por lance no treino (200 mil, de ~10 a ~20 s conforme a máquina), no lugar do relógio: a aptidão deixa de depender da máquina e a mesma semente reproduz a partida (`SearchConfig.node_limit`, `train --node-limit`)
+  - **treino congelado** (`frozen`): a configuração salva é lida sem migrações, cada geração grava a configuração e o SHA do código, e os ids levam o nome do treino (`treino-v5-g0001-i00`), sem colisão entre treinos
+  - **partidas pareadas** no treino: mesma abertura do livro e mesma semente, cores trocadas
+  - faixas de `quiescence_depth` (0 a 12) e `check_extension` (0 a 4) ampliadas, **reflexão** nos limites no lugar do recorte e **taxa de mutação de 5%** nos genes inteiros
+  - **sem bônus** da vitória por desistência no ranking (vale 5, como as outras vitórias)
+  - **elite sem ruído congelado**: a elite recém-eleita não leva as partidas que a elegeram. Simulação antes (`tools/simular_elite.py`, 200 repetições): resposta igual, e as cópias da elite que seguem no top-2 caem de ~29% para ~12%
+  - **catraca pré-registrada** ([docs/CATRACA.md](CATRACA.md)): semente nova por desafio, confirmação com pares novos depois de um H1, Elo corrigido pela parada, desafio retomável (`--out`) e script de pré-seleção no repositório (`tools/catraca.sh`)
+  - `tools/confronto_genes.py`: confronto controlado de um gene com clones, no treino e nas condições oficiais (efeito de `check_extension` e sensibilidade à profundidade). Fica para depois da régua de rating, para não disputar CPU
+- [ ] Treino-v5 com as condições congeladas acima, a partir da `luna-v5`
+- [ ] Confronto controlado de `check_extension` (1 contra 2 contra 3, fundos `luna-v5` e `g0047-i00`, ~343 pares cada, ~16 a 20 h), depois da régua de rating
 - [ ] Régua de rating mais estável (decisão do Lucas em 2026-11-27): medir só contra a Leela de 4 e 16 nós, sem a de 1 nó, com aberturas pareadas e cores trocadas e Bradley–Terry com intervalo; a de 128 nós só como marco ocasional; o Stockfish fica como teste separado. Meta: ±25 Elo
 - [ ] Busca: poda por lance nulo, testada sozinha contra a versão anterior
 - [ ] Busca: redução de lances tardios (LMR), testada sozinha
 - [ ] Busca: janelas de aspiração, testadas sozinhas
-- [ ] Ajuste supervisionado dos pesos pelo método de Texel, com as notas das posições dadas pelo Stockfish, complementando o algoritmo genético
+- [~] Ajuste supervisionado dos pesos pelo método de Texel (`python -m luna.texel`), complementando o algoritmo genético: posições quietas de partidas salvas, alvo pelo resultado ou pela nota do Stockfish (`--stockfish`), busca local de Texel nos 17 pesos da avaliação; os genes de busca ficam com o AG. A candidata só vira oficial pela catraca — PR da revisão do AG
+- [ ] CMA-ES nos pesos da avaliação, para comparar com o Texel (recomendação da revisão de 2026-11-28, depois do Texel)
 - [ ] Acelerar o Python da Luna (perfilar e otimizar o caminho quente), a alavanca de mais força por segundo
 - [ ] Avaliar o custo do treino com a escala 2/3/4/5 (cerca de 30 vezes mais lento por geração) e decidir se mantém, encurta a escala ou usa mais núcleos
 - [ ] Entender por que os pesos iniciais continuam à frente e definir os próximos ajustes do treino
@@ -249,6 +261,7 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 | 2026-11-27 | Ajuste dos pesos pelo método de Texel com as notas do Stockfish | Lucas |
 | 2026-11-27 | No Lichess, a Luna abre 1.e4 de brancas e 1...c6 de pretas e depois sorteia entre lances quase iguais (até 5 cp); o rating continua sem sorteio | Lucas (PR #25) |
 | 2026-11-27 | Desafio automático do Lichess em 15+5 | Lucas (PR #25) |
+| 2026-11-28 | Aplicar as recomendações da revisão do AG: treino-v5 congelado (nós, pareamento, faixas maiores), Texel nos pesos e CMA-ES depois, AG nos genes de busca, catraca pré-registrada com confirmação, sem bônus da desistência no ranking, elite sem ruído congelado (testada antes por simulação), confronto controlado de `check_extension` e sensibilidade à profundidade antes de treinar nas condições oficiais | Lucas |
 
 ---
 
@@ -314,3 +327,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-11-23 | Rating da `luna-v5` com a busca nova: 2043 ± 49 |
 | 2026-11-26 | Rating da `luna-v5` contra a Leela Chess Zero (2200 ± 77) e combinado com o Stockfish (2090 ± 43) |
 | 2026-11-28 | PR #25 aberto: orçamento de tempo validado em 128 partidas, 1.e4/1...c6, sorteio no Lichess e 15+5; decisões de 2026-11-27 e novo backlog de busca, régua de rating e Texel |
+| 2026-11-28 | PR #25 mergeado; revisão do AG por especialistas e PR da revisão aberto (treino congelado, pareamento, faixas, elite, catraca, Texel) |

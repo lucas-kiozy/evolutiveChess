@@ -76,8 +76,17 @@ def test_search_config_overrides_genes_only_when_given():
     assert (s.quiescence_depth, s.contempt) == (0, 10)
 
 
+def _old(d: dict) -> dict:
+    """Configuração como os treinos antigos a salvavam, sem as opções novas."""
+    from luna.evolution import LEGACY_CONFIG
+
+    for key in LEGACY_CONFIG:
+        d.pop(key, None)
+    return d
+
+
 def test_old_configs_let_search_genes_evolve():
-    d = EvolutionConfig().to_dict()
+    d = _old(EvolutionConfig().to_dict())
     d["match"]["search"].update(quiescence_depth=4, contempt=50.0)
     search = EvolutionConfig.from_dict(d).match.search
     assert search.quiescence_depth is None and search.contempt is None
@@ -278,11 +287,15 @@ def test_elite_carries_its_games_for_the_next_ranking(tmp_path):
     from luna.storage import RunStorage
 
     run = tmp_path / "run"
-    evolve(str(run), 2, _tiny_config(boundary_games=0), workers=1, log=lambda _: None)
+    cfg = _tiny_config(boundary_games=0, elite_fresh=False)  # carry completo
+    evolve(str(run), 2, cfg, workers=1, log=lambda _: None)
     _, carry = RunStorage(run).load_hall_of_fame()
     (entry,) = carry.values()
-    assert len(entry["results"]) == entry["games"] == 4
+    assert len(entry["results"]) == entry["games"] >= 2
     gen2 = RunStorage(run).load_generation(2)
+    # A cópia da elite da geração 1 soma as 2 partidas de lá às 2 da geração 2.
+    (copy,) = [p for p in gen2["population"] if len(p["parents"]) == 1]
+    assert copy["stats"]["games"] == copy["strength"]["games"] == 4
     assert all(p["strength"]["games"] >= 2 for p in gen2["population"])
     assert gen2["summary"]["best_elo"] is not None
 
@@ -303,10 +316,10 @@ def test_training_schedule_and_old_configs_get_it():
     assert train.schedule == ((1, 2), (11, 3), (30, 4), (46, 5))
     moves = (1, 10, 11, 29, 30, 45, 46, 80)
     assert [train.depth_for_move(m) for m in moves] == [2, 2, 3, 3, 4, 4, 5, 5]
-    d = EvolutionConfig().to_dict()
+    d = _old(EvolutionConfig().to_dict())
     del d["match"]["search"]["schedule"]  # treino salvo antes da escala
     assert EvolutionConfig.from_dict(d).match.search.schedule == train.schedule
-    explicit = EvolutionConfig().to_dict()
+    explicit = _old(EvolutionConfig().to_dict())
     explicit["match"]["search"]["schedule"] = None  # desligada de propósito
     assert EvolutionConfig.from_dict(explicit).match.search.schedule is None
 

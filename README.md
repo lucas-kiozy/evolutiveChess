@@ -25,7 +25,7 @@ Definido pelo Lucas para escolher os melhores descendentes. Cada partida dá pon
 | Resultado | Pontos |
 |-----------|--------|
 | Vitória (xeque-mate) | +5 |
-| Vitória por desistência do adversário | +6 (os 5 da vitória mais 1 de bônus) |
+| Vitória por desistência do adversário | +5 desde a revisão do AG de 2026-11-28 (os treinos até o `treino-v4` davam +6, com 1 de bônus) |
 | Empate | +2 |
 | Derrota | -1 |
 
@@ -42,7 +42,7 @@ A Luna é escrita em Python puro, motor de regras inclusive, e analisa cerca de 
 | Onde | Profundidade mínima (meios-lances) | Tempo por lance |
 |------|-------------------------------------|-----------------|
 | Partidas oficiais (rating, promoção, Lichess) | 2 nos lances 1 a 9, 4 nos 10 a 16, 5 do 17 em diante, e até 4 a mais quando sobra tempo | Orçamento: teto normal de 20 s; para cedo se o melhor lance se repete por 3 camadas; passa de 20 s (até 40 s) só se o melhor lance mudar ou a avaliação cair meio peão, e no máximo em 5 lances por partida |
-| Treino (Luna contra Luna) | 2/3/4/5 nos lances 1 a 10, 11 a 29, 30 a 45 e 46 em diante | Limite fixo de 14 s |
+| Treino (Luna contra Luna) | 2/3/4/5 nos lances 1 a 10, 11 a 29, 30 a 45 e 46 em diante | Limite de 200 mil nós por lance desde o `treino-v5` (de ~10 a ~20 s, igual em qualquer máquina); os treinos até o `treino-v4` usavam 14 s fixos |
 
 No Lichess a Luna abre sempre 1.e4 de brancas e 1...c6 de pretas, sorteia entre lances que diferem até 5 centipeões para não repetir partidas e encolhe os tetos de tempo conforme o relógio. O desafio automático é 15+5. Nas medições de rating não há sorteio, e as partidas começam do livro de aberturas, com pares de cores trocadas.
 
@@ -122,14 +122,24 @@ python -m luna show --run-dir treinos/meu-treino
 python -m luna export --run-dir treinos/meu-treino --name luna-v1
 python -m luna versions
 
-# match de promoção: a candidata só vira a Luna oficial se vencer a atual
-python -m luna promote --run-dir treinos/meu-treino --name luna-v6
+# match de promoção: a candidata só vira a Luna oficial se vencer a atual (docs/CATRACA.md)
+python -m luna promote --run-dir treinos/meu-treino --name luna-v6 --out desafios/luna-v6
+
+# várias candidatas: pré-seleção de 32 partidas e desafio da melhor, retomável
+tools/catraca.sh desafios/v6 candidata-a.json candidata-b.json
+
+# ajustar os pesos da avaliação pelo método de Texel (gera uma candidata para a catraca)
+python -m luna.texel --partidas treinos/meu-treino --base luna-v5 --saida candidata-texel.json
+
+# efeito controlado de um gene, com clones, no treino e nas condições oficiais
+python tools/confronto_genes.py --base luna-v5 --gene check_extension --valores 1 2 3 \
+    --condicoes treino oficial --pares 343 --out confrontos/check-extension
 
 # testes de todos os pacotes
 python -m pytest
 ```
 
-Rodar `python -m luna train` de novo com o mesmo `--run-dir` continua o treino de onde parou.
+Rodar `python -m luna train` de novo com o mesmo `--run-dir` continua o treino de onde parou. Desde a revisão do AG de 2026-11-28, um treino novo é **congelado**: a configuração salva é lida como está, cada geração grava a configuração e o SHA do código, e mudar busca, limite ou avaliação exige um treino novo. Os treinos antigos continuam rodando como antes.
 
 Para medir o rating da Luna oficial contra o Stockfish e para colocá-la no Lichess, use `--player luna.player:official_factory` (rating) ou `--player luna.player:lichess_factory` (Lichess, com 1.e4 / 1...c6 fixos e um ruído pequeno para não repetir partidas) e siga [rating/GUIA.md](rating/GUIA.md) e [lichess_bot/GUIA.md](lichess_bot/GUIA.md).
 

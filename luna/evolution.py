@@ -28,9 +28,11 @@ from __future__ import annotations
 import datetime
 import math
 import random
+import subprocess
 import time
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Callable, Optional
 
 from luna.fitness import RESULT_POINTS, Stats, collect_stats, rank, resign_bonus_games, sort_key
@@ -46,11 +48,32 @@ from luna.storage import RunStorage
 #: 1 ao 10, 3 do 11 ao 29, 4 do 30 ao 45 e 5 do 46 em diante (decisão do Lucas em
 #: 2026-10-31; antes era 2 com 3 só nos lances 8 a 12).
 TRAINING_SCHEDULE: tuple[tuple[int, int], ...] = ((1, 2), (11, 3), (30, 4), (46, 5))
-#: Busca padrão do treino, com ``MOVE_TIME_LIMIT`` (14 s) por lance.
+#: Nós por lance no treino, a partir do treino-v5 (revisão do AG de 2026-11-28,
+#: aprovada pelo Lucas): de ~10 s a ~20 s, conforme a máquina (10 a 19 mil nós/s,
+#: medidos em 2026-11-27 e 2026-11-28), perto dos 14 s de antes. Com nós em vez de
+#: relógio a aptidão não depende da carga da máquina e a mesma semente reproduz a partida.
+TRAINING_NODE_LIMIT = 200_000
+#: Busca padrão do treino.
 TRAINING_SEARCH = SearchConfig(
+    depth=2, noise=5.0, schedule=TRAINING_SCHEDULE, node_limit=TRAINING_NODE_LIMIT
+)
+#: Busca dos treinos até o treino-v4, com ``MOVE_TIME_LIMIT`` (14 s) por lance.
+LEGACY_TRAINING_SEARCH = SearchConfig(
     depth=2, noise=5.0, schedule=TRAINING_SCHEDULE, time_limit=MOVE_TIME_LIMIT
 )
 RANKINGS = ("bradley_terry", "regua")
+
+#: Valores das opções novas para configurações salvas antes delas (treinos até o
+#: treino-v4): reproduzem como esses treinos rodavam. Cada opção nova que muda a
+#: aptidão ou a variação entra aqui, para não mudar um treino em andamento.
+LEGACY_CONFIG: dict = {
+    "frozen": False,
+    "paired": False,
+    "integer_mutation_rate": None,
+    "mutation_boundary": "clip",
+    "resign_win_points": RESULT_POINTS["resign_win"],
+    "elite_fresh": False,
+}
 
 
 @dataclass
@@ -67,8 +90,31 @@ class EvolutionConfig:
     ranking: str = "bradley_terry"  # ou "regua": soma da régua com os desempates
     boundary_games: int = 8  # partidas extras na fronteira da elite (par; 0 desliga)
     prior_games: float = 12.0  # partidas virtuais contra a média (Bradley–Terry)
-    resign_win_points: float = RESULT_POINTS["resign_win"]  # vitória por desistência
+    # Vitória por desistência. Desde a revisão de 2026-11-28 (aprovada pelo Lucas) vale
+    # o mesmo que a vitória: o bônus de +1 entrava na aptidão sem medir força, e o
+    # gatilho de desistência depende da escala da avaliação de cada genoma.
+    resign_win_points: float = RESULT_POINTS["win"]
     match: MatchConfig = field(default_factory=lambda: MatchConfig(search=TRAINING_SEARCH))
+    # Treino congelado (a partir do treino-v5): a configuração salva é lida como está,
+    # sem migrações; mudou busca, limite ou avaliação, começa um treino novo.
+    frozen: bool = True
+    run_tag: str = ""  # prefixo dos ids das Lunas; vazio = sem prefixo (treinos antigos)
+    origin: Optional[dict] = None  # de onde veio a população inicial (treino, geração)
+    # Pares com a mesma abertura do livro e os mesmos lances aleatórios, cores trocadas,
+    # em todas as partidas da geração, como já era na fronteira e na catraca (números
+    # aleatórios comuns; Glasserman e Yao 1992, Management Science 38(6):884-908).
+    # Medido no treino: ~10% menos variância por par, sem custo.
+    paired: bool = True
+    # Taxa de mutação própria dos genes inteiros (None = mutation_rate): um passo de 1 em
+    # check_extension era 25% a 50% da faixa, e 10% dos filhos perdiam o valor bom.
+    integer_mutation_rate: Optional[float] = 0.05
+    mutation_boundary: str = "reflect"  # ou "clip": recorte nos limites (treinos antigos)
+    # Elite sem o "ruído congelado": quem acabou de entrar na elite não leva as partidas
+    # da geração em que foi escolhida (a sorte que a elegeu); quem continua acumula só as
+    # partidas jogadas depois de entrar. Na simulação de 2026-11-28
+    # (tools/simular_elite.py) a resposta à seleção ficou igual e a fração de cópias da
+    # elite que seguem no top-2 caiu de ~29% para ~12%, perto do que o reteste prevê.
+    elite_fresh: bool = True
 
     def __post_init__(self) -> None:
         if self.population < 2 or self.population % 2:
@@ -95,6 +141,16 @@ class EvolutionConfig:
     @classmethod
     def from_dict(cls, d: dict) -> "EvolutionConfig":
         d = dict(d)
+        d.pop("code", None)  # SHA do código no início do treino (só informativo)
+        if d.get("frozen"):
+            # Treino congelado: nenhuma migração, nenhum padrão novo.
+            m = dict(d.pop("match", {}))
+            m["search"] = SearchConfig.from_dict(m.get("search", {}))
+            if isinstance(m.get("black_search"), dict):
+                m["black_search"] = SearchConfig.from_dict(m["black_search"])
+            return cls(match=MatchConfig(**m), **d)
+        for key, value in LEGACY_CONFIG.items():
+            d.setdefault(key, value)
         d.pop("fallback", None)  # opção antiga, substituída pela régua 5/2/-1
         if "rounds" in d:  # treinos antigos: 2 partidas por rodada e sem hall of fame
             d["games_per_luna"] = 2 * d.pop("rounds")
@@ -152,7 +208,16 @@ def play_generation(
             opponent = Genome(dict(champion.genes), id=f"campea-{champion.id}")
             games.append((luna, opponent))
             games.append((opponent, luna))
-    tasks = [(w.to_dict(), b.to_dict(), config.match, rng.randrange(2**32)) for w, b in games]
+    if config.paired:
+        # ``games`` vem em pares (a, b), (b, a): cada par recebe uma abertura e uma semente.
+        tasks = []
+        for i in range(0, len(games), 2):
+            opening, seed = BOOK[rng.randrange(len(BOOK))], rng.randrange(2**32)
+            tasks += [
+                (w.to_dict(), b.to_dict(), config.match, seed, opening) for w, b in games[i : i + 2]
+            ]
+    else:
+        tasks = [(w.to_dict(), b.to_dict(), config.match, rng.randrange(2**32)) for w, b in games]
     if executor is None:
         return [_play_task(t) for t in tasks]
     return list(executor.map(_play_task, tasks))
@@ -229,6 +294,21 @@ def rank_generation(
     return ranking
 
 
+def elite_carry(
+    parent: str,
+    stats: dict[str, Stats],
+    results: list[tuple[str, str, float]],
+    carry: dict,
+    config: EvolutionConfig,
+) -> dict:
+    """Resultados que a cópia de ``parent`` leva para a geração seguinte. Com
+    ``elite_fresh``, quem acabou de entrar na elite (não era cópia de elite nesta
+    geração, então não está em ``carry``) começa sem as partidas que a elegeram."""
+    if config.elite_fresh and parent not in carry:
+        return {**Stats().to_dict(), "results": []}
+    return {**stats[parent].to_dict(), "results": results_of(parent, results)}
+
+
 def tournament_select(ranked: list[Genome], size: int, rng: random.Random) -> Genome:
     """Torneio: sorteia ``size`` indivíduos e fica com o de melhor posição."""
     picks = [rng.randrange(len(ranked)) for _ in range(size)]
@@ -238,27 +318,61 @@ def tournament_select(ranked: list[Genome], size: int, rng: random.Random) -> Ge
 def next_population(ranked: list[Genome], config: EvolutionConfig, generation: int) -> list[Genome]:
     rng = random.Random(f"{config.seed}-breed-{generation}")
     new: list[Genome] = []
+    tag = config.run_tag
     for i, g in enumerate(ranked[: config.elite]):
-        new.append(Genome(dict(g.genes), id=_ident(generation, i), parents=(g.id,)))
+        new.append(Genome(dict(g.genes), id=_ident(generation, i, tag), parents=(g.id,)))
     while len(new) < config.population:
         a = tournament_select(ranked, config.tournament_size, rng)
         b = tournament_select(ranked, config.tournament_size, rng)
-        child = crossover(a, b, rng, id=_ident(generation, len(new)))
-        child = mutate(child, rng, config.mutation_rate, config.mutation_scale)
+        child = crossover(a, b, rng, id=_ident(generation, len(new), tag))
+        child = mutate(
+            child,
+            rng,
+            config.mutation_rate,
+            config.mutation_scale,
+            integer_rate=config.integer_mutation_rate,
+            boundary=config.mutation_boundary,
+        )
         new.append(child)
     return new
 
 
 def initial_population(config: EvolutionConfig) -> list[Genome]:
     rng = random.Random(f"{config.seed}-init")
-    pop = [Genome.reference(id=_ident(1, 0))]
+    tag = config.run_tag
+    pop = [Genome.reference(id=_ident(1, 0, tag))]
     while len(pop) < config.population:
-        pop.append(Genome.random(rng, id=_ident(1, len(pop))))
+        pop.append(Genome.random(rng, id=_ident(1, len(pop), tag)))
     return pop
 
 
-def _ident(generation: int, index: int) -> str:
-    return f"g{generation:04d}-i{index:02d}"
+def _ident(generation: int, index: int, tag: str = "") -> str:
+    """Id da Luna. Com ``tag`` (o nome do treino), ids de treinos diferentes nunca
+    coincidem: antes, uma população copiada de outro treino trazia ids repetidos."""
+    base = f"g{generation:04d}-i{index:02d}"
+    return f"{tag}-{base}" if tag else base
+
+
+def code_version() -> Optional[str]:
+    """SHA do código da Luna (com ``+modificado`` se houver mudanças não commitadas),
+    gravado em cada geração; None fora de um repositório git."""
+    root = Path(__file__).resolve().parent.parent
+    try:
+        sha = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=root, capture_output=True, text=True, timeout=10
+        ).stdout.strip()
+        if not sha:
+            return None
+        dirty = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no", "--", "luna"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        ).stdout.strip()
+        return sha + ("+modificado" if dirty else "")
+    except (OSError, subprocess.SubprocessError):
+        return None
 
 
 def summarize(
@@ -307,14 +421,22 @@ def evolve(
     """Roda ``generations`` gerações. Se ``run_dir`` já tiver um treino, retoma de onde parou
     (a configuração salva prevalece sobre ``config``)."""
     storage = RunStorage(run_dir)
+    code = code_version()
     if storage.exists():
-        config = EvolutionConfig.from_dict(storage.load_config())
+        saved = storage.load_config()
+        config = EvolutionConfig.from_dict(saved)
         start, population = storage.load_state()
         hall, carry = storage.load_hall_of_fame()
         log(f"Retomando {run_dir} na geração {start}")
+        if not config.frozen:
+            log("Aviso: treino antigo, sem configuração congelada; a busca segue as migrações")
+        elif saved.get("code") and code and saved["code"] != code:
+            log(f"Aviso: código mudou desde o início do treino ({saved['code']} -> {code})")
     else:
         config = config or EvolutionConfig()
-        storage.save_config(config.to_dict())
+        if config.frozen and not config.run_tag:
+            config.run_tag = Path(run_dir).resolve().name
+        storage.save_config({**config.to_dict(), "code": code})
         start, population = 1, initial_population(config)
         hall, carry = [], {}
         storage.save_state(start, population)
@@ -347,6 +469,8 @@ def evolve(
                 {
                     "generation": generation,
                     "summary": summary,
+                    "code": code,
+                    "config": config.to_dict(),
                     "population": [
                         {
                             **by_id[i].to_dict(),
@@ -375,10 +499,7 @@ def evolve(
             # A elite (primeiras da nova população) leva os resultados acumulados, com a
             # lista de partidas para o Bradley–Terry da geração seguinte.
             carry = {
-                g.id: {
-                    **stats[g.parents[0]].to_dict(),
-                    "results": results_of(g.parents[0], ranking.results),
-                }
+                g.id: elite_carry(g.parents[0], stats, ranking.results, carry, config)
                 for g in population[: config.elite]
             }
             storage.save_state(generation + 1, population, hall, carry)

@@ -9,7 +9,9 @@ para a elite, que acumula as partidas das gerações anteriores.
 Vitória por desistência do adversário: +5 da vitória e +1 de bônus, 6 no total
 (decisão do Lucas em 2026-10-08: o +1 é bônus e só se ganha em vitórias). O valor fica em
 ``RESULT_POINTS["resign_win"]`` e no ``EvolutionConfig.resign_win_points``. Quem
-desiste leva a derrota de sempre (-1).
+desiste leva a derrota de sempre (-1). Desde a revisão do AG de 2026-11-28 (aprovada
+pelo Lucas), os treinos novos usam ``resign_win_points`` = 5: a vitória por desistência
+vale o mesmo que as outras e o bônus sai do ranking; os treinos antigos mantêm o 6.
 
 Desempates, nesta ordem, entre Lunas com a mesma média na régua:
 1. Pontos de captura nos empates e derrotas, por partida (maior é melhor): peão 0,1;
