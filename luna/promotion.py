@@ -17,6 +17,26 @@ O match segue o protocolo da seção 8 da análise:
   estima de 550 a 1.000 partidas;
 - teto de 2.000 partidas: se o teste não decidir até lá, a candidata não é promovida.
 
+Protocolo pré-registrado (revisão do AG de 2026-11-28, aprovada pelo Lucas; versão em
+``PROTOCOL``, gravada em cada resultado, e descrição em ``docs/CATRACA.md``):
+
+- **semente nova por desafio**: sem ``seed`` explícita, a semente vem dos nomes da
+  candidata e da oficial, então cada desafio joga pares novos. Antes era sempre 2026,
+  e todo desafio rejogava as mesmas aberturas e lances aleatórios (reuso do conjunto
+  de teste; Dwork et al. 2015, Science 349(6248):636-638);
+- **confirmação**: um H1 só promove se um segundo teste, com pares novos, também der
+  H1. Com várias candidatas desafiando a mesma oficial, alfa = 5% por teste dava até
+  ~15% de chance de alguma promoção falsa; com a confirmação, cada desafio tem alfa
+  de ~0,25% (5% x 5%) e poder de ~90% em +30 Elo;
+- **Elo corrigido pela parada**: o Elo estimado quando um teste sequencial para é
+  viesado para cima (Whitehead 1986, Biometrika 73(3):573-581). O resultado traz
+  também ``elo_corrigido``: o Elo verdadeiro cujo teste simulado, com a mesma regra
+  de parada e a distribuição dos pares observada, dá em média o Elo observado;
+- **retomável**: com ``out_dir``, cada lote de pares vai para ``pares.jsonl`` assim que
+  termina, e um reinício continua de onde parou com as mesmas sementes;
+- **regras fixas**: os parâmetros do teste não mudam durante um desafio. Uma correção
+  do teste vale só para desafios novos, com nova versão de ``PROTOCOL``.
+
 Sem ruído, cada abertura daria sempre as mesmas duas partidas, e o livro só tem 40.
 Por isso, depois do livro vêm ``random_plies`` lances aleatórios, iguais nas duas
 partidas do par, o que mantém o pareamento e gera partidas novas.
@@ -31,11 +51,13 @@ com a aproximação normal.
 
 from __future__ import annotations
 
+import json
 import math
 import random
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import asdict, dataclass, field, replace
-from typing import Callable, Optional
+from pathlib import Path
+from typing import Callable, Optional, Union
 
 from luna.genome import Genome
 from luna.match import MatchConfig, play_game
@@ -85,6 +107,8 @@ def official_search(
     )
 
 
+#: Versão do protocolo da catraca (docs/CATRACA.md). Mudou uma regra do teste, muda aqui.
+PROTOCOL = "2026-11-28"
 MIN_PAIRS = 16  # pares antes de o teste poder parar (a variância precisa de amostra)
 # Um pseudo-par em cada resultado possível de um par (0, 1/4, 1/2, 3/4, 1), usado só na
 # variância. Sem ele, quando quase todo par dá 1/2 (cada lado vence com as brancas), a
@@ -111,8 +135,15 @@ class PromotionConfig:
     random_plies: int = 2  # lances aleatórios depois do livro, iguais no par
     max_plies: int = 200
     backend: str = "chess_engine"
-    seed: int = 2026
+    # None = semente do desafio, tirada dos nomes da candidata e da oficial (pares novos
+    # em cada desafio). Um valor fixo repete os mesmos pares (testes, reprodução).
+    seed: Optional[Union[int, str]] = None
     batch_pairs: int = 16  # pares jogados por lote antes de olhar o teste
+    confirm: bool = True  # H1 só promove se um segundo teste, com pares novos, der H1
+    sequential: bool = True  # False = joga exatamente max_games (pré-seleção)
+    offset: int = 0  # primeiro índice de par (partidas novas com a mesma semente)
+    out_dir: Optional[str] = None  # grava os pares e retoma de lá
+    bias_sims: int = 400  # simulações por ponto na correção do Elo pela parada
 
     def __post_init__(self) -> None:
         if self.max_games < 2 * MIN_PAIRS or self.max_games % 2:
@@ -182,6 +213,8 @@ class PromotionResult:
     bounds: tuple[float, float]
     config: dict = field(default_factory=dict)
     games_detail: list[dict] = field(default_factory=list)
+    elo_corrigido: Optional[float] = None  # corrigido pelo viés da parada (Whitehead 1986)
+    confirmation: Optional[dict] = None  # o segundo teste, quando o primeiro deu H1
 
     def to_dict(self, with_games: bool = False) -> dict:
         d = asdict(self)
@@ -200,6 +233,84 @@ def _pair_task(args: tuple) -> tuple[float, float, dict, dict]:
     return s1, s2, first.to_dict(), second.to_dict()
 
 
+def challenge_seed(config: PromotionConfig, candidate_id: str, official_id: str) -> str:
+    return str(config.seed) if config.seed is not None else f"{candidate_id}-x-{official_id}"
+
+
+def _decide(pair_scores: list[float], config: PromotionConfig, value: float) -> str:
+    lower, upper = config.bounds
+    if not config.sequential or len(pair_scores) < MIN_PAIRS:
+        return "teto"
+    if value >= upper:
+        return "H1"
+    if value <= lower:
+        return "H0"
+    return "teto"
+
+
+def _play_test(
+    cand_d: dict,
+    off_d: dict,
+    config: PromotionConfig,
+    seed: str,
+    executor: Optional[ProcessPoolExecutor],
+    log: Callable[[str], None],
+    pairs_path: Optional[Path],
+) -> tuple[list[float], list[float], list[dict], str, float]:
+    """Um teste sequencial (ou de tamanho fixo); devolve pares, partidas e decisão."""
+    lower, upper = config.bounds
+    match_config = config.match_config()
+    max_pairs = config.max_games // 2
+
+    def task(i: int) -> tuple:
+        rng = random.Random(f"{seed}-pair-{i}")
+        return (cand_d, off_d, match_config, BOOK[i % len(BOOK)], rng.randrange(2**32))
+
+    done: list[tuple] = []
+    if pairs_path is not None and pairs_path.exists():
+        rows = [json.loads(x) for x in pairs_path.read_text(encoding="utf-8").splitlines() if x]
+        done = [(r["s1"], r["s2"], r["g1"], r["g2"]) for r in sorted(rows, key=lambda r: r["i"])]
+        log(f"Retomando: {len(done)} pares já jogados em {pairs_path}")
+
+    scores: list[float] = []
+    pair_scores: list[float] = []
+    detail: list[dict] = []
+    decision, value = "teto", 0.0
+
+    def take(results) -> None:
+        nonlocal decision, value
+        for s1, s2, g1, g2 in results:
+            if decision != "teto" or len(pair_scores) >= max_pairs:
+                return
+            scores.extend((s1, s2))
+            pair_scores.append((s1 + s2) / 2)
+            detail.extend((g1, g2))
+            value = llr(pair_scores, config.elo0, config.elo1)
+            decision = _decide(pair_scores, config, value)
+
+    take(done)
+    next_pair = len(done)
+    while decision == "teto" and next_pair < max_pairs:
+        batch = range(next_pair, min(max_pairs, next_pair + config.batch_pairs))
+        tasks = [task(config.offset + i) for i in batch]
+        results = (
+            list(executor.map(_pair_task, tasks)) if executor else list(map(_pair_task, tasks))
+        )
+        if pairs_path is not None:
+            pairs_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(pairs_path, "a", encoding="utf-8") as f:
+                for i, (s1, s2, g1, g2) in zip(batch, results):
+                    f.write(json.dumps({"i": i, "s1": s1, "s2": s2, "g1": g1, "g2": g2}) + "\n")
+        take(results)
+        next_pair = batch.stop
+        elo, err = elo_estimate(pair_scores)
+        log(
+            f"{len(scores)} partidas: candidata {sum(scores):g}/{len(scores)}, "
+            f"Elo {elo:+.0f} ± {err:.0f}, LLR {value:+.2f} (limites {lower:.2f} e {upper:.2f})"
+        )
+    return pair_scores, scores, detail, decision, value
+
+
 def run_promotion_match(
     candidate: Genome,
     official: Genome,
@@ -207,60 +318,57 @@ def run_promotion_match(
     workers: int = 0,
     log: Callable[[str], None] = print,
 ) -> PromotionResult:
-    """Joga o match pareado até o teste sequencial decidir ou chegar ao teto.
+    """Joga o match pareado até o teste sequencial decidir ou chegar ao teto e, com
+    ``confirm``, repete com pares novos depois de um H1.
 
     Os pares são jogados em lotes em paralelo, mas o teste olha os resultados na
     ordem dos pares, então a decisão não depende do número de processos."""
     config = config or PromotionConfig()
     lower, upper = config.bounds
-    match_config = config.match_config()
-    max_pairs = config.max_games // 2
     cand_d = {**candidate.to_dict(), "id": candidate.id or "candidata"}
     off_d = {**official.to_dict(), "id": official.id or "oficial"}
     if cand_d["id"] == off_d["id"]:
         off_d["id"] += "-oficial"
-
-    def task(i: int) -> tuple:
-        rng = random.Random(f"{config.seed}-pair-{i}")
-        return (cand_d, off_d, match_config, BOOK[i % len(BOOK)], rng.randrange(2**32))
-
-    scores: list[float] = []
-    pair_scores: list[float] = []
-    detail: list[dict] = []
-    decision, value = "teto", 0.0
+    seed = challenge_seed(config, cand_d["id"], off_d["id"])
+    out = Path(config.out_dir) if config.out_dir else None
     executor = ProcessPoolExecutor(max_workers=workers or None) if workers != 1 else None
+    confirmation = None
     try:
-        next_pair = 0
-        while decision == "teto" and next_pair < max_pairs:
-            batch = range(next_pair, min(max_pairs, next_pair + config.batch_pairs))
-            tasks = [task(i) for i in batch]
-            results = list(executor.map(_pair_task, tasks)) if executor else map(_pair_task, tasks)
-            for s1, s2, g1, g2 in results:
-                scores += [s1, s2]
-                pair_scores.append((s1 + s2) / 2)
-                detail += [g1, g2]
-                value = llr(pair_scores, config.elo0, config.elo1)
-                if len(pair_scores) >= MIN_PAIRS and value >= upper:
-                    decision = "H1"
-                elif len(pair_scores) >= MIN_PAIRS and value <= lower:
-                    decision = "H0"
-                if decision != "teto":
-                    break
-            next_pair = batch.stop
-            elo, err = elo_estimate(pair_scores)
-            log(
-                f"{len(scores)} partidas: candidata {sum(scores):g}/{len(scores)}, "
-                f"Elo {elo:+.0f} ± {err:.0f}, LLR {value:+.2f} (limites {lower:.2f} e {upper:.2f})"
+        pair_scores, scores, detail, decision, value = _play_test(
+            cand_d, off_d, config, seed, executor, log, out / "pares.jsonl" if out else None
+        )
+        if decision == "H1" and config.confirm and config.sequential:
+            log("H1 no primeiro teste; confirmação com pares novos")
+            c_pairs, c_scores, c_detail, c_decision, c_value = _play_test(
+                cand_d,
+                off_d,
+                config,
+                seed + "-confirmacao",
+                executor,
+                log,
+                out / "pares-confirmacao.jsonl" if out else None,
             )
+            c_elo, c_err = elo_estimate(c_pairs)
+            confirmation = {
+                "decision": c_decision,
+                "games": len(c_scores),
+                "score": sum(c_scores) / len(c_scores) if c_scores else 0.0,
+                "elo": c_elo,
+                "elo_error": c_err,
+                "elo_corrigido": corrected_elo(c_pairs, config, c_decision),
+                "llr": c_value,
+            }
+            detail = detail + c_detail
     finally:
         if executor is not None:
             executor.shutdown()
 
     elo, err = elo_estimate(pair_scores)
-    return PromotionResult(
+    promoted = decision == "H1" and (confirmation is None or confirmation["decision"] == "H1")
+    result = PromotionResult(
         candidate_id=cand_d["id"],
         official_id=off_d["id"],
-        promoted=decision == "H1",
+        promoted=promoted,
         decision=decision,
         games=len(scores),
         wins=scores.count(1.0),
@@ -271,6 +379,84 @@ def run_promotion_match(
         elo_error=err,
         llr=value,
         bounds=(lower, upper),
-        config=asdict(config),
+        config={**asdict(config), "protocol": PROTOCOL, "seed_used": seed},
         games_detail=detail,
+        elo_corrigido=corrected_elo(pair_scores, config, decision),
+        confirmation=confirmation,
     )
+    if out is not None:
+        tmp = out / "resultado.json.tmp"
+        tmp.write_text(json.dumps(result.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(out / "resultado.json")
+    return result
+
+
+def _tilt(values: list[float], probs: list[float], target: float) -> list[float]:
+    """Pesos ``probs`` inclinados (família exponencial) até a média ``target``."""
+    lo, hi = -60.0, 60.0
+    w = probs
+    for _ in range(80):
+        lam = (lo + hi) / 2
+        w = [p * math.exp(lam * v) for p, v in zip(probs, values)]
+        total = sum(w)
+        w = [x / total for x in w]
+        if sum(x * v for x, v in zip(w, values)) < target:
+            lo = lam
+        else:
+            hi = lam
+    return w
+
+
+def _simulate_stop(values, cum, config: PromotionConfig, rng: random.Random) -> float:
+    """Elo estimado ao parar, num teste simulado com pares sorteados de ``values``/``cum``."""
+    s0, s1 = expected_score(config.elo0), expected_score(config.elo1)
+    lower, upper = config.bounds
+    prior_n = len(PRIOR_PAIRS)
+    p1, p2 = sum(PRIOR_PAIRS), sum(x * x for x in PRIOR_PAIRS)
+    n, t1, t2 = 0, 0.0, 0.0
+    max_pairs = config.max_games // 2
+    while n < max_pairs:
+        u = rng.random()
+        x = values[next(i for i, c in enumerate(cum) if u <= c)]
+        n, t1, t2 = n + 1, t1 + x, t2 + x * x
+        if n >= MIN_PAIRS:
+            mean = t1 / n
+            var = (t2 + p2 - 2 * mean * (t1 + p1) + mean * mean * (n + prior_n)) / (n + prior_n)
+            value = n * (s1 - s0) * (2 * mean - s0 - s1) / (2 * var) if var > 0 else 0.0
+            if value >= upper or value <= lower:
+                break
+    mean = min(max(t1 / n, 1e-3), 1 - 1e-3)
+    return -400.0 * math.log10(1.0 / mean - 1.0)
+
+
+def corrected_elo(
+    pair_scores: list[float], config: PromotionConfig, decision: str
+) -> Optional[float]:
+    """Elo corrigido pelo viés da parada (Whitehead 1986): o Elo verdadeiro cujo teste
+    simulado dá, em média, o Elo observado. None se o teste não parou pela regra."""
+    if decision not in ("H0", "H1") or len(pair_scores) < MIN_PAIRS:
+        return None
+    observed, _ = elo_estimate(pair_scores)
+    values = list(PRIOR_PAIRS)
+    counts = [sum(1 for x in pair_scores if abs(x - v) < 1e-9) + 0.5 for v in values]
+    probs = [c / sum(counts) for c in counts]
+    rng = random.Random(f"vies-{len(pair_scores)}-{sum(pair_scores)}")
+
+    def mean_estimate(true_elo: float) -> float:
+        w = _tilt(values, probs, expected_score(true_elo))
+        cum, acc = [], 0.0
+        for x in w:
+            acc += x
+            cum.append(acc)
+        cum[-1] = 1.0
+        sims = [_simulate_stop(values, cum, config, rng) for _ in range(config.bias_sims)]
+        return sum(sims) / len(sims)
+
+    lo, hi = observed - 150.0, observed + 50.0
+    for _ in range(12):
+        mid = (lo + hi) / 2
+        if mean_estimate(mid) < observed:
+            lo = mid
+        else:
+            hi = mid
+    return round((lo + hi) / 2, 1)

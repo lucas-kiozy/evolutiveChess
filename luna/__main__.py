@@ -121,7 +121,17 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--max-games", type=int, default=2000)
     p.add_argument("--random-plies", type=int, default=2, help="lances aleatórios após o livro")
     p.add_argument("--workers", type=int, default=0, help="0 = número de CPUs")
-    p.add_argument("--seed", type=int, default=2026)
+    p.add_argument(
+        "--seed", help="semente fixa; padrão: a do desafio (nomes da candidata e da oficial)"
+    )
+    p.add_argument("--out", help="pasta para gravar os pares e retomar o desafio de lá")
+    p.add_argument("--offset", type=int, default=0, help="primeiro índice de par")
+    p.add_argument("--sem-confirmacao", action="store_true", help="H1 promove sem o segundo teste")
+    p.add_argument(
+        "--fixo",
+        action="store_true",
+        help="joga exatamente --max-games, sem parar pelo teste e sem promover (pré-seleção)",
+    )
     p.add_argument("--report", help="JSON com o resultado e as partidas do match")
 
     args = parser.parse_args(argv)
@@ -218,6 +228,10 @@ def _promote(args: argparse.Namespace) -> None:
         time_limit=args.time_limit or None,
         random_plies=args.random_plies,
         seed=args.seed,
+        confirm=not args.sem_confirmacao,
+        sequential=not args.fixo,
+        offset=args.offset,
+        out_dir=args.out,
     )
     depth = args.depth if args.depth is not None else "2/4/5 por lance"
     limit = f", até {args.time_limit:g} s por lance" if args.time_limit else ""
@@ -231,6 +245,12 @@ def _promote(args: argparse.Namespace) -> None:
     if args.report:
         with open(args.report, "w", encoding="utf-8") as fh:
             json.dump(result.to_dict(with_games=True), fh, ensure_ascii=False, indent=1)
+    if args.fixo:
+        print(
+            f"Pré-seleção: {result.score:.1%} em {result.games} partidas, "
+            f"Elo {result.elo:+.0f} ± {result.elo_error:.0f} (sem promoção)."
+        )
+        return
     if not result.promoted:
         print(
             f"Não promovida ({result.decision}): {result.score:.1%} em {result.games} partidas, "
