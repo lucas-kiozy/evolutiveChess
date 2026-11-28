@@ -51,3 +51,24 @@ def test_new_run_saves_code_tag_and_config_in_every_generation(tmp_path):
     gen2 = storage.load_generation(2)
     assert gen2["config"] == gen1["config"]
     assert all(p["id"].startswith("treino-x-g0002-") for p in gen2["population"])
+
+
+# ------------------------------------------------------------- pareamento
+
+
+def test_training_games_are_paired_with_the_same_opening_and_colors_swapped(tmp_path):
+    from luna.evolution import initial_population, play_generation
+
+    cfg = _tiny(hall_of_fame=0)
+    records = play_generation(initial_population(cfg), cfg, 1)
+    assert cfg.paired and len(records) % 2 == 0
+    for first, second in zip(records[0::2], records[1::2]):
+        assert (first.white_id, first.black_id) == (second.black_id, second.white_id)
+        # Mesma abertura do livro e mesmos lances aleatórios no começo.
+        assert first.moves[:3] == second.moves[:3]
+
+
+def test_old_configs_keep_unpaired_games():
+    d = EvolutionConfig().to_dict()
+    del d["frozen"], d["paired"]
+    assert EvolutionConfig.from_dict(d).paired is False
