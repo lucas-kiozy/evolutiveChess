@@ -208,6 +208,7 @@ def test_evolve_saves_and_resumes(tmp_path):
         hall_of_fame=1,
         seed=3,
         boundary_games=0,
+        elite_fresh=False,  # carry completo; o da elite "fresca" é testado à parte
         match=MatchConfig(search=SearchConfig(depth=1, quiescence_depth=0), max_plies=20),
     )
     run = tmp_path / "run"

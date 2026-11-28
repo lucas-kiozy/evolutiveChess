@@ -71,6 +71,7 @@ LEGACY_CONFIG: dict = {
     "integer_mutation_rate": None,
     "mutation_boundary": "clip",
     "resign_win_points": RESULT_POINTS["resign_win"],
+    "elite_fresh": False,
 }
 
 
@@ -107,6 +108,12 @@ class EvolutionConfig:
     # check_extension era 25% a 50% da faixa, e 10% dos filhos perdiam o valor bom.
     integer_mutation_rate: Optional[float] = 0.05
     mutation_boundary: str = "reflect"  # ou "clip": recorte nos limites (treinos antigos)
+    # Elite sem o "ruído congelado": quem acabou de entrar na elite não leva as partidas
+    # da geração em que foi escolhida (a sorte que a elegeu); quem continua acumula só as
+    # partidas jogadas depois de entrar. Na simulação de 2026-11-28
+    # (tools/simular_elite.py) a resposta à seleção ficou igual e a fração de cópias da
+    # elite que seguem no top-2 caiu de ~29% para ~12%, perto do que o reteste prevê.
+    elite_fresh: bool = True
 
     def __post_init__(self) -> None:
         if self.population < 2 or self.population % 2:
@@ -284,6 +291,21 @@ def rank_generation(
             ranking = build(records + extra)
             ranking.boundary = (a, b)
     return ranking
+
+
+def elite_carry(
+    parent: str,
+    stats: dict[str, Stats],
+    results: list[tuple[str, str, float]],
+    carry: dict,
+    config: EvolutionConfig,
+) -> dict:
+    """Resultados que a cópia de ``parent`` leva para a geração seguinte. Com
+    ``elite_fresh``, quem acabou de entrar na elite (não era cópia de elite nesta
+    geração, então não está em ``carry``) começa sem as partidas que a elegeram."""
+    if config.elite_fresh and parent not in carry:
+        return {**Stats().to_dict(), "results": []}
+    return {**stats[parent].to_dict(), "results": results_of(parent, results)}
 
 
 def tournament_select(ranked: list[Genome], size: int, rng: random.Random) -> Genome:
@@ -476,10 +498,7 @@ def evolve(
             # A elite (primeiras da nova população) leva os resultados acumulados, com a
             # lista de partidas para o Bradley–Terry da geração seguinte.
             carry = {
-                g.id: {
-                    **stats[g.parents[0]].to_dict(),
-                    "results": results_of(g.parents[0], ranking.results),
-                }
+                g.id: elite_carry(g.parents[0], stats, ranking.results, carry, config)
                 for g in population[: config.elite]
             }
             storage.save_state(generation + 1, population, hall, carry)

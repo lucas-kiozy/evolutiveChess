@@ -144,3 +144,27 @@ def test_new_trainings_give_no_resign_bonus_old_ones_keep_it():
     for key in ("frozen", "resign_win_points"):
         del d[key]
     assert EvolutionConfig.from_dict(d).resign_win_points == 6.0
+
+
+# ------------------------------------------------------------------ elite
+
+
+def test_fresh_elite_drops_the_audition_games_and_keeps_later_ones(tmp_path):
+    run = tmp_path / "run"
+    evolve(str(run), 3, _tiny(hall_of_fame=0), workers=1, log=lambda _: None)
+    storage = RunStorage(run)
+    gen2, gen3 = storage.load_generation(2), storage.load_generation(3)
+    # Geração 2: a cópia da elite acabou de entrar e só tem as 4 partidas novas.
+    (copy2,) = [p for p in gen2["population"] if len(p["parents"]) == 1]
+    assert copy2["stats"]["games"] == 4
+    # Geração 3: se a mesma Luna continuou na elite, soma as da geração 2 (8); se outra
+    # entrou, também começa só com as 4 novas.
+    (copy3,) = [p for p in gen3["population"] if len(p["parents"]) == 1]
+    stayed = copy3["parents"][0] == copy2["id"]
+    assert copy3["stats"]["games"] == (8 if stayed else 4)
+
+
+def test_old_configs_keep_the_full_elite_carry():
+    d = EvolutionConfig().to_dict()
+    del d["frozen"], d["elite_fresh"]
+    assert EvolutionConfig.from_dict(d).elite_fresh is False

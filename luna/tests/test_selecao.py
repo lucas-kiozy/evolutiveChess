@@ -287,7 +287,8 @@ def test_elite_carries_its_games_for_the_next_ranking(tmp_path):
     from luna.storage import RunStorage
 
     run = tmp_path / "run"
-    evolve(str(run), 2, _tiny_config(boundary_games=0), workers=1, log=lambda _: None)
+    cfg = _tiny_config(boundary_games=0, elite_fresh=False)  # carry completo
+    evolve(str(run), 2, cfg, workers=1, log=lambda _: None)
     _, carry = RunStorage(run).load_hall_of_fame()
     (entry,) = carry.values()
     assert len(entry["results"]) == entry["games"] >= 2
