@@ -33,7 +33,19 @@ Cada partida fica em `rating/runs/history.jsonl` (com PGN).
 
 ## Ligando a Luna
 
-O estimador aceita qualquer objeto com
+Para a Luna oficial, use a jogadora pronta do pacote `luna`:
+
+```bash
+python -m rating --player luna.player:official_factory --games 60 --parallel 4
+```
+
+Ela joga sem sorteio, com a escala de profundidade oficial e o orçamento de tempo
+(teto normal de 20 s, até 5 lances por partida estendidos até 40 s). O `rating`
+não passa relógio para a Luna, então o orçamento vale inteiro. `LUNA_VERSION`,
+`LUNA_DEPTH`, `LUNA_TIME_LIMIT`, `LUNA_EXTENDED_TIME`, `LUNA_EXTENSIONS`,
+`LUNA_NOISE` e `LUNA_SEED` mudam a configuração (ver `luna/player.py`).
+
+Para outro jogador: o estimador aceita qualquer objeto com
 `choose_move(fen: str, legal_moves: list[str]) -> str` (lances em UCI).
 Métodos opcionais: `new_game(color)` e `set_clock(ms_restantes, ms_incremento)`.
 A fábrica precisa ser uma função de nível de módulo (sem argumentos), porque

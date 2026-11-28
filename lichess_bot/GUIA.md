@@ -26,9 +26,13 @@ Nada aqui joga sozinho. Você roda o comando quando quiser.
    ```
 5. Colocar a Luna para jogar:
    ```bash
-   python -m lichess_bot play --player luna_player:luna_factory
+   python -m lichess_bot play --player luna.player:lichess_factory
    # opções: --max-games 10  --casual-only  --matchmaking
    ```
+   `lichess_factory` é a Luna oficial (`luna/versions/oficial.txt`) com três
+   ajustes para jogar contra pessoas (decisões do Lucas em 2026-11-27): abre
+   sempre 1.e4 de brancas e 1...c6 de pretas, sorteia entre lances que diferem
+   até 5 centipeões (`LUNA_NOISE=0` desliga) e segue o relógio da partida.
 
 Se o token vazar, revogue em https://lichess.org/account/oauth/token.
 
@@ -37,11 +41,25 @@ Se o token vazar, revogue em https://lichess.org/account/oauth/token.
 - Bots não entram no pareamento automático do Lichess. A Luna joga quando
   alguém a desafia ou, com `--matchmaking`, desafia outro bot online de rating
   próximo depois de 2 minutos ociosa.
+- Com `--matchmaking`, o desafio automático é **15+5** (decisão do Lucas em
+  2026-11-27), ritmo em que cabe o teto de 20 s por lance da Luna.
 - Desafios aceitos por padrão: xadrez padrão, com relógio, de 3 a 30 minutos de
   base e até 30 s de incremento, valendo ou não rating. Correspondência e
   variantes são recusadas. Ajuste em `lichess_bot/config.py`.
 - Se o adversário abandona a partida, o bot reivindica a vitória quando o
   Lichess permite.
+
+## Tempo por lance
+
+A Luna usa o orçamento de tempo das partidas oficiais (`luna.search.TimeBudget`):
+teto normal de 20 s por lance, parada antecipada quando o melhor lance é estável
+e até 5 lances por partida estendidos até 40 s, só quando a busca está instável.
+O bot passa o relógio a cada lance (`set_clock`), e os tetos encolhem para caber
+nele: o teto normal vira `restante / 25 + 3/4 do incremento` e o estendido no
+máximo `restante / 8`. Em 15+5, mesmo gastando o teto em todo lance, a Luna
+mantém os 20 s até por volta do lance 30 e não perde no tempo. Variáveis:
+`LUNA_TIME_LIMIT` (teto normal; 0 desliga), `LUNA_EXTENDED_TIME` e
+`LUNA_EXTENSIONS`.
 
 ## Aprendizado contínuo
 

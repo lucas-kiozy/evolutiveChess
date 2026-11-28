@@ -1,6 +1,6 @@
 # Relatório de status do projeto
 
-**Última atualização:** 2026-11-26
+**Última atualização:** 2026-11-28
 **Atualizado por:** agente de documentação ([.claude/agents/documentador.md](../.claude/agents/documentador.md))
 
 Este relatório é atualizado depois de cada alteração concluída no repositório. Itens de PRs ainda em revisão aparecem como `[~]` e só passam a `[x]` quando o PR é mergeado no `main`.
@@ -20,7 +20,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 2 | Luna: IA evolutiva com algoritmo genético | **Concluída** | Luna no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); 21 genes desde o [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11); Luna oficial `luna-v5` desde o [PR #24](https://github.com/lucas-kiozy/evolutiveChess/pull/24) |
 | 3 | Self-play paralelo e seleção de descendentes | **Concluída** | Laço no `main` pelo [PR #1](https://github.com/lucas-kiozy/evolutiveChess/pull/1); 7.000 partidas de treino até a geração 32; catraca de promoção e ordenação por Bradley–Terry desde o [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11) |
 | 4 | Medição de rating (meta ~1600) | **Meta atingida** | A `luna-v4` mede 1936 ± 47 (IC 90%: 1859 a 2013) em profundidade 3: o limite inferior passa de 1600. Desde o [PR #24](https://github.com/lucas-kiozy/evolutiveChess/pull/24), a oficial é a `luna-v5`, que venceu a `luna-v4` por +25 ± 10 Elo e mede 2090 ± 43 juntando as partidas contra o Stockfish e a Leela Chess Zero |
-| 5 | Luna jogando no Lichess | Em andamento | Bot no `main` pelo [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4); a Luna já cumpre o critério. Falta o Lucas criar a conta BOT e o token, o [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14) (desistência e ritmo no Lichess) e o aprendizado online |
+| 5 | Luna jogando no Lichess | Em andamento | Bot no `main` pelo [PR #4](https://github.com/lucas-kiozy/evolutiveChess/pull/4); a Luna já cumpre o critério. Orçamento de tempo de 20 s, 1.e4/1...c6, sorteio pequeno e desafio 15+5 em revisão no [PR #25](https://github.com/lucas-kiozy/evolutiveChess/pull/25). Falta o Lucas criar a conta BOT e o token, o [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14) (desistência e ritmo no Lichess) e o aprendizado online |
 
 ---
 
@@ -42,6 +42,7 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 | 2026-10-08 | Busca de empate forçado mais leve, para a desistência funcionar no meio-jogo | 3 | [PR #18](https://github.com/lucas-kiozy/evolutiveChess/pull/18) |
 | 2026-10-08 | Regra única de empate forçado antes de desistir, para treino, rating, Lichess e tabuleiro | 3, 4 e 5 | [PR #17](https://github.com/lucas-kiozy/evolutiveChess/pull/17) |
 | 2026-10-08 | Desistência nas partidas de treino e vitória por desistência na régua (6) | 3 | [PR #16](https://github.com/lucas-kiozy/evolutiveChess/pull/16) |
+| 2026-11-28 | Orçamento de tempo nas partidas oficiais (teto 20 s, parada antecipada, até 5 lances por partida estendidos até 40 s), 1.e4/1...c6 fixos, sorteio de até 5 cp no Lichess e desafio 15+5 (em revisão) | 3, 4 e 5 | [PR #25](https://github.com/lucas-kiozy/evolutiveChess/pull/25) |
 | 2026-11-20 | `luna-v5` vira a Luna oficial (venceu a `luna-v4` por +25 ± 10 Elo em 704 partidas) | 3 e 4 | [PR #24](https://github.com/lucas-kiozy/evolutiveChess/pull/24) |
 | 2026-11-18 | Busca com tabela de transposição, killer moves e history; até 4 meios-lances extras nas partidas oficiais; teste sequencial da catraca corrigido | 2, 3 e 4 | [PR #23](https://github.com/lucas-kiozy/evolutiveChess/pull/23) |
 | 2026-11-02 | Limite de 14 s por lance, com aprofundamento iterativo, em treino, rating, promoção e Lichess | 3, 4 e 5 | [PR #22](https://github.com/lucas-kiozy/evolutiveChess/pull/22) |
@@ -156,6 +157,15 @@ Legenda: `[x]` concluído no `main` · `[~]` em andamento ou em PR aberto · `[ 
 - [x] Medição da `luna-v5` com a busca nova, nas condições oficiais (até 14 s por lance): 60 partidas contra o Stockfish 16 (29 vitórias, 19 empates, 12 derrotas), **2043 ± 49** (IC 90% de cerca de 1962 a 2124). São +144 ± 68 sobre a `luna-v4` com a busca antiga (1899 ± 47); o ganho mistura a busca nova (+234 ± 65 no confronto direto) e o genoma (+25 ± 10 na catraca). A medição foi interrompida por um reinício com 48 partidas e completada depois, com as 60 combinadas no mesmo cálculo
 - [x] Medição da `luna-v5` contra a Leela Chess Zero (lc0 0.31.2 em CPU, rede oficial 394, limitada por nós). Cada nível da Leela foi calibrado em 24 partidas contra o Stockfish 16: 1 nó 2121 ± 64, 16 nós 2324 ± 68, 128 nós 2815 ± 71, 800 nós 2919 ± 72. A Luna jogou 16 partidas por nível (vitórias, empates, derrotas): 10-2-4, 2-2-12, 2-0-14 e 0-0-16. Rating pelas partidas contra a Leela: 2200 ± 77; **juntando com as 60 contra o Stockfish: 2090 ± 43**. A diferença entre as duas medidas (+157 ± 91) fica dentro de 2 erros-padrão. Scripts e dados na pasta compartilhada, `luna-treinos/leela/`
 - [x] ~~Entender por que as gerações do quinto treino não superavam a `luna-v4`~~: resolvido na prática, a geração 45 a superou (+25 ± 10 Elo) depois das gerações 13, 19 e 32 terem empatado ou perdido
+- [x] Velocidade da Luna medida em 2026-11-27: cerca de 19 mil nós por segundo (16 a 23 mil), em Python puro, com 4 partidas em paralelo, em 40 posições das partidas contra a Leela. Com 14 s fixos ela jogava em 6 a 7 s na mediana, porque uma camada além da escala só começava antes de 3,5 s
+- [~] Orçamento de tempo nas partidas oficiais (`luna.search.TimeBudget`), pedido do Lucas: teto normal de 20 s; uma camada só começa se o tempo previsto couber; parada antecipada quando o melhor lance se repete por 3 camadas; extensão até 40 s só com busca instável (melhor lance mudou, avaliação caiu 50 cp ou mais, ou outro lance passou à frente), no máximo 5 lances por partida; lance único jogado na hora; no Lichess os tetos seguem o relógio. O treino continua com 14 s fixos — [PR #25](https://github.com/lucas-kiozy/evolutiveChess/pull/25)
+- [~] Validação do orçamento, 128 partidas pareadas com a `luna-v5` dos dois lados: contra a versão de 14 s fixos, 28-11-25 (+16 Elo, IC 95% de -56 a +91); contra a Leela de 16 nós, 11-6-15 (-44, IC de -147 a +53), contra 8-3-21 (-150, IC de -333 a -24) da versão de 14 s nas mesmas aberturas (diferença pareada de +106, IC de -23 a +224). Tempo por lance: mediana de 6,2 s, p90 de 19,8 s, máximo de 39,8 s, 93% dos lances em até 20 s e **nenhuma das 96 partidas com mais de 5 lances acima de 20 s**. Dados em `luna-treinos/orcamento-tempo/` — [PR #25](https://github.com/lucas-kiozy/evolutiveChess/pull/25)
+- [ ] Régua de rating mais estável (decisão do Lucas em 2026-11-27): medir só contra a Leela de 4 e 16 nós, sem a de 1 nó, com aberturas pareadas e cores trocadas e Bradley–Terry com intervalo; a de 128 nós só como marco ocasional; o Stockfish fica como teste separado. Meta: ±25 Elo
+- [ ] Busca: poda por lance nulo, testada sozinha contra a versão anterior
+- [ ] Busca: redução de lances tardios (LMR), testada sozinha
+- [ ] Busca: janelas de aspiração, testadas sozinhas
+- [ ] Ajuste supervisionado dos pesos pelo método de Texel, com as notas das posições dadas pelo Stockfish, complementando o algoritmo genético
+- [ ] Acelerar o Python da Luna (perfilar e otimizar o caminho quente), a alavanca de mais força por segundo
 - [ ] Avaliar o custo do treino com a escala 2/3/4/5 (cerca de 30 vezes mais lento por geração) e decidir se mantém, encurta a escala ou usa mais núcleos
 - [ ] Entender por que os pesos iniciais continuam à frente e definir os próximos ajustes do treino
 - [x] Catraca de promoção (`python -m luna promote`): a candidata só vira a Luna oficial se vencer um match pareado de 40 aberturas, decidido por teste sequencial de Wald (H0 0 Elo, H1 +30 Elo) — [PR #11](https://github.com/lucas-kiozy/evolutiveChess/pull/11)
@@ -211,6 +221,8 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 - [~] Ritmo de lances no Lichess (`lichess_bot/pacing.py`): lances 1 a 6 em 20 s, 7 a 40 em 1 a 16 s, do 41 em diante em 16 a 90 s, sempre limitado pelo relógio. Treino e rating continuam sem espera — [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14)
 - [~] O bot só aceita partidas rápidas ou clássicas, com base + 60 × incremento de pelo menos 1.500 s, e o desafio automático passa a ser 30+20 — [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14)
 - [~] Vitória por desistência do adversário registrada na partida, valendo 1 ponto no rating — [PR #14](https://github.com/lucas-kiozy/evolutiveChess/pull/14)
+- [~] Luna do Lichess (`luna.player:lichess_factory`): abre 1.e4 de brancas e 1...c6 de pretas a partir da posição inicial e sorteia entre lances que diferem até 5 centipeões; a jogadora do rating (`official_factory`) continua sem sorteio — [PR #25](https://github.com/lucas-kiozy/evolutiveChess/pull/25)
+- [~] Desafio automático do bot em 15+5 (antes 5+3), para caber o teto de 20 s por lance; a jogadora recebe o relógio (`set_clock`) e encolhe os tetos quando ele aperta — [PR #25](https://github.com/lucas-kiozy/evolutiveChess/pull/25)
 - [x] A jogadora da Luna expõe `last_score`, a avaliação do último lance escolhido, sem o ruído de treino; é o que a desistência do PR #14 usa — [PR #15](https://github.com/lucas-kiozy/evolutiveChess/pull/15)
 
 ---
@@ -231,6 +243,12 @@ No `main` desde 2026-10-07 pelo [PR #4](https://github.com/lucas-kiozy/evolutive
 | 2026-10-08 | Vitória por desistência do adversário vale 6 na régua: os 5 da vitória mais 1 de bônus, que só se ganha em vitórias. Quem desiste leva a derrota normal (-1) | Lucas |
 | 2026-10-31 | Profundidade de busca varia com o lance da Luna: nas partidas oficiais, 2 meios-lances nos lances 1 a 9, 4 nos 10 a 16 e 5 do 17 em diante; no treino, 2/3/4/5 nos lances 1 a 10, 11 a 29, 30 a 45 e 46 em diante | Lucas (aplicado no PR #21) |
 | 2026-11-02 | Limite de 14 s por lance em todos os usos (treino, rating, promoção e Lichess) | Lucas (aplicado no PR #22) |
+| 2026-11-27 | Partidas oficiais com orçamento de tempo: numa partida de 35 lances, pelo menos 30 em até 20 s e no máximo 5 acima disso. O treino segue com 14 s | Lucas (PR #25) |
+| 2026-11-27 | O treino das gerações continua Luna contra Luna; o rating passa a ser medido contra a Leela de 4 e 16 nós (sem a de 1 nó), com a de 128 nós só como marco | Lucas |
+| 2026-11-27 | Próximos ganhos de força: poda por lance nulo, LMR e janelas de aspiração, cada uma testada sozinha; a tabela de transposição fica como está | Lucas |
+| 2026-11-27 | Ajuste dos pesos pelo método de Texel com as notas do Stockfish | Lucas |
+| 2026-11-27 | No Lichess, a Luna abre 1.e4 de brancas e 1...c6 de pretas e depois sorteia entre lances quase iguais (até 5 cp); o rating continua sem sorteio | Lucas (PR #25) |
+| 2026-11-27 | Desafio automático do Lichess em 15+5 | Lucas (PR #25) |
 
 ---
 
@@ -295,3 +313,4 @@ Pontos que precisam de decisão do Lucas ou da frente responsável antes ou dura
 | 2026-11-20 | PR #24 mergeado: `luna-v5` oficial; falta medir o rating dela contra o Stockfish |
 | 2026-11-23 | Rating da `luna-v5` com a busca nova: 2043 ± 49 |
 | 2026-11-26 | Rating da `luna-v5` contra a Leela Chess Zero (2200 ± 77) e combinado com o Stockfish (2090 ± 43) |
+| 2026-11-28 | PR #25 aberto: orçamento de tempo validado em 128 partidas, 1.e4/1...c6, sorteio no Lichess e 15+5; decisões de 2026-11-27 e novo backlog de busca, régua de rating e Texel |

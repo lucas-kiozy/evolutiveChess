@@ -34,13 +34,13 @@ from __future__ import annotations
 import math
 import random
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from typing import Callable, Optional
 
 from luna.genome import Genome
 from luna.match import MatchConfig, play_game
 from luna.openings import BOOK
-from luna.search import MOVE_TIME_LIMIT, SearchConfig
+from luna.search import SearchConfig, TimeBudget
 
 #: Profundidade das partidas oficiais (rating, promoção, Lichess), em meios-lances,
 #: por lance da partida: 2 do lance 1 ao 9, 4 do 10 ao 16 e 5 do 17 em diante
@@ -51,24 +51,37 @@ OFFICIAL_SCHEDULE: tuple[tuple[int, int], ...] = ((1, 2), (10, 4), (17, 5))
 # tantos meios-lances enquanto sobra tempo (a busca com tabela de transposição chega à
 # escala bem antes dos 14 s). A escala continua sendo o mínimo de cada lance.
 OFFICIAL_EXTRA_DEPTH = 4
+#: Teto normal de tempo por lance nas partidas oficiais, em segundos (pedido do Lucas em
+#: 2026-11-27: pelo menos 30 de 35 lances em até 20 s). Até então era o limite fixo de
+#: 14 s (``luna.search.MOVE_TIME_LIMIT``), que o treino continua usando.
+OFFICIAL_MOVE_TIME = 20.0
+#: Orçamento de tempo das partidas oficiais (``luna.search.TimeBudget``): teto de 20 s,
+#: até 5 lances por partida estendidos até 40 s quando a busca está instável.
+OFFICIAL_BUDGET = TimeBudget(move_time=OFFICIAL_MOVE_TIME)
 #: Profundidade fixa usada até 2026-10-31 (luna-v2 a luna-v4 foram medidas assim).
 OFFICIAL_DEPTH = 3
 
 
 def official_search(
-    depth: Optional[int] = None, time_limit: Optional[float] = MOVE_TIME_LIMIT
+    depth: Optional[int] = None,
+    time_limit: Optional[float] = OFFICIAL_MOVE_TIME,
+    budget: Optional[TimeBudget] = None,
 ) -> SearchConfig:
-    """Busca das partidas oficiais: a escala por lance, ou ``depth`` fixo se dado, com
-    ``time_limit`` segundos por lance (None ou 0 = sem limite)."""
+    """Busca das partidas oficiais: a escala por lance, ou ``depth`` fixo se dado.
+
+    Com ``time_limit`` (teto normal, em segundos) a busca usa o orçamento de tempo
+    ``budget`` (padrão ``OFFICIAL_BUDGET``) com esse teto. None ou 0 = sem limite."""
     time_limit = time_limit or None
+    tb = replace(budget or OFFICIAL_BUDGET, move_time=time_limit) if time_limit else None
     if depth is not None:
-        return SearchConfig(depth=depth, noise=0.0, time_limit=time_limit)
+        return SearchConfig(depth=depth, noise=0.0, time_limit=time_limit, budget=tb)
     return SearchConfig(
         depth=OFFICIAL_SCHEDULE[0][1],
         noise=0.0,
         schedule=OFFICIAL_SCHEDULE,
         time_limit=time_limit,
         extra_depth=OFFICIAL_EXTRA_DEPTH if time_limit else 0,
+        budget=tb,
     )
 
 
@@ -94,7 +107,7 @@ class PromotionConfig:
     beta: float = 0.05  # chance de recusar uma candidata 30 Elo melhor
     max_games: int = 2000
     depth: Optional[int] = None  # None = OFFICIAL_SCHEDULE; um número fixa a profundidade
-    time_limit: Optional[float] = MOVE_TIME_LIMIT  # segundos por lance; None = sem limite
+    time_limit: Optional[float] = OFFICIAL_MOVE_TIME  # teto normal por lance; None = sem limite
     random_plies: int = 2  # lances aleatórios depois do livro, iguais no par
     max_plies: int = 200
     backend: str = "chess_engine"
