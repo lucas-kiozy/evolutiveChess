@@ -72,3 +72,60 @@ def test_old_configs_keep_unpaired_games():
     d = EvolutionConfig().to_dict()
     del d["frozen"], d["paired"]
     assert EvolutionConfig.from_dict(d).paired is False
+
+
+# ---------------------------------------------------------------- variação
+
+
+def test_search_gene_ranges_are_wider():
+    from luna.genome import GENE_SPECS
+
+    assert GENE_SPECS["quiescence_depth"][:2] == (0.0, 12.0)
+    assert GENE_SPECS["check_extension"][:2] == (0.0, 4.0)
+
+
+def test_reflection_keeps_values_inside_and_off_the_limit():
+    from luna.genome import reflect
+
+    assert reflect("check_extension", 5.0) == 3.0  # 1 acima do teto 4 volta 1
+    assert reflect("check_extension", -1.0) == 1.0
+    assert reflect("pst_weight", 2.5) == 1.5
+    assert reflect("pst_weight", 0.7) == 0.7
+
+
+def test_reflect_mutation_does_not_pile_up_at_the_ceiling():
+    import random
+
+    from luna.genome import Genome, mutate
+
+    rng = random.Random(1)
+    top = Genome({**Genome.reference().genes, "pst_weight": 2.0})
+    clipped = [mutate(top, rng, 1.0, 0.05).genes["pst_weight"] for _ in range(400)]
+    reflected = [
+        mutate(top, rng, 1.0, 0.05, boundary="reflect").genes["pst_weight"] for _ in range(400)
+    ]
+    assert sum(v == 2.0 for v in clipped) > 150  # metade das mutações para no teto
+    assert sum(v == 2.0 for v in reflected) == 0
+    assert all(0.0 <= v <= 2.0 for v in reflected)
+
+
+def test_integer_genes_have_their_own_rate():
+    import random
+
+    from luna.genome import Genome, mutate
+
+    rng = random.Random(2)
+    ref = Genome.reference()
+    n = 2000
+    changed = sum(
+        mutate(ref, rng, 0.2, 0.05, integer_rate=0.05).genes["check_extension"] != 1.0
+        for _ in range(n)
+    )
+    assert 0.03 * n < changed < 0.07 * n
+    cfg = EvolutionConfig()
+    assert cfg.integer_mutation_rate == 0.05 and cfg.mutation_boundary == "reflect"
+    d = cfg.to_dict()
+    for key in ("frozen", "paired", "integer_mutation_rate", "mutation_boundary"):
+        del d[key]
+    old = EvolutionConfig.from_dict(d)
+    assert old.integer_mutation_rate is None and old.mutation_boundary == "clip"

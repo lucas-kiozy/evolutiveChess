@@ -65,7 +65,12 @@ RANKINGS = ("bradley_terry", "regua")
 #: Valores das opções novas para configurações salvas antes delas (treinos até o
 #: treino-v4): reproduzem como esses treinos rodavam. Cada opção nova que muda a
 #: aptidão ou a variação entra aqui, para não mudar um treino em andamento.
-LEGACY_CONFIG: dict = {"frozen": False, "paired": False}
+LEGACY_CONFIG: dict = {
+    "frozen": False,
+    "paired": False,
+    "integer_mutation_rate": None,
+    "mutation_boundary": "clip",
+}
 
 
 @dataclass
@@ -94,6 +99,10 @@ class EvolutionConfig:
     # aleatórios comuns; Glasserman e Yao 1992, Management Science 38(6):884-908).
     # Medido no treino: ~10% menos variância por par, sem custo.
     paired: bool = True
+    # Taxa de mutação própria dos genes inteiros (None = mutation_rate): um passo de 1 em
+    # check_extension era 25% a 50% da faixa, e 10% dos filhos perdiam o valor bom.
+    integer_mutation_rate: Optional[float] = 0.05
+    mutation_boundary: str = "reflect"  # ou "clip": recorte nos limites (treinos antigos)
 
     def __post_init__(self) -> None:
         if self.population < 2 or self.population % 2:
@@ -289,7 +298,14 @@ def next_population(ranked: list[Genome], config: EvolutionConfig, generation: i
         a = tournament_select(ranked, config.tournament_size, rng)
         b = tournament_select(ranked, config.tournament_size, rng)
         child = crossover(a, b, rng, id=_ident(generation, len(new), tag))
-        child = mutate(child, rng, config.mutation_rate, config.mutation_scale)
+        child = mutate(
+            child,
+            rng,
+            config.mutation_rate,
+            config.mutation_scale,
+            integer_rate=config.integer_mutation_rate,
+            boundary=config.mutation_boundary,
+        )
         new.append(child)
     return new
 

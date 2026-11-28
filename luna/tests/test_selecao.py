@@ -290,8 +290,11 @@ def test_elite_carries_its_games_for_the_next_ranking(tmp_path):
     evolve(str(run), 2, _tiny_config(boundary_games=0), workers=1, log=lambda _: None)
     _, carry = RunStorage(run).load_hall_of_fame()
     (entry,) = carry.values()
-    assert len(entry["results"]) == entry["games"] == 4
+    assert len(entry["results"]) == entry["games"] >= 2
     gen2 = RunStorage(run).load_generation(2)
+    # A cópia da elite da geração 1 soma as 2 partidas de lá às 2 da geração 2.
+    (copy,) = [p for p in gen2["population"] if len(p["parents"]) == 1]
+    assert copy["stats"]["games"] == copy["strength"]["games"] == 4
     assert all(p["strength"]["games"] >= 2 for p in gen2["population"])
     assert gen2["summary"]["best_elo"] is not None
 
