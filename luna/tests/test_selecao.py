@@ -76,8 +76,17 @@ def test_search_config_overrides_genes_only_when_given():
     assert (s.quiescence_depth, s.contempt) == (0, 10)
 
 
+def _old(d: dict) -> dict:
+    """Configuração como os treinos antigos a salvavam, sem as opções novas."""
+    from luna.evolution import LEGACY_CONFIG
+
+    for key in LEGACY_CONFIG:
+        d.pop(key, None)
+    return d
+
+
 def test_old_configs_let_search_genes_evolve():
-    d = EvolutionConfig().to_dict()
+    d = _old(EvolutionConfig().to_dict())
     d["match"]["search"].update(quiescence_depth=4, contempt=50.0)
     search = EvolutionConfig.from_dict(d).match.search
     assert search.quiescence_depth is None and search.contempt is None
@@ -303,10 +312,10 @@ def test_training_schedule_and_old_configs_get_it():
     assert train.schedule == ((1, 2), (11, 3), (30, 4), (46, 5))
     moves = (1, 10, 11, 29, 30, 45, 46, 80)
     assert [train.depth_for_move(m) for m in moves] == [2, 2, 3, 3, 4, 4, 5, 5]
-    d = EvolutionConfig().to_dict()
+    d = _old(EvolutionConfig().to_dict())
     del d["match"]["search"]["schedule"]  # treino salvo antes da escala
     assert EvolutionConfig.from_dict(d).match.search.schedule == train.schedule
-    explicit = EvolutionConfig().to_dict()
+    explicit = _old(EvolutionConfig().to_dict())
     explicit["match"]["search"]["schedule"] = None  # desligada de propósito
     assert EvolutionConfig.from_dict(explicit).match.search.schedule is None
 

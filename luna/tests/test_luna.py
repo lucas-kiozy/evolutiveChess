@@ -230,8 +230,17 @@ def test_evolve_saves_and_resumes(tmp_path):
         assert len(played) == 4
         assert sum("campea-" in g["white_id"] + g["black_id"] for g in played) == 2
     # A elite leva as 4 partidas da geração 1 e soma as 4 da geração 2.
-    elite = next(p for p in gen2["population"] if p["id"] == "g0002-i00")
+    elite = next(p for p in gen2["population"] if p["id"] == "run-g0002-i00")
     assert elite["stats"]["games"] == 8
+
+
+def _old(d: dict) -> dict:
+    """Configuração como os treinos antigos a salvavam, sem as opções novas."""
+    from luna.evolution import LEGACY_CONFIG
+
+    for key in LEGACY_CONFIG:
+        d.pop(key, None)
+    return d
 
 
 def test_search_avoids_repetition_with_contempt():
@@ -304,7 +313,7 @@ def test_each_luna_plays_18_games_with_hall_of_fame():
 
 
 def test_old_config_with_rounds_still_loads():
-    cfg = EvolutionConfig(population=4).to_dict()
+    cfg = _old(EvolutionConfig(population=4).to_dict())
     del cfg["games_per_luna"], cfg["hall_of_fame"]
     cfg["rounds"], cfg["fallback"] = 2, "captures"
     old = EvolutionConfig.from_dict(cfg)

@@ -5,7 +5,7 @@ import time
 import pytest
 
 from luna.adapters import new_game
-from luna.evolution import TRAINING_SEARCH, EvolutionConfig
+from luna.evolution import TRAINING_NODE_LIMIT, TRAINING_SEARCH, EvolutionConfig
 from luna.genome import Genome
 from luna.player import official_factory
 from luna.promotion import OFFICIAL_MOVE_TIME, PromotionConfig, official_search
@@ -43,9 +43,14 @@ def test_mate_in_one_is_found_with_the_limit():
     assert state.uci(searcher.choose_move(state)) == "a1a8"
 
 
-def test_training_keeps_fourteen_seconds_and_official_games_use_the_budget(monkeypatch):
+def test_training_uses_nodes_old_trainings_keep_14_s_and_official_games_the_budget(
+    monkeypatch,
+):
+    # Desde a revisão de 2026-11-28 o treino é limitado por nós; treinos antigos (sem
+    # ``frozen`` na configuração) continuam com os 14 s com que rodavam.
     assert MOVE_TIME_LIMIT == 14.0
-    assert TRAINING_SEARCH.time_limit == 14.0 and TRAINING_SEARCH.budget is None
+    assert TRAINING_SEARCH.time_limit is None and TRAINING_SEARCH.budget is None
+    assert TRAINING_SEARCH.node_limit == TRAINING_NODE_LIMIT
     assert (
         EvolutionConfig.from_dict({"match": {"search": {"depth": 2}}}).match.search.time_limit
         == 14.0

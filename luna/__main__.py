@@ -15,7 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 
-from luna.evolution import EvolutionConfig, evolve
+from luna.evolution import TRAINING_NODE_LIMIT, EvolutionConfig, evolve
 from luna.genome import Genome
 from luna.match import MatchConfig
 from luna.promotion import OFFICIAL_MOVE_TIME
@@ -51,8 +51,18 @@ def main(argv: list[str] | None = None) -> None:
         help="profundidade por lance, 'lance:profundidade,...'; vazio usa --depth e a janela",
     )
     t.add_argument(
-        "--time-limit", type=float, default=MOVE_TIME_LIMIT, help="segundos por lance; 0 desliga"
+        "--time-limit",
+        type=float,
+        default=0.0,
+        help=f"segundos por lance; 0 desliga (treinos até o v4 usavam {MOVE_TIME_LIMIT:g})",
     )
+    t.add_argument(
+        "--node-limit",
+        type=int,
+        default=TRAINING_NODE_LIMIT,
+        help="nós por lance (reproduzível em qualquer máquina); 0 desliga",
+    )
+    t.add_argument("--run-tag", default="", help="prefixo dos ids; padrão: o nome do --run-dir")
     t.add_argument("--deep-depth", type=int, default=0, help="profundidade na janela; 0 desliga")
     t.add_argument("--deep-from", type=int, default=8, help="primeiro lance da janela funda")
     t.add_argument("--deep-to", type=int, default=12, help="último lance da janela funda")
@@ -145,6 +155,7 @@ def main(argv: list[str] | None = None) -> None:
             workers=args.workers,
             seed=args.seed,
             resign_win_points=args.resign_win_points,
+            run_tag=args.run_tag,
             match=MatchConfig(
                 search=SearchConfig(
                     depth=args.depth,
@@ -154,6 +165,7 @@ def main(argv: list[str] | None = None) -> None:
                     deep_depth=args.deep_depth or None,
                     schedule=_parse_schedule(args.schedule),
                     time_limit=args.time_limit or None,
+                    node_limit=args.node_limit or None,
                     deep_from_move=args.deep_from,
                     deep_to_move=args.deep_to,
                 ),
